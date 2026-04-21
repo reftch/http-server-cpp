@@ -1,3 +1,4 @@
+// server.cpp
 #include "server.hpp"
 
 #include <errno.h>
@@ -15,13 +16,6 @@
 #include <vector>
 
 namespace http::server {
-/**
- * Constructor implementation.
- */
-server::server(const std::string& host, const std::string& port) : host_(host), port_(port) {
-    // std::cout << "[Server Setup] Initializing server for host: " << host_
-    //           << ", port: " << port_ << std::endl;
-}
 
 static const char* okResp =
     "HTTP/1.1 200 OK\r\n"
@@ -31,12 +25,33 @@ static const char* okResp =
     "hello from pure c++";
 
 /**
+ * Constructor implementation.
+ * Initializes the server with the specified host and port configuration.
+ * Does not establish any network connections or start listening.
+ *
+ * @param host The hostname or IP address to bind to
+ * @param port The port number to listen on
+ */
+server::server(const std::string& host, const std::string& port) : host_(host), port_(port) {
+    // Initialize connection tracking structures
+    ctxs.reserve(MAX_CONNS);
+    for (int i = 0; i < MAX_CONNS; ++i) {
+        ctxs[i].fd = -1;
+    }
+
+    // fd -> index mapping (simple for FDs < MAX_CONNS)
+    fd_to_idx.reserve(MAX_CONNS);
+    fd_to_idx.resize(MAX_CONNS, -1);
+}
+
+/**
  * Implementation of the start method.
- * In a real application, this method would set up sockets and begin listening.
+ * Sets up the server socket, binds to the specified address, and enters the main event loop.
+ * The server will continuously listen for new connections and handle existing connections.
+ *
+ * @return 0 on successful start, non-zero on error
  */
 int server::start() {
-    // std::cout << "Server started on http:// " << host_ << ":" << port_ << std::endl;
-
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
         perror("socket");
@@ -63,20 +78,14 @@ int server::start() {
         return 1;
     }
 
-    std::vector<Ctx> ctxs(MAX_CONNS);
-    for (int i = 0; i < MAX_CONNS; ++i) {
-        ctxs[i].fd = -1;
-    }
-
-    // fd -> index (simple for FDs < MAX_CONNS)
-    std::vector<int> fd_to_idx(MAX_CONNS, -1);
+    // fd -> index mapping (simple for FDs < MAX_CONNS)
     fd_to_idx[sockfd] = sockfd;  // Use FD as index
 
     std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << std::endl;
 
     while (true) {
         // Build pollfd array from active FDs
-        std::vector<struct pollfd> pfds;
+        pfds.clear();
         pfds.reserve(MAX_CONNS);
         int max_fd = sockfd;
 
@@ -109,30 +118,9 @@ int server::start() {
 
             if (fd == sockfd) {
                 // New connection
-                struct sockaddr_in client_addr{};
-                socklen_t client_len = sizeof(client_addr);
-                int connfd = accept(sockfd, (struct sockaddr*)&client_addr, &client_len);
-                if (connfd < 0) {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
-                    perror("accept");
+                if (handleNewConnection(sockfd) < 0) {
                     continue;
                 }
-
-                if (connfd >= MAX_CONNS) {
-                    std::cout << "too many connections\n";
-                    close(connfd);
-                    continue;
-                }
-
-                if (setNonblocking(connfd) < 0) {
-                    close(connfd);
-                    continue;
-                }
-
-                fd_to_idx[connfd] = connfd;
-                ctxs[connfd].fd = connfd;
-
-                // std::cout << "accepted connfd " << connfd << "\n";
                 continue;
             }
 
@@ -153,9 +141,10 @@ int server::start() {
                 char dummy[4096];
                 ssize_t nread = read(fd, dummy, sizeof(dummy));
                 if (nread > 0) {
-                    // std::cout << "read " << nread << " bytes on fd " << fd << "\n";
+                    // Process incoming data and send response
                     write(fd, okResp, strlen(okResp));
                 } else if (nread == 0) {
+                    // Client closed connection
                     close(fd);
                     fd_to_idx[fd] = -1;
                     ctx.fd = -1;
@@ -163,6 +152,7 @@ int server::start() {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         // More data coming
                     } else {
+                        // Handle read error
                         std::cout << "read error on fd " << fd << "\n";
                         close(fd);
                         fd_to_idx[fd] = -1;
@@ -177,6 +167,49 @@ int server::start() {
     return 0;
 }
 
+/**
+ * Handle new incoming connection.
+ * Accepts a new connection from the listening socket and sets it up for non-blocking I/O.
+ * Adds the new connection to the connection tracking system.
+ *
+ * @param sockfd Listening socket file descriptor
+ * @return 0 on success, -1 on error
+ */
+int server::handleNewConnection(int sockfd) {
+    struct sockaddr_in client_addr{};
+    socklen_t client_len = sizeof(client_addr);
+    int connfd = accept(sockfd, (struct sockaddr*)&client_addr, &client_len);
+    if (connfd < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) return -1;
+        perror("accept");
+        return -1;
+    }
+
+    if (connfd >= MAX_CONNS) {
+        std::cout << "too many connections" << std::endl;
+        close(connfd);
+        return -1;
+    }
+
+    if (setNonblocking(connfd) < 0) {
+        close(connfd);
+        return -1;
+    }
+
+    fd_to_idx[connfd] = connfd;
+    ctxs[connfd].fd = connfd;
+
+    return 0;
+}
+
+/**
+ * Set socket to non-blocking mode.
+ * Configures the socket to operate in non-blocking mode, which is essential for efficient
+ * polling-based I/O multiplexing.
+ *
+ * @param fd Socket file descriptor
+ * @return 0 on success, -1 on error
+ */
 int server::setNonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) return -1;
