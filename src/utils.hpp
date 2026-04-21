@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <map>
 #include <string>
 
 /**
@@ -21,4 +22,26 @@ std::string get_build_date();
  */
 void print_help();
 
-#endif // UTILS_HPP
+/**
+ * @brief Parses command-line arguments for host and port configuration.
+ *
+ * This function processes command-line arguments and returns a map containing
+ * the host and port values. If no arguments are provided, default values are used:
+ * - Host: "0.0.0.0"
+ * - Port: "8080"
+ *
+ * @param argc The number of command-line arguments
+ * @param argv An array of command-line argument strings
+ * @return A map containing the parsed arguments with keys "--host" and "--port"
+ *
+ * @example
+ * parseArguments(3, {"server", "--host", "127.0.0.1"})
+ * // Returns map with "--host": "127.0.0.1" and "--port": "8080"
+ *
+ * @example
+ * parseArguments(5, {"server", "--port", "9000", "--host", "192.168.1.1"})
+ * // Returns map with "--host": "192.168.1.1" and "--port": "9000"
+ */
+std::map<std::string, std::string> parseArguments(int argc, char* argv[]);
+
+#endif  // UTILS_HPP

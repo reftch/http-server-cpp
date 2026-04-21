@@ -1,17 +1,19 @@
 #include "utils.hpp"
+
+#include <ctime>    // For time functions
+#include <iomanip>  // For stream manipulation (like std::put_time)
 #include <iostream>
-#include <ctime>   // For time functions
-#include <iomanip> // For stream manipulation (like std::put_time)
-#include <sstream> // Must include this for stringstream
+#include <map>
+#include <sstream>  // Must include this for stringstream
+#include <vector>
 
 // --- Helper function to get the current build time ---
-std::string get_build_date()
-{
+std::string get_build_date() {
     // Get current time
     std::time_t now = std::time(nullptr);
 
     // Convert to local time structure
-    std::tm *ltm = std::localtime(&now);
+    std::tm* ltm = std::localtime(&now);
 
     // Format the date (e.g., YYYY-MM-DD)
     std::stringstream ss;
@@ -30,4 +32,26 @@ void print_help() {
               << "  --help         Show this help message.\n"
               << "  --host [addr]  Specify the IP address (default: 0.0.0.0)\n"
               << "  --port [num]   Specify the port number (default: 8080)\n";
+}
+
+std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
+    std::map<std::string, std::string> args;
+
+    // Set default values
+    args["--host"] = "0.0.0.0";
+    args["--port"] = "8080";
+
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+
+        if (arg == "--host" && i + 1 < argc) {
+            args["--host"] = argv[i + 1];
+            i++;  // Skip next argument
+        } else if (arg == "--port" && i + 1 < argc) {
+            args["--port"] = argv[i + 1];
+            i++;  // Skip next argument
+        }
+    }
+
+    return args;
 }
