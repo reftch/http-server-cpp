@@ -3,31 +3,53 @@
 
 #include <string>
 
-namespace http::server
-{
+namespace http::server {
+/**
+ * Represents an HTTP server instance.
+ */
+class server {
+   public:
     /**
-     * Represents an HTTP server instance.
+     * Constructor for the server.
+     *
+     * @param host The hostname or IP address to bind to.
+     * @param port The port number to listen on.
      */
-    class server
-    {
-    public:
-        /**
-         * Constructor for the server.
-         *
-         * @param host The hostname or IP address to bind to.
-         * @param port The port number to listen on.
-         */
-        server(const std::string &host, const std::string &port);
+    server(const std::string& host, const std::string& port);
 
-        // You would typically add other methods here (e.g., start(), handleRequest(), etc.)
+    // You would typically add other methods here (e.g., start(), handleRequest(), etc.)
 
-        void start();
-    private:
-        // Private members related to the server state (optional, but good practice)
-        std::string host_;
-        std::string port_;
+    int start();
+
+   private:
+    // Private members related to the server state (optional, but good practice)
+    std::string host_;
+    std::string port_;
+
+    int sockfd;
+
+    /**
+     * Maximum number of connections allowed.
+     */
+    const int MAX_CONNS = 65536;
+
+    /**
+     * Context structure for server operations.
+     */
+    struct Ctx {
+        int fd;
+        Ctx() : fd(-1) {}
     };
 
-} // namespace http::server
+    /**
+     * Set socket to non-blocking mode.
+     *
+     * @param fd Socket file descriptor
+     * @return 0 on success, -1 on error
+     */
+    int setNonblocking(int fd);
+};
 
-#endif // SERVER_HPP
+}  // namespace http::server
+
+#endif  // SERVER_HPP

@@ -7,7 +7,6 @@
 #include <sstream>  // Must include this for stringstream
 #include <vector>
 
-// --- Helper function to get the current build time ---
 std::string get_build_date() {
     // Get current time
     std::time_t now = std::time(nullptr);
