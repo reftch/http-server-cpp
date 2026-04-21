@@ -31,7 +31,7 @@ class server {
     /**
      * Maximum number of connections allowed.
      */
-    const int MAX_CONNS = 65536;
+    const int MAX_CONNS = 1024;
 
     /**
      * Context structure for server operations.
