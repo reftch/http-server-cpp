@@ -24,7 +24,7 @@ std::string get_build_date() {
     return ss.str();
 }
 
-// --- Helper function for help message ---
+// Helper function for help message
 void print_help() {
     std::cout << "Usage: http_server [options] <address> <port>\n\n"
               << "Options (Optional):\n"
