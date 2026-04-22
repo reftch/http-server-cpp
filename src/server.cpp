@@ -33,6 +33,8 @@ static const char* okResp =
  * @param port The port number to listen on
  */
 server::server(const std::string& host, const std::string& port) : host_(host), port_(port) {
+    startTime = std::chrono::high_resolution_clock::now();
+
     // Initialize connection tracking structures
     ctxs.reserve(MAX_CONNS);
     for (int i = 0; i < MAX_CONNS; ++i) {
@@ -81,7 +83,10 @@ int server::start() {
     // fd -> index mapping (simple for FDs < MAX_CONNS)
     fd_to_idx[sockfd] = sockfd;  // Use FD as index
 
-    std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << std::endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - startTime);
+
+    std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << " in " << duration << std::endl;
 
     while (true) {
         // Build pollfd array from active FDs
@@ -121,48 +126,16 @@ int server::start() {
                 if (handleNewConnection(sockfd) < 0) {
                     continue;
                 }
-                continue;
-            }
-
-            // Existing client
-            int idx = fd_to_idx[fd];
-            if (idx < 0 || idx >= MAX_CONNS || ctxs[idx].fd != fd) continue;
-
-            Ctx& ctx = ctxs[idx];
-
-            if (pfds[j].revents & POLLHUP || pfds[j].revents & POLLERR) {
-                close(fd);
-                fd_to_idx[fd] = -1;
-                ctx.fd = -1;
-                continue;
-            }
-
-            if (pfds[j].revents & POLLIN) {
-                char dummy[4096];
-                ssize_t nread = read(fd, dummy, sizeof(dummy));
-                if (nread > 0) {
-                    // Process incoming data and send response
-                    write(fd, okResp, strlen(okResp));
-                } else if (nread == 0) {
-                    // Client closed connection
-                    close(fd);
-                    fd_to_idx[fd] = -1;
-                    ctx.fd = -1;
-                } else {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        // More data coming
-                    } else {
-                        // Handle read error
-                        std::cout << "read error on fd " << fd << "\n";
-                        close(fd);
-                        fd_to_idx[fd] = -1;
-                        ctx.fd = -1;
-                    }
+            } else {
+                // Existing client
+                if (handleRequest(fd, j) < 0) {
+                    continue;
                 }
             }
         }
     }
 
+    // close socket
     close(sockfd);
     return 0;
 }
@@ -198,6 +171,46 @@ int server::handleNewConnection(int sockfd) {
 
     fd_to_idx[connfd] = connfd;
     ctxs[connfd].fd = connfd;
+
+    return 0;
+}
+
+int server::handleRequest(int fd, int j) {
+    int idx = fd_to_idx[fd];
+    if (idx < 0 || idx >= MAX_CONNS || ctxs[idx].fd != fd) return -1;
+
+    Ctx& ctx = ctxs[idx];
+
+    if (pfds[j].revents & POLLHUP || pfds[j].revents & POLLERR) {
+        close(fd);
+        fd_to_idx[fd] = -1;
+        ctx.fd = -1;
+        return -1;
+    }
+
+    if (pfds[j].revents & POLLIN) {
+        char dummy[4096];
+        ssize_t nread = read(fd, dummy, sizeof(dummy));
+        if (nread > 0) {
+            // Process incoming data and send response
+            write(fd, okResp, strlen(okResp));
+        } else if (nread == 0) {
+            // Client closed connection
+            close(fd);
+            fd_to_idx[fd] = -1;
+            ctx.fd = -1;
+        } else {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // More data coming
+            } else {
+                // Handle read error
+                std::cout << "read error on fd " << fd << "\n";
+                close(fd);
+                fd_to_idx[fd] = -1;
+                ctx.fd = -1;
+            }
+        }
+    }
 
     return 0;
 }

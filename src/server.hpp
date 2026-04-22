@@ -4,6 +4,7 @@
 
 #include <poll.h>
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,7 @@ class server {
     std::string host_; /**< Hostname or IP address to bind to */
     std::string port_; /**< Port number to listen on */
 
+    std::chrono::high_resolution_clock::time_point startTime;
     int sockfd; /**< File descriptor for the listening socket */
 
     /**
@@ -77,6 +79,8 @@ class server {
      * @return 0 on success, -1 on error
      */
     int handleNewConnection(int sockfd);
+
+    int handleRequest(int fd, int j);
 };
 
 }  // namespace http::server
