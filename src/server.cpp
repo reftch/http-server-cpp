@@ -80,13 +80,6 @@ int server::start() {
         return 1;
     }
 
-    // set socket to non-blocking mode
-    if (setNonblocking(sockfd) < 0) {
-        perror("setNonblocking");
-        close(sockfd);
-        return 1;
-    }
-
     // fd -> index mapping (simple for FDs < MAX_CONNS)
     fd_to_idx[sockfd] = sockfd;  // Use FD as index
 
@@ -130,7 +123,7 @@ int server::start() {
 
             if (fd == sockfd) {
                 // New connection
-                handleNewConnection(sockfd);
+                acceptConnection(sockfd);
             } else {
                 // Existing client
                 handleRequest(fd, j);
@@ -151,7 +144,8 @@ int server::start() {
  * @param sockfd Listening socket file descriptor
  * @return 0 on success, -1 on error
  */
-int server::handleNewConnection(int sockfd) {
+int server::acceptConnection(int sockfd) {
+    // accept client connection
     struct sockaddr_in client_addr{};
     socklen_t client_len = sizeof(client_addr);
     int connfd = accept(sockfd, (struct sockaddr*)&client_addr, &client_len);
@@ -167,6 +161,7 @@ int server::handleNewConnection(int sockfd) {
         return -1;
     }
 
+    // set socket to non-blocking mode
     if (setNonblocking(connfd) < 0) {
         close(connfd);
         return -1;

@@ -79,7 +79,7 @@ class server {
      * @param sockfd Listening socket file descriptor
      * @return 0 on success, -1 on error
      */
-    int handleNewConnection(int sockfd);
+    int acceptConnection(int sockfd);
 
     /**
      * Handle an incoming HTTP request on a given connection.
