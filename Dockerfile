@@ -2,16 +2,17 @@
 FROM ubuntu:latest AS build
 
 # Install build-essential for compiling C++ code
-RUN apt-get update && apt-get install -y build-essential
+RUN apt-get update && apt-get install -y build-essential cmake
 
 # Set the working directory
 WORKDIR /app
 
 # Copy the source code into the container
-COPY server.cpp .
+COPY . .
 
-# Compile the C++ code statically to ensure it doesn't depend on runtime libraries
-RUN g++ -o server server.cpp -static -std=c++17 -O3
+# Compile in release mode  
+RUN cmake -DCMAKE_BUILD_TYPE=Release .
+RUN make all
 
 # Stage 2: Runtime stage
 FROM scratch
