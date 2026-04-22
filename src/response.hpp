@@ -33,16 +33,13 @@ namespace http::server {
 
         // The content to be sent in the reply.
         std::string content;
-
-        std::string to_string(status_type status);
-
-        int to_buffer(int fd, response resp);
     };
     //]
 
     namespace stock {
         response ok(std::string message);
         std::string to_string(response resp);
+        std::string to_string(response::status_type status);
     }  // namespace stock
 
 }  // namespace http::server

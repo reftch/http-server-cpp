@@ -20,7 +20,6 @@ target_compile_options(server PRIVATE -O3)
 # macOS static libc++ (most redistributable option)
 if(APPLE)
     target_link_options(server PRIVATE 
-        -static-libstdc++ 
         -Wl,-dead_strip  # Remove unused code
     )
 else()

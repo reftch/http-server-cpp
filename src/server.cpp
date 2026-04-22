@@ -204,7 +204,8 @@ namespace http::server {
                 // response resp;
                 // Process incoming data and send response
                 // response resp = stock::ok("Hello from cpp server");
-                std::string body = stock::to_string(stock::ok("Hello from cpp server"));
+                auto body = stock::to_string(stock::ok("Hello from cpp server"));
+                // write(fd, body.c_str(), body.size());
                 write(fd, body.c_str(), body.size());
                 // response::to_buffer(fd, resp);
                 // std::cout << "Response: " << body << std::endl;

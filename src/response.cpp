@@ -26,64 +26,9 @@ namespace http::server {
     }  // namespace status_strings
 
     namespace misc_strings {
-        const char name_value_separator[] = {':', ' '};
-        const char crlf[] = {'\r', '\n'};
+        const char name_value_separator[] = {':', ' ', '\0'};
+        const char crlf[] = {'\r', '\n', '\0'};
     }  // namespace misc_strings
-
-    int response::to_buffer(int fd, response resp) {
-        // response
-        std::string body = to_string(resp.status);
-        for (std::size_t i = 0; i < headers.size(); ++i) {
-            header& h = headers[i];
-            body.append(h.name);
-            body.append(misc_strings::name_value_separator);
-            body.append(h.value);
-            body.append(misc_strings::crlf);
-        }
-        body.append(misc_strings::crlf);
-        body.append(content);
-
-        return write(fd, body.c_str(), body.size());
-    }
-
-    std::string to_string(response::status_type status) {
-        switch (status) {
-            case response::ok:
-                return status_strings::ok;
-            case response::created:
-                return status_strings::created;
-            case response::accepted:
-                return status_strings::accepted;
-            case response::no_content:
-                return status_strings::no_content;
-            case response::multiple_choices:
-                return status_strings::multiple_choices;
-            case response::moved_permanently:
-                return status_strings::moved_permanently;
-            case response::moved_temporarily:
-                return status_strings::moved_temporarily;
-            case response::not_modified:
-                return status_strings::not_modified;
-            case response::bad_request:
-                return status_strings::bad_request;
-            case response::unauthorized:
-                return status_strings::unauthorized;
-            case response::forbidden:
-                return status_strings::forbidden;
-            case response::not_found:
-                return status_strings::not_found;
-            case response::internal_server_error:
-                return status_strings::internal_server_error;
-            case response::not_implemented:
-                return status_strings::not_implemented;
-            case response::bad_gateway:
-                return status_strings::bad_gateway;
-            case response::service_unavailable:
-                return status_strings::service_unavailable;
-            default:
-                return status_strings::internal_server_error;
-        }
-    }
 
     namespace stock {
         response ok(std::string message) {
@@ -113,6 +58,46 @@ namespace http::server {
             body.append(resp.content);
             return body;
         }
+
+        std::string to_string(response::status_type status) {
+            switch (status) {
+                case response::ok:
+                    return status_strings::ok;
+                case response::created:
+                    return status_strings::created;
+                case response::accepted:
+                    return status_strings::accepted;
+                case response::no_content:
+                    return status_strings::no_content;
+                case response::multiple_choices:
+                    return status_strings::multiple_choices;
+                case response::moved_permanently:
+                    return status_strings::moved_permanently;
+                case response::moved_temporarily:
+                    return status_strings::moved_temporarily;
+                case response::not_modified:
+                    return status_strings::not_modified;
+                case response::bad_request:
+                    return status_strings::bad_request;
+                case response::unauthorized:
+                    return status_strings::unauthorized;
+                case response::forbidden:
+                    return status_strings::forbidden;
+                case response::not_found:
+                    return status_strings::not_found;
+                case response::internal_server_error:
+                    return status_strings::internal_server_error;
+                case response::not_implemented:
+                    return status_strings::not_implemented;
+                case response::bad_gateway:
+                    return status_strings::bad_gateway;
+                case response::service_unavailable:
+                    return status_strings::service_unavailable;
+                default:
+                    return status_strings::internal_server_error;
+            }
+        }
+
     }  // namespace stock
 
 }  // namespace http::server
