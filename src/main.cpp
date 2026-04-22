@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
     // Get the build date string
     std::string build_date = get_build_date();
     // Launch banner
-    std::cout << "HTTP Server, v1.0.0 (Build: " << build_date << ")" << std::endl;
+    std::cout << "http server, v1.0.0 (Build: " << build_date << ")" << std::endl;
 
     // Server Execution
     try {

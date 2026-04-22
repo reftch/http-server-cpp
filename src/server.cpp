@@ -175,20 +175,28 @@ int server::handleNewConnection(int sockfd) {
     return 0;
 }
 
-int server::handleRequest(int fd, int j) {
+/**
+ * Handle an incoming HTTP request on a given connection.
+ * Processes data received on the connection and handles the request logic.
+ *
+ * @param fd File descriptor of the connection
+ * @param i Index in the internal context vector
+ * @return 0 on success, -1 on error or connection close
+ */
+int server::handleRequest(int fd, int i) {
     int idx = fd_to_idx[fd];
     if (idx < 0 || idx >= MAX_CONNS || ctxs[idx].fd != fd) return -1;
 
     Ctx& ctx = ctxs[idx];
 
-    if (pfds[j].revents & POLLHUP || pfds[j].revents & POLLERR) {
+    if (pfds[i].revents & POLLHUP || pfds[i].revents & POLLERR) {
         close(fd);
         fd_to_idx[fd] = -1;
         ctx.fd = -1;
         return -1;
     }
 
-    if (pfds[j].revents & POLLIN) {
+    if (pfds[i].revents & POLLIN) {
         char dummy[4096];
         ssize_t nread = read(fd, dummy, sizeof(dummy));
         if (nread > 0) {

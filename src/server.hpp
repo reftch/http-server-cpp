@@ -49,7 +49,8 @@ class server {
     std::string host_; /**< Hostname or IP address to bind to */
     std::string port_; /**< Port number to listen on */
 
-    std::chrono::high_resolution_clock::time_point startTime;
+    std::chrono::high_resolution_clock::time_point startTime; /**< Time when server started */
+
     int sockfd; /**< File descriptor for the listening socket */
 
     /**
@@ -80,7 +81,15 @@ class server {
      */
     int handleNewConnection(int sockfd);
 
-    int handleRequest(int fd, int j);
+    /**
+     * Handle an incoming HTTP request on a given connection.
+     * Processes data received on the connection and handles the request logic.
+     *
+     * @param fd File descriptor of the connection
+     * @param i Index in the internal context vector
+     * @return 0 on success, -1 on error or connection close
+     */
+    int handleRequest(int fd, int i);
 };
 
 }  // namespace http::server
