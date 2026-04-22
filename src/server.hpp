@@ -49,7 +49,7 @@ class server {
     std::string host_; /**< Hostname or IP address to bind to */
     std::string port_; /**< Port number to listen on */
 
-    std::chrono::high_resolution_clock::time_point startTime; /**< Time when server started */
+    std::chrono::high_resolution_clock::time_point start_time; /**< Time when server started */
 
     int sockfd; /**< File descriptor for the listening socket */
 

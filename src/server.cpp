@@ -33,7 +33,7 @@ static const char* okResp =
  * @param port The port number to listen on
  */
 server::server(const std::string& host, const std::string& port) : host_(host), port_(port) {
-    startTime = std::chrono::high_resolution_clock::now();
+    start_time = std::chrono::high_resolution_clock::now();
 
     // Initialize connection tracking structures
     ctxs.reserve(MAX_CONNS);
@@ -54,26 +54,33 @@ server::server(const std::string& host, const std::string& port) : host_(host), 
  * @return 0 on successful start, non-zero on error
  */
 int server::start() {
+    // create server socket
+    // AF_INET: IPv4 protocol, SOCK_STREAM: TCP socket
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
         perror("socket");
         return 1;
     }
 
+    // set sockek options
+    // SO_REUSEADDR: allow local address reuse
     int one = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
+    // define server address
     struct sockaddr_in addr{};
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(std::stoi(this->port_));
+    addr.sin_addr.s_addr = INADDR_ANY;              // INADDR_ANY: Accept connections on any IP
+    addr.sin_port = htons(std::stoi(this->port_));  // htons(): Converts port to network byte order
 
+    // bind Socket to Address and listen for incoming Connections
     if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0 || listen(sockfd, 100) < 0) {
         perror("bind/listen");
         close(sockfd);
         return 1;
     }
 
+    // set socket to non-blocking mode
     if (setNonblocking(sockfd) < 0) {
         perror("setNonblocking");
         close(sockfd);
@@ -83,8 +90,8 @@ int server::start() {
     // fd -> index mapping (simple for FDs < MAX_CONNS)
     fd_to_idx[sockfd] = sockfd;  // Use FD as index
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - startTime);
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
     std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << " in " << duration << std::endl;
 
@@ -123,14 +130,10 @@ int server::start() {
 
             if (fd == sockfd) {
                 // New connection
-                if (handleNewConnection(sockfd) < 0) {
-                    continue;
-                }
+                handleNewConnection(sockfd);
             } else {
                 // Existing client
-                if (handleRequest(fd, j) < 0) {
-                    continue;
-                }
+                handleRequest(fd, j);
             }
         }
     }

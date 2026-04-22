@@ -39,6 +39,7 @@ std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
     // Set default values
     args["--host"] = "0.0.0.0";
     args["--port"] = "8080";
+    args["--help"] = "false";
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -48,6 +49,9 @@ std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
             i++;  // Skip next argument
         } else if (arg == "--port" && i + 1 < argc) {
             args["--port"] = argv[i + 1];
+            i++;  // Skip next argument
+        } else if (arg == "--help") {
+            args["--help"] = "true";
             i++;  // Skip next argument
         }
     }

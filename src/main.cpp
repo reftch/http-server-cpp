@@ -5,7 +5,14 @@
 #include "utils.hpp"
 
 int main(int argc, char* argv[]) {
+    // parse input parameters
     auto args = parseArguments(argc, argv);
+
+    // show help message
+    if (args["--help"] == "true") {
+        print_help();
+        return 0;
+    }
 
     // Get the build date string
     std::string build_date = get_build_date();
