@@ -25,7 +25,7 @@ static const char* okResp =
     "hello from pure c++";
 
 /**
- * Constructor implementation.
+ * Constructor implementation
  * Initializes the server with the specified host and port configuration.
  * Does not establish any network connections or start listening.
  *

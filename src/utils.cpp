@@ -46,13 +46,12 @@ std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
 
         if (arg == "--host" && i + 1 < argc) {
             args["--host"] = argv[i + 1];
-            i++;  // Skip next argument
+            i++;
         } else if (arg == "--port" && i + 1 < argc) {
             args["--port"] = argv[i + 1];
-            i++;  // Skip next argument
+            i++;
         } else if (arg == "--help") {
             args["--help"] = "true";
-            i++;  // Skip next argument
         }
     }
 
