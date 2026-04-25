@@ -19,12 +19,12 @@
 
 namespace http::server {
 
-    static const char* okResp =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain; charset=utf-8\r\n"
-        "Content-Length: 19\r\n"
-        "Connection: keep-alive\r\n\r\n"
-        "hello from pure c++";
+    // static const char* okResp =
+    //     "HTTP/1.1 200 OK\r\n"
+    //     "Content-Type: text/plain; charset=utf-8\r\n"
+    //     "Content-Length: 19\r\n"
+    //     "Connection: keep-alive\r\n\r\n"
+    //     "hello from pure c++";
 
     /**
      * Constructor implementation
@@ -49,7 +49,7 @@ namespace http::server {
     }
 
     /**
-     * Implementation of the start method.
+     * Implementation of the start method
      * Sets up the server socket, binds to the specified address, and enters the main event loop.
      * The server will continuously listen for new connections and handle existing connections.
      *
@@ -88,8 +88,7 @@ namespace http::server {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
-        std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << " in " << duration
-                  << std::endl;
+        std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << " in " << duration << '\n';
 
         while (true) {
             // Build pollfd array from active FDs
@@ -201,14 +200,10 @@ namespace http::server {
             char dummy[4096];
             ssize_t nread = read(fd, dummy, sizeof(dummy));
             if (nread > 0) {
-                // response resp;
-                // Process incoming data and send response
-                // response resp = stock::ok("Hello from cpp server");
-                auto body = stock::to_string(stock::ok("Hello from cpp server"));
-                // write(fd, body.c_str(), body.size());
+                // content_type json_type = {"application/json", "data"};
+                response resp(ok, json_type, "Hello from c++ server");
+                std::string body = resp.get_body();
                 write(fd, body.c_str(), body.size());
-                // response::to_buffer(fd, resp);
-                // std::cout << "Response: " << body << std::endl;
 
                 // write(fd, okResp, strlen(okResp));
             } else if (nread == 0) {

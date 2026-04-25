@@ -30,74 +30,72 @@ namespace http::server {
         const char crlf[] = {'\r', '\n', '\0'};
     }  // namespace misc_strings
 
-    namespace stock {
-        response ok(std::string message) {
-            response resp;
-            resp.status = response::status_type::ok;
-            resp.headers.resize(3);
-            resp.headers[0].name = "Content-Type";
-            resp.headers[0].value = "text/plain; charset=utf-8";
-            resp.headers[1].name = "Content-Length";
-            resp.content = message;
-            resp.headers[1].value = std::to_string(resp.content.size());
-            resp.headers[2].name = "Connection";
-            resp.headers[2].value = "keep-alive";
-            return resp;
-        }
+    response::response(const status_type& status, const content_type& type, const std::string& content)
+        : status_(status), content_(content) {
+        headers_.resize(3);
+        headers_[0].name = "Content-Type";
+        headers_[0].value = type.mime_type;
+        headers_[1].name = "Content-Length";
+        headers_[1].value = std::to_string(content_.size());
+        headers_[2].name = "Connection";
+        headers_[2].value = "keep-alive";
+    }
 
-        std::string to_string(response resp) {
-            std::string body = to_string(resp.status);
-            for (std::size_t i = 0; i < resp.headers.size(); ++i) {
-                header& h = resp.headers[i];
-                body.append(h.name);
-                body.append(misc_strings::name_value_separator);
-                body.append(h.value);
-                body.append(misc_strings::crlf);
-            }
+    response::response(const status_type& status, const content_type& type, const std::vector<header> headers,
+                       const std::string& content)
+        : status_(status), headers_(headers), content_(content) {}
+
+    std::string response::get_body() {
+        std::string body = to_string();
+        for (std::size_t i = 0; i < headers_.size(); ++i) {
+            header& h = headers_[i];
+            body.append(h.name);
+            body.append(misc_strings::name_value_separator);
+            body.append(h.value);
             body.append(misc_strings::crlf);
-            body.append(resp.content);
-            return body;
         }
+        body.append(misc_strings::crlf);
+        body.append(content_);
+        return body;
+    }
 
-        std::string to_string(response::status_type status) {
-            switch (status) {
-                case response::ok:
-                    return status_strings::ok;
-                case response::created:
-                    return status_strings::created;
-                case response::accepted:
-                    return status_strings::accepted;
-                case response::no_content:
-                    return status_strings::no_content;
-                case response::multiple_choices:
-                    return status_strings::multiple_choices;
-                case response::moved_permanently:
-                    return status_strings::moved_permanently;
-                case response::moved_temporarily:
-                    return status_strings::moved_temporarily;
-                case response::not_modified:
-                    return status_strings::not_modified;
-                case response::bad_request:
-                    return status_strings::bad_request;
-                case response::unauthorized:
-                    return status_strings::unauthorized;
-                case response::forbidden:
-                    return status_strings::forbidden;
-                case response::not_found:
-                    return status_strings::not_found;
-                case response::internal_server_error:
-                    return status_strings::internal_server_error;
-                case response::not_implemented:
-                    return status_strings::not_implemented;
-                case response::bad_gateway:
-                    return status_strings::bad_gateway;
-                case response::service_unavailable:
-                    return status_strings::service_unavailable;
-                default:
-                    return status_strings::internal_server_error;
-            }
+    std::string response::to_string() {
+        switch (status_) {
+            case ok:
+                return status_strings::ok;
+            case created:
+                return status_strings::created;
+            case accepted:
+                return status_strings::accepted;
+            case no_content:
+                return status_strings::no_content;
+            case multiple_choices:
+                return status_strings::multiple_choices;
+            case moved_permanently:
+                return status_strings::moved_permanently;
+            case moved_temporarily:
+                return status_strings::moved_temporarily;
+            case not_modified:
+                return status_strings::not_modified;
+            case bad_request:
+                return status_strings::bad_request;
+            case unauthorized:
+                return status_strings::unauthorized;
+            case forbidden:
+                return status_strings::forbidden;
+            case not_found:
+                return status_strings::not_found;
+            case internal_server_error:
+                return status_strings::internal_server_error;
+            case not_implemented:
+                return status_strings::not_implemented;
+            case bad_gateway:
+                return status_strings::bad_gateway;
+            case service_unavailable:
+                return status_strings::service_unavailable;
+            default:
+                return status_strings::internal_server_error;
         }
-
-    }  // namespace stock
+    }
 
 }  // namespace http::server
