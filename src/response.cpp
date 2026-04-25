@@ -30,7 +30,7 @@ namespace http::server {
         const char crlf[] = {'\r', '\n', '\0'};
     }  // namespace misc_strings
 
-    response::response(const status_type& status, const char* type, const std::string& content)
+    response::response(const status::type& status, const char* type, const std::string& content)
         : status_(status), content_(content) {
         headers_.resize(3);
         headers_[0].name = "Content-Type";
@@ -41,7 +41,7 @@ namespace http::server {
         headers_[2].value = "keep-alive";
     }
 
-    response::response(const status_type& status, const std::vector<header> headers, const std::string& content)
+    response::response(const status::type& status, const std::vector<header> headers, const std::string& content)
         : status_(status), headers_(headers), content_(content) {}
 
     std::string response::get_body() {
@@ -60,38 +60,38 @@ namespace http::server {
 
     std::string response::to_string() {
         switch (status_) {
-            case ok:
+            case status::ok:
                 return status_strings::ok;
-            case created:
+            case status::created:
                 return status_strings::created;
-            case accepted:
+            case status::accepted:
                 return status_strings::accepted;
-            case no_content:
+            case status::no_content:
                 return status_strings::no_content;
-            case multiple_choices:
+            case status::multiple_choices:
                 return status_strings::multiple_choices;
-            case moved_permanently:
+            case status::moved_permanently:
                 return status_strings::moved_permanently;
-            case moved_temporarily:
+            case status::moved_temporarily:
                 return status_strings::moved_temporarily;
-            case not_modified:
-                return status_strings::not_modified;
-            case bad_request:
-                return status_strings::bad_request;
-            case unauthorized:
-                return status_strings::unauthorized;
-            case forbidden:
-                return status_strings::forbidden;
-            case not_found:
-                return status_strings::not_found;
-            case internal_server_error:
-                return status_strings::internal_server_error;
-            case not_implemented:
-                return status_strings::not_implemented;
-            case bad_gateway:
-                return status_strings::bad_gateway;
-            case service_unavailable:
-                return status_strings::service_unavailable;
+            // case status_type::not_modified:
+            //     return status_strings::not_modified;
+            // case status_type::bad_request:
+            //     return status_strings::bad_request;
+            // case status_type::unauthorized:
+            //     return status_strings::unauthorized;
+            // case status_type::forbidden:
+            //     return status_strings::forbidden;
+            // case status_type::not_found:
+            //     return status_strings::not_found;
+            // case status_type::internal_server_error:
+            //     return status_strings::internal_server_error;
+            // case status_type::not_implemented:
+            //     return status_strings::not_implemented;
+            // case status_type::bad_gateway:
+            //     return status_strings::bad_gateway;
+            // case status_type::service_unavailable:
+            //     return status_strings::service_unavailable;
             default:
                 return status_strings::internal_server_error;
         }

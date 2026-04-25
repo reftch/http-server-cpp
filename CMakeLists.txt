@@ -5,7 +5,7 @@ project(http-server
     HOMEPAGE_URL "https://github.com/reftch/http-server-cpp"
     LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 26)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Collect all .cpp files recursively from src/

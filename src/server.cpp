@@ -201,9 +201,19 @@ namespace http::server {
             ssize_t nread = read(fd, dummy, sizeof(dummy));
             if (nread > 0) {
                 // content_type json_type = {"application/json", "data"};
-                response resp(ok, content_type::api::JSON, "Hello from c++ server");
+                response resp(status::ok, content_type::api::JSON, "Hello from c++ server");
                 std::string body = resp.get_body();
-                write(fd, body.c_str(), body.size());
+                // write(fd, body.c_str(), body.size());
+
+                ssize_t bytes_written = write(fd, body.c_str(), body.size());
+                // Check if the write operation failed (e.g., if bytes_written is -1)
+                if (bytes_written == -1) {
+                    // Handle error, such as logging an error or throwing an exception
+                    perror("Error writing to file");
+                } else if (bytes_written < body.size()) {
+                    // Handle partial write error
+                    fprintf(stderr, "Warning: Only %zd of %zu bytes were written.\n", bytes_written, body.size());
+                }
 
                 // write(fd, okResp, strlen(okResp));
             } else if (nread == 0) {

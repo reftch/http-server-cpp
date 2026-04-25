@@ -8,24 +8,26 @@
 
 namespace http::server {
 
-    enum status_type {
-        ok = 200,
-        created = 201,
-        accepted = 202,
-        no_content = 204,
-        multiple_choices = 300,
-        moved_permanently = 301,
-        moved_temporarily = 302,
-        not_modified = 304,
-        bad_request = 400,
-        unauthorized = 401,
-        forbidden = 403,
-        not_found = 404,
-        internal_server_error = 500,
-        not_implemented = 501,
-        bad_gateway = 502,
-        service_unavailable = 503
-    } status;
+    namespace status {
+        enum type {
+            ok = 200,
+            created = 201,
+            accepted = 202,
+            no_content = 204,
+            multiple_choices = 300,
+            moved_permanently = 301,
+            moved_temporarily = 302,
+            not_modified = 304,
+            bad_request = 400,
+            unauthorized = 401,
+            forbidden = 403,
+            not_found = 404,
+            internal_server_error = 500,
+            not_implemented = 501,
+            bad_gateway = 502,
+            service_unavailable = 503
+        };
+    }
 
     namespace content_type {
         // API & Data Formats (Application Types)
@@ -78,13 +80,13 @@ namespace http::server {
        public:
         // std::vector<header> getHeaders();
 
-        response(const status_type& status, const char* type, const std::string& content);
-        response(const status_type& status, const std::vector<header> headers, const std::string& content);
+        response(const status::type& status, const char* type, const std::string& content);
+        response(const status::type& status, const std::vector<header> headers, const std::string& content);
 
         std::string get_body();
 
        private:
-        status_type status_;
+        status::type status_;
         // The headers to be included in the reply.
         std::vector<header> headers_;
         // The content to be sent in the reply.
