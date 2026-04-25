@@ -30,19 +30,18 @@ namespace http::server {
         const char crlf[] = {'\r', '\n', '\0'};
     }  // namespace misc_strings
 
-    response::response(const status_type& status, const content_type& type, const std::string& content)
+    response::response(const status_type& status, const char* type, const std::string& content)
         : status_(status), content_(content) {
         headers_.resize(3);
         headers_[0].name = "Content-Type";
-        headers_[0].value = type.mime_type;
+        headers_[0].value = type;
         headers_[1].name = "Content-Length";
         headers_[1].value = std::to_string(content_.size());
         headers_[2].name = "Connection";
         headers_[2].value = "keep-alive";
     }
 
-    response::response(const status_type& status, const content_type& type, const std::vector<header> headers,
-                       const std::string& content)
+    response::response(const status_type& status, const std::vector<header> headers, const std::string& content)
         : status_(status), headers_(headers), content_(content) {}
 
     std::string response::get_body() {

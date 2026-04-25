@@ -27,22 +27,59 @@ namespace http::server {
         service_unavailable = 503
     } status;
 
-    struct content_type {
-        std::string mime_type;  // The standard MIME type (e.g., "application/json")
-        std::string category;   // A descriptive category (e.g., "data", "media", "text")
-    };
+    namespace content_type {
+        // API & Data Formats (Application Types)
+        namespace api {
+            constexpr const char* JSON = "application/json";
+            constexpr const char* XML = "application/xml";
+            constexpr const char* BINARY_STREAM = "application/octet-stream";  // Generic binary data/files
+            constexpr const char* WEBASSEMBLY = "application/wasm";            // WebAssembly modules
+        }  // namespace api
 
-    const content_type json_type = {"application/json", "data"};
-    const content_type image_type = {"image/jpeg", "media"};
-    const content_type text_type = {"text/plain", "text"};
+        // Text & Markup (HTML/CSS/JS)
+        namespace text {
+            constexpr const char* HTML = "text/html";
+            constexpr const char* CSS = "text/css";
+            constexpr const char* JavaScript = "application/javascript";  // Modern standard for JS
+            constexpr const char* PLAIN_TEXT = "text/plain; charset=utf-8";
+        }  // namespace text
+
+        // Image & Graphics
+        namespace image {
+            constexpr const char* PNG = "image/png";
+            constexpr const char* JPEG = "image/jpeg";
+            constexpr const char* GIF = "image/gif";
+            constexpr const char* SVG = "image/svg+xml";
+        }  // namespace image
+
+        // Documents & Files
+        namespace documents {
+            constexpr const char* PDF = "application/pdf";
+            constexpr const char* TXT = "text/plain";  // General plain text files
+        }  // namespace documents
+
+        // Media (Audio & Video)
+        namespace media {
+            constexpr const char* MP3 = "audio/mpeg";
+            constexpr const char* MP4 = "video/mp4";
+            constexpr const char* WEBM = "video/webm";
+        }  // namespace media
+
+        // Fonts & Web Assets
+        namespace web_assets {
+            constexpr const char* WOFF2 = "font/woff2";
+            constexpr const char* TTF = "font/ttf";
+            constexpr const char* EOT = "font/ttf";  // Embedded OpenType
+        }  // namespace web_assets
+
+    }  // namespace content_type
 
     class response {
        public:
         // std::vector<header> getHeaders();
 
-        response(const status_type& status, const content_type& type, const std::string& content);
-        response(const status_type& status, const content_type& type, const std::vector<header> headers,
-                 const std::string& content);
+        response(const status_type& status, const char* type, const std::string& content);
+        response(const status_type& status, const std::vector<header> headers, const std::string& content);
 
         std::string get_body();
 
@@ -57,4 +94,5 @@ namespace http::server {
     };
 
 }  // namespace http::server
+
 #endif  // RESPONSE_HPP

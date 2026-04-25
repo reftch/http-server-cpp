@@ -201,7 +201,7 @@ namespace http::server {
             ssize_t nread = read(fd, dummy, sizeof(dummy));
             if (nread > 0) {
                 // content_type json_type = {"application/json", "data"};
-                response resp(ok, json_type, "Hello from c++ server");
+                response resp(ok, content_type::api::JSON, "Hello from c++ server");
                 std::string body = resp.get_body();
                 write(fd, body.c_str(), body.size());
 
