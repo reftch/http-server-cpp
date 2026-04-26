@@ -78,8 +78,6 @@ namespace http::server {
 
     class response {
        public:
-        // std::vector<header> getHeaders();
-
         response(const status::type& status, const char* type, const std::string& content);
         response(const status::type& status, const std::vector<header> headers, const std::string& content);
 

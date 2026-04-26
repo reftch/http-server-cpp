@@ -15,7 +15,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(server ${SOURCES})
 
 # Add optimization and static linking to match your g++ command
-target_compile_options(server PRIVATE -O3)
+# target_compile_options(server PRIVATE -O3)
 
 # macOS static libc++ (most redistributable option)
 if(APPLE)

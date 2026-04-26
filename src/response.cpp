@@ -74,24 +74,24 @@ namespace http::server {
                 return status_strings::moved_permanently;
             case status::moved_temporarily:
                 return status_strings::moved_temporarily;
-            // case status_type::not_modified:
-            //     return status_strings::not_modified;
-            // case status_type::bad_request:
-            //     return status_strings::bad_request;
-            // case status_type::unauthorized:
-            //     return status_strings::unauthorized;
-            // case status_type::forbidden:
-            //     return status_strings::forbidden;
-            // case status_type::not_found:
-            //     return status_strings::not_found;
-            // case status_type::internal_server_error:
-            //     return status_strings::internal_server_error;
-            // case status_type::not_implemented:
-            //     return status_strings::not_implemented;
-            // case status_type::bad_gateway:
-            //     return status_strings::bad_gateway;
-            // case status_type::service_unavailable:
-            //     return status_strings::service_unavailable;
+            case status::not_modified:
+                return status_strings::not_modified;
+            case status::bad_request:
+                return status_strings::bad_request;
+            case status::unauthorized:
+                return status_strings::unauthorized;
+            case status::forbidden:
+                return status_strings::forbidden;
+            case status::not_found:
+                return status_strings::not_found;
+            case status::internal_server_error:
+                return status_strings::internal_server_error;
+            case status::not_implemented:
+                return status_strings::not_implemented;
+            case status::bad_gateway:
+                return status_strings::bad_gateway;
+            case status::service_unavailable:
+                return status_strings::service_unavailable;
             default:
                 return status_strings::internal_server_error;
         }
