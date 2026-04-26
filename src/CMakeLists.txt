@@ -1,4 +1,4 @@
-add_library(server
+add_library(http-server
     header.hpp
     request.cpp
     request.hpp
@@ -9,6 +9,3 @@ add_library(server
     utils.cpp
     utils.hpp
 )
-
-add_executable(http-server main.cpp)
-target_link_libraries(http-server server)
