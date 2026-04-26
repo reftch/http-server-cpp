@@ -20,13 +20,6 @@
 
 namespace http::server {
 
-    // static const char* okResp =
-    //     "HTTP/1.1 200 OK\r\n"
-    //     "Content-Type: text/plain; charset=utf-8\r\n"
-    //     "Content-Length: 19\r\n"
-    //     "Connection: keep-alive\r\n\r\n"
-    //     "hello from pure c++";
-
     /**
      * Constructor implementation
      * Initializes the server with the specified host and port configuration.
@@ -203,41 +196,13 @@ namespace http::server {
             if (nread > 0) {
                 std::string raw_request(buffer, nread);
 
-                // Parse the request line to find Method and Path
-                // request req;
+                // Parse the request line to find method and path
                 request::http_request request = request::parse(raw_request);
-                std::string method = request.method;
-                std::string path = request.path;
 
-                // routing Lookup
-                std::pair<std::string, std::string> key = {method, path};
-                auto it = routes_.find(key);
-
-                if (it != routes_.end()) {
-                    // --- Handler Found: Execute Logic ---
-                    request_handler handler = it->second;
-
-                    // Execute the handler to get the response body
-                    std::string body = handler();
-
-                    // Write the response body back to the client socket
-                    response resp(status::ok, content_type::api::JSON, body);
-                    std::string reponse_body = resp.get_body();
-                    if (write(fd, reponse_body.c_str(), reponse_body.size()) == -1) {
-                        perror("Error writing response body");
-                    }
-
-                    return 0;  // Success
-                } else {
-                    // route Not Found (404)
-                    // Send the 404 body back to the client socket
-                    response resp(status::not_found, content_type::text::PLAIN_TEXT, "404 Not Found");
-                    std::string error_body = resp.get_body();
-                    if (write(fd, error_body.c_str(), error_body.size()) == -1) {
-                        perror("Error writing 404 response body");
-                    }
-
-                    return 404;  // Not Found
+                // handle route
+                std::string body = handle_route(request.method, request.path);
+                if (write(fd, body.c_str(), body.size()) == -1) {
+                    perror("Error writing response body");
                 }
             } else if (nread == 0) {
                 // Client closed connection
@@ -260,6 +225,28 @@ namespace http::server {
         return 0;
     }
 
+    // check routes
+    std::string server::handle_route(const std::string& method, const std::string& path) {
+        for (const auto& route_info : pattern_routes_) {
+            std::smatch matches;
+            if (std::regex_match(path, matches, route_info.regex_pattern)) {
+                // Extract parameters
+                std::unordered_map<std::string, std::string> params;
+                for (size_t i = 0; i < route_info.param_names.size(); ++i) {
+                    if (i + 1 < matches.size()) {
+                        params[route_info.param_names[i]] = matches[i + 1].str();
+                    }
+                }
+
+                std::string body = route_info.handler(path, params);
+                return response::get(response::status::ok, response::content_type::JSON, body);
+            }
+        }
+
+        std::cout << "No handler found for: " << method << " " << path << std::endl;
+        return response::get(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
+    }
+
     /**
      * Set socket to non-blocking mode.
      * Configures the socket to operate in non-blocking mode, which is essential for efficient
@@ -279,19 +266,36 @@ namespace http::server {
      * Implementation of the required method to register handlers.
      */
     int server::register_handler(const std::string& method, const std::string& path, request_handler handler) {
-        // Create the composite key
-        std::pair<std::string, std::string> route = {method, path};
+        // Convert path with :id to regex pattern
+        std::string regex_pattern = "^" + path + "$";
+        std::vector<std::string> param_names;
 
-        // Check if the route is already registered
-        if (routes_.count(route)) {
-            std::cerr << "Error: Route [" << method << " " << path << "] is already registered." << std::endl;
-            return -1;
+        // Replace :param with regex group
+        size_t pos = 0;
+        while ((pos = regex_pattern.find(':')) != std::string::npos) {
+            // Find the end of the parameter name (next slash or end of string)
+            size_t end_pos = pos + 1;
+            while (end_pos < regex_pattern.length() && regex_pattern[end_pos] != '/' && regex_pattern[end_pos] != '$') {
+                end_pos++;
+            }
+
+            std::string param_name = regex_pattern.substr(pos + 1, end_pos - pos - 1);
+            param_names.push_back(param_name);
+
+            // Replace :param_name with regex group
+            regex_pattern.replace(pos, end_pos - pos, "([^/]+)");
         }
 
-        // Register the new handler
-        routes_[route] = handler;
+        // Create route_info structure
+        route_info info;
+        info.pattern = path;
+        info.regex_pattern = std::regex(regex_pattern);
+        info.param_names = param_names;
+        info.handler = handler;
 
-        std::cout << "Successfully registered handler for: " << method << " " << path << std::endl;
+        pattern_routes_.push_back(info);
+
+        std::cout << "Successfully registered pattern handler for: " << method << " " << path << std::endl;
         return 0;
     }
 

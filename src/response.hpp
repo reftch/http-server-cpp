@@ -8,8 +8,8 @@
 
 namespace http::server {
 
-    namespace status {
-        enum type {
+    namespace response {
+        enum status {
             ok = 200,
             created = 201,
             accepted = 202,
@@ -27,71 +27,58 @@ namespace http::server {
             bad_gateway = 502,
             service_unavailable = 503
         };
-    }
 
-    namespace content_type {
-        // API & Data Formats (Application Types)
-        namespace api {
+        namespace content_type {
             constexpr const char* JSON = "application/json";
             constexpr const char* XML = "application/xml";
             constexpr const char* BINARY_STREAM = "application/octet-stream";  // Generic binary data/files
             constexpr const char* WEBASSEMBLY = "application/wasm";            // WebAssembly modules
-        }  // namespace api
-
-        // Text & Markup (HTML/CSS/JS)
-        namespace text {
             constexpr const char* HTML = "text/html";
             constexpr const char* CSS = "text/css";
             constexpr const char* JavaScript = "application/javascript";  // Modern standard for JS
             constexpr const char* PLAIN_TEXT = "text/plain; charset=utf-8";
-        }  // namespace text
-
-        // Image & Graphics
-        namespace image {
             constexpr const char* PNG = "image/png";
             constexpr const char* JPEG = "image/jpeg";
             constexpr const char* GIF = "image/gif";
             constexpr const char* SVG = "image/svg+xml";
-        }  // namespace image
-
-        // Documents & Files
-        namespace documents {
             constexpr const char* PDF = "application/pdf";
             constexpr const char* TXT = "text/plain";  // General plain text files
-        }  // namespace documents
-
-        // Media (Audio & Video)
-        namespace media {
             constexpr const char* MP3 = "audio/mpeg";
             constexpr const char* MP4 = "video/mp4";
             constexpr const char* WEBM = "video/webm";
-        }  // namespace media
-
-        // Fonts & Web Assets
-        namespace web_assets {
             constexpr const char* WOFF2 = "font/woff2";
             constexpr const char* TTF = "font/ttf";
             constexpr const char* EOT = "font/ttf";  // Embedded OpenType
-        }  // namespace web_assets
+        }  // namespace content_type
 
-    }  // namespace content_type
+        namespace status_strings {
+            const std::string ok = "HTTP/1.0 200 OK\r\n";
+            const std::string created = "HTTP/1.0 201 Created\r\n";
+            const std::string accepted = "HTTP/1.0 202 Accepted\r\n";
+            const std::string no_content = "HTTP/1.0 204 No Content\r\n";
+            const std::string multiple_choices = "HTTP/1.0 300 Multiple Choices\r\n";
+            const std::string moved_permanently = "HTTP/1.0 301 Moved Permanently\r\n";
+            const std::string moved_temporarily = "HTTP/1.0 302 Moved Temporarily\r\n";
+            const std::string not_modified = "HTTP/1.0 304 Not Modified\r\n";
+            const std::string bad_request = "HTTP/1.0 400 Bad Request\r\n";
+            const std::string unauthorized = "HTTP/1.0 401 Unauthorized\r\n";
+            const std::string forbidden = "HTTP/1.0 403 Forbidden\r\n";
+            const std::string not_found = "HTTP/1.0 404 Not Found\r\n";
+            const std::string internal_server_error = "HTTP/1.0 500 Internal Server Error\r\n";
+            const std::string not_implemented = "HTTP/1.0 501 Not Implemented\r\n";
+            const std::string bad_gateway = "HTTP/1.0 502 Bad Gateway\r\n";
+            const std::string service_unavailable = "HTTP/1.0 503 Service Unavailable\r\n";
+        }  // namespace status_strings
 
-    class response {
-       public:
-        response(const status::type& status, const char* type, const std::string& content);
-        response(const status::type& status, const std::vector<header> headers, const std::string& content);
+        namespace misc_strings {
+            const char name_value_separator[] = {':', ' ', '\0'};
+            const char crlf[] = {'\r', '\n', '\0'};
+        }  // namespace misc_strings
 
-        std::string get_body();
+        std::string get(const status& status_type, const char* type, const std::string& content);
+        std::string to_string(const status& status);
 
-       private:
-        status::type status_;
-        // The headers to be included in the reply.
-        std::vector<header> headers_;
-        // The content to be sent in the reply.
-        std::string content_;
-
-        std::string to_string();
-    };
+    }  // namespace response
 
 }  // namespace http::server
 

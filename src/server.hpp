@@ -7,6 +7,7 @@
 #include <chrono>
 #include <functional>
 #include <map>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -25,7 +26,8 @@ namespace http::server {
     // The handler now returns the response body (string).
     // It takes the file descriptor (fd) and the context index (i) for interaction.
     using response_body = std::string;
-    using request_handler = std::function<response_body()>;
+    using request_handler = std::function<response_body(const std::string& path,
+                                                        const std::unordered_map<std::string, std::string>& params)>;
 
     /**
      * Represents an HTTP server instance.
@@ -71,8 +73,16 @@ namespace http::server {
 
         int sockfd; /**< File descriptor for the listening socket */
 
-        // Maps {Method, Path} to the handler function.
-        std::map<std::pair<std::string, std::string>, request_handler> routes_;
+        // Structure to hold route information
+        struct route_info {
+            std::string pattern;
+            std::regex regex_pattern;
+            std::vector<std::string> param_names;
+            request_handler handler;
+        };
+
+        // map for routes
+        std::vector<route_info> pattern_routes_;
 
         /**
          * Maximum number of connections allowed.
@@ -111,6 +121,8 @@ namespace http::server {
          * @return 0 on success, -1 on error or connection close
          */
         int handle_request(int fd, int i);
+
+        std::string handle_route(const std::string& method, const std::string& path);
     };
 
 }  // namespace http::server
