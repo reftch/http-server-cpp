@@ -5,6 +5,8 @@
 #include <poll.h>
 
 #include <chrono>
+#include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -18,6 +20,12 @@ namespace http::server {
         int fd;
         Ctx() : fd(-1) {}
     };
+
+    // Define the type for our request handler function.
+    // The handler now returns the response body (string).
+    // It takes the file descriptor (fd) and the context index (i) for interaction.
+    using response_body = std::string;
+    using request_handler = std::function<response_body()>;
 
     /**
      * Represents an HTTP server instance.
@@ -44,6 +52,16 @@ namespace http::server {
          */
         int start();
 
+        /**
+         * Registers a handler function for a specific HTTP method and path.
+         *
+         * @param method The HTTP method (e.g., "GET", "POST").
+         * @param path The URL path (e.g., "/index.html").
+         * @param handler The function to call when this endpoint is hit.
+         * @return 0 on success, -1 if the route is already registered or invalid input.
+         */
+        int register_handler(const std::string& method, const std::string& path, request_handler handler);
+
        private:
         // Private members related to the server state (optional, but good practice)
         std::string host_; /**< Hostname or IP address to bind to */
@@ -52,6 +70,9 @@ namespace http::server {
         std::chrono::high_resolution_clock::time_point start_time; /**< Time when server started */
 
         int sockfd; /**< File descriptor for the listening socket */
+
+        // Maps {Method, Path} to the handler function.
+        std::map<std::pair<std::string, std::string>, request_handler> routes_;
 
         /**
          * Maximum number of connections allowed.
@@ -70,7 +91,7 @@ namespace http::server {
          * @param fd Socket file descriptor
          * @return 0 on success, -1 on error
          */
-        int setNonblocking(int fd);
+        int set_nonblocking(int fd);
 
         /**
          * Handle new incoming connection.
@@ -79,7 +100,7 @@ namespace http::server {
          * @param sockfd Listening socket file descriptor
          * @return 0 on success, -1 on error
          */
-        int acceptConnection(int sockfd);
+        int accept_connection(int sockfd);
 
         /**
          * Handle an incoming HTTP request on a given connection.
@@ -89,7 +110,7 @@ namespace http::server {
          * @param i Index in the internal context vector
          * @return 0 on success, -1 on error or connection close
          */
-        int handleRequest(int fd, int i);
+        int handle_request(int fd, int i);
     };
 
 }  // namespace http::server

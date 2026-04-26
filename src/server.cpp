@@ -15,6 +15,7 @@
 #include <thread>
 #include <vector>
 
+#include "request.hpp"
 #include "response.hpp"
 
 namespace http::server {
@@ -125,10 +126,10 @@ namespace http::server {
 
                 if (fd == sockfd) {
                     // New connection
-                    acceptConnection(sockfd);
+                    accept_connection(sockfd);
                 } else {
                     // Existing client
-                    handleRequest(fd, j);
+                    handle_request(fd, j);
                 }
             }
         }
@@ -146,7 +147,7 @@ namespace http::server {
      * @param sockfd Listening socket file descriptor
      * @return 0 on success, -1 on error
      */
-    int server::acceptConnection(int sockfd) {
+    int server::accept_connection(int sockfd) {
         // accept client connection
         struct sockaddr_in client_addr{};
         socklen_t client_len = sizeof(client_addr);
@@ -164,7 +165,7 @@ namespace http::server {
         }
 
         // set socket to non-blocking mode
-        if (setNonblocking(connfd) < 0) {
+        if (set_nonblocking(connfd) < 0) {
             close(connfd);
             return -1;
         }
@@ -183,7 +184,7 @@ namespace http::server {
      * @param i Index in the internal context vector
      * @return 0 on success, -1 on error or connection close
      */
-    int server::handleRequest(int fd, int i) {
+    int server::handle_request(int fd, int i) {
         int idx = fd_to_idx[fd];
         if (idx < 0 || idx >= MAX_CONNS || ctxs[idx].fd != fd) return -1;
 
@@ -197,25 +198,47 @@ namespace http::server {
         }
 
         if (pfds[i].revents & POLLIN) {
-            char dummy[4096];
-            ssize_t nread = read(fd, dummy, sizeof(dummy));
+            char buffer[4096];
+            ssize_t nread = read(fd, buffer, sizeof(buffer));
             if (nread > 0) {
-                // content_type json_type = {"application/json", "data"};
-                response resp(status::ok, content_type::api::JSON, "Hello from c++ server");
-                std::string body = resp.get_body();
-                // write(fd, body.c_str(), body.size());
+                std::string raw_request(buffer, nread);
 
-                ssize_t bytes_written = write(fd, body.c_str(), body.size());
-                // Check if the write operation failed (e.g., if bytes_written is -1)
-                if (bytes_written == -1) {
-                    // Handle error, such as logging an error or throwing an exception
-                    perror("Error writing to file");
-                } else if (bytes_written < body.size()) {
-                    // Handle partial write error
-                    fprintf(stderr, "Warning: Only %zd of %zu bytes were written.\n", bytes_written, body.size());
+                // Parse the request line to find Method and Path
+                // request req;
+                request::http_request request = request::parse(raw_request);
+                std::string method = request.method;
+                std::string path = request.path;
+
+                // routing Lookup
+                std::pair<std::string, std::string> key = {method, path};
+                auto it = routes_.find(key);
+
+                if (it != routes_.end()) {
+                    // --- Handler Found: Execute Logic ---
+                    request_handler handler = it->second;
+
+                    // Execute the handler to get the response body
+                    std::string body = handler();
+
+                    // Write the response body back to the client socket
+                    response resp(status::ok, content_type::api::JSON, body);
+                    std::string reponse_body = resp.get_body();
+                    if (write(fd, reponse_body.c_str(), reponse_body.size()) == -1) {
+                        perror("Error writing response body");
+                    }
+
+                    return 0;  // Success
+                } else {
+                    // route Not Found (404)
+                    // Send the 404 body back to the client socket
+                    response resp(status::not_found, content_type::text::PLAIN_TEXT, "404 Not Found");
+                    std::string error_body = resp.get_body();
+                    if (write(fd, error_body.c_str(), error_body.size()) == -1) {
+                        perror("Error writing 404 response body");
+                    }
+
+                    return 404;  // Not Found
                 }
-
-                // write(fd, okResp, strlen(okResp));
             } else if (nread == 0) {
                 // Client closed connection
                 close(fd);
@@ -245,10 +268,30 @@ namespace http::server {
      * @param fd Socket file descriptor
      * @return 0 on success, -1 on error
      */
-    int server::setNonblocking(int fd) {
+    int server::set_nonblocking(int fd) {
         int flags = fcntl(fd, F_GETFL, 0);
         if (flags == -1) return -1;
         if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
+        return 0;
+    }
+
+    /**
+     * Implementation of the required method to register handlers.
+     */
+    int server::register_handler(const std::string& method, const std::string& path, request_handler handler) {
+        // Create the composite key
+        std::pair<std::string, std::string> route = {method, path};
+
+        // Check if the route is already registered
+        if (routes_.count(route)) {
+            std::cerr << "Error: Route [" << method << " " << path << "] is already registered." << std::endl;
+            return -1;
+        }
+
+        // Register the new handler
+        routes_[route] = handler;
+
+        std::cout << "Successfully registered handler for: " << method << " " << path << std::endl;
         return 0;
     }
 
