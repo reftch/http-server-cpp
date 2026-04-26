@@ -1,20 +1,6 @@
 // server.cpp
 #include "server.hpp"
 
-#include <errno.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <poll.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <chrono>
-#include <cstring>
-#include <iostream>
-#include <thread>
-#include <vector>
-
 #include "request.hpp"
 #include "response.hpp"
 
@@ -227,7 +213,7 @@ namespace http::server {
 
     // check routes
     std::string server::handle_route(const std::string& method, const std::string& path) {
-        for (const auto& route_info : pattern_routes_) {
+        for (const auto& route_info : routes_) {
             std::smatch matches;
             if (std::regex_match(path, matches, route_info.regex_pattern)) {
                 // Extract parameters
@@ -293,7 +279,7 @@ namespace http::server {
         info.param_names = param_names;
         info.handler = handler;
 
-        pattern_routes_.push_back(info);
+        routes_.push_back(info);
 
         std::cout << "Successfully registered pattern handler for: " << method << " " << path << std::endl;
         return 0;

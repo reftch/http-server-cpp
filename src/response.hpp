@@ -9,6 +9,7 @@
 namespace http::server {
 
     namespace response {
+
         enum status {
             ok = 200,
             created = 201,

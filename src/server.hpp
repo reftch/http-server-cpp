@@ -2,14 +2,27 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
 #include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <chrono>
+#include <cstring>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <regex>
 #include <string>
+#include <thread>
 #include <vector>
+
+#include "request.hpp"
+#include "response.hpp"
+#include "utils.hpp"
 
 namespace http::server {
 
@@ -35,6 +48,8 @@ namespace http::server {
      */
     class server {
        public:
+        server();
+
         /**
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
@@ -82,7 +97,7 @@ namespace http::server {
         };
 
         // map for routes
-        std::vector<route_info> pattern_routes_;
+        std::vector<route_info> routes_;
 
         /**
          * Maximum number of connections allowed.
