@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <unordered_map>
 
 /**
  * @file utils.hpp
@@ -43,5 +44,7 @@ void print_help();
  * // Returns map with "--host": "192.168.1.1" and "--port": "9000"
  */
 std::map<std::string, std::string> parseArguments(int argc, char* argv[]);
+
+std::string map_to_json(const std::unordered_map<std::string, std::string>& params);
 
 #endif  // UTILS_HPP

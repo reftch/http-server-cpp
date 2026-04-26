@@ -11,8 +11,10 @@ std::string home_handler(const std::string& path, const std::unordered_map<std::
 }
 
 std::string api_handler(const std::string& path, const std::unordered_map<std::string, std::string>& params) {
-    std::string json_string = R"({"name": "Alice", "age": 30, "city": "New York"})";
-    return json_string;
+    std::unordered_map<std::string, std::string> mutable_params = {
+        {"name", "Alice"}, {"age", "34"}, {"id", params.at("id")}};
+    std::string json_output = map_to_json(mutable_params);
+    return json_output;
 }
 
 int main(int argc, char* argv[]) {
@@ -28,7 +30,7 @@ int main(int argc, char* argv[]) {
     // Get the build date string
     std::string build_date = get_build_date();
     // Launch banner
-    std::cout << "http server, v1.0.0 (Build: " << build_date << ")" << std::endl;
+    std::cout << "http server, v1.0.0 (Build: " << build_date << ")" << '\n';
 
     // Server Execution
     try {
@@ -38,7 +40,7 @@ int main(int argc, char* argv[]) {
         s.register_handler("GET", "/api/v1/users/:id", api_handler);
         s.start();
     } catch (const std::exception& e) {
-        std::cerr << "Server Exception: " << e.what() << std::endl;
+        std::cerr << "Server Exception: " << e.what() << '\n';
         return 1;
     }
 

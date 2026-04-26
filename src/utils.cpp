@@ -57,3 +57,31 @@ std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
 
     return args;
 }
+
+std::string map_to_json(const std::unordered_map<std::string, std::string>& params) {
+    std::stringstream ss;
+    ss << "{";  // Start the JSON object
+
+    bool first = true;
+
+    // Iterate over all key-value pairs in the map
+    for (const auto& pair : params) {
+        // Add a comma separator if it's not the first element
+        if (!first) {
+            ss << ", ";
+        }
+
+        // Start the key (must be a quoted string)
+        ss << "\"" << pair.first << "\": ";
+
+        // Add the value (must be a quoted string)
+        // Note: Since the input is string-based, we wrap the value in quotes.
+        ss << "\"" << pair.second << "\"";
+
+        first = false;
+    }
+
+    ss << "}";  // End the JSON object
+
+    return ss.str();
+}
