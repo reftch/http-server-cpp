@@ -26,34 +26,37 @@ namespace http::server {
         // fd -> index mapping (simple for FDs < MAX_CONNS)
         fd_to_idx.reserve(MAX_CONNS);
         fd_to_idx.resize(MAX_CONNS, -1);
+
+        // Build pollfd array
+        pfds.reserve(MAX_CONNS);
     }
 
     /**
      * Signals the server to shut down, stops the polling loop, and closes all sockets.
      */
     void server::stop() {
-        std::cout << "\nServer stopping..." << std::endl;
+        std::cout << "\nServer stopping..." << '\n';
 
-        // Set the running flag to false to break the while loop in start()
+        // set the running flag to false to break the while loop in start()
         running_ = false;
 
-        // 1. Close all active client connections
+        // close all active client connections
         for (int i = 0; i < MAX_CONNS; ++i) {
             if (ctxs[i].fd != -1) {
-                std::cout << "Closing client connection FD: " << ctxs[i].fd << std::endl;
+                std::cout << "Closing client connection FD: " << ctxs[i].fd << '\n';
                 close(ctxs[i].fd);
                 fd_to_idx[ctxs[i].fd] = -1;
                 ctxs[i].fd = -1;
             }
         }
 
-        // 2. Close the listening socket (the main server socket)
+        // close the listening socket (the main server socket)
         if (sockfd != -1) {
-            std::cout << "Closing listening socket FD: " << sockfd << std::endl;
+            std::cout << "Closing listening socket FD: " << sockfd << '\n';
             close(sockfd);
         }
 
-        std::cout << "Server stopped successfully." << std::endl;
+        std::cout << "Server stopped successfully." << '\n';
     }
 
     /**
@@ -101,11 +104,11 @@ namespace http::server {
 
         std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << " in " << duration << '\n';
 
+        int max_fd = sockfd;
+
         while (running_) {
-            // Build pollfd array from active FDs
+            // clear pollfd array from active FDs
             pfds.clear();
-            pfds.reserve(MAX_CONNS);
-            int max_fd = sockfd;
 
             // Add listening socket
             struct pollfd pfd_sock = {sockfd, POLLIN, 0};
@@ -126,7 +129,10 @@ namespace http::server {
                 perror("poll");
                 break;
             }
+
             if (n == 0) continue;
+
+            // std::cout << "Size: " << pfds.size() << '\n';
 
             // Process events
             for (size_t j = 0; j < pfds.size(); ++j) {
@@ -260,7 +266,7 @@ namespace http::server {
             }
         }
 
-        std::cout << "No handler found for: " << method << " " << path << std::endl;
+        std::cout << "No handler found for: " << method << " " << path << '\n';
         return response::get(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
     }
 

@@ -1,7 +1,6 @@
 #include <unistd.h>  // For exit()
 
 #include <chrono>
-#include <csignal>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -41,44 +40,13 @@ std::string api_handler(const std::string& path, const std::unordered_map<std::s
     return json_output;
 }
 
-// Global pointer/reference to the server object for signal handling
-http::server::server* global_server_ptr = nullptr;
-
-void signal_handler(int signum) {
-    if (global_server_ptr) {
-        global_server_ptr->stop();
-    }
-
-    exit(signum);
-}
-
 int main() {
     // setup the server object
     http::server::server s("127.0.0.1", "8080");
     s.register_handler("GET", "/", home_handler);
     s.register_handler("GET", "/api/v1/users/:id", api_handler);
 
-    // set the global pointer so the signal handler can access the server
-    global_server_ptr = &s;
-
-    // setup signal handling for SIGINT (Ctrl+C)
-    struct sigaction sa;
-    sa.sa_handler = signal_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-
-    if (sigaction(SIGINT, &sa, nullptr) == -1) {
-        perror("sigaction");
-        return 1;
-    }
-
-    // start the server in a separate thread
-    std::thread server_thread([&s]() { s.start(); });
-
-    std::cout << "Server thread started. Press Ctrl+C to stop." << std::endl;
-
-    // wait for the thread to finish
-    server_thread.join();
+    s.start();
 
     return 0;
 }

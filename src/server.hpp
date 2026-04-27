@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include <chrono>
+#include <csignal>
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -107,7 +108,7 @@ namespace http::server {
          * Maximum number of connections allowed.
          * This constant defines the maximum capacity of the server's connection handling.
          */
-        static constexpr int MAX_CONNS = 1024;
+        static constexpr int MAX_CONNS = 96;
 
         std::vector<Ctx> ctxs;           /**< Vector of connection contexts */
         std::vector<int> fd_to_idx;      /**< Mapping from file descriptor to index in ctxs */
