@@ -29,6 +29,34 @@ namespace http::server {
     }
 
     /**
+     * Signals the server to shut down, stops the polling loop, and closes all sockets.
+     */
+    void server::stop() {
+        std::cout << "\nServer stopping..." << std::endl;
+
+        // Set the running flag to false to break the while loop in start()
+        running_ = false;
+
+        // 1. Close all active client connections
+        for (int i = 0; i < MAX_CONNS; ++i) {
+            if (ctxs[i].fd != -1) {
+                std::cout << "Closing client connection FD: " << ctxs[i].fd << std::endl;
+                close(ctxs[i].fd);
+                fd_to_idx[ctxs[i].fd] = -1;
+                ctxs[i].fd = -1;
+            }
+        }
+
+        // 2. Close the listening socket (the main server socket)
+        if (sockfd != -1) {
+            std::cout << "Closing listening socket FD: " << sockfd << std::endl;
+            close(sockfd);
+        }
+
+        std::cout << "Server stopped successfully." << std::endl;
+    }
+
+    /**
      * Implementation of the start method
      * Sets up the server socket, binds to the specified address, and enters the main event loop.
      * The server will continuously listen for new connections and handle existing connections.
@@ -36,6 +64,9 @@ namespace http::server {
      * @return 0 on successful start, non-zero on error
      */
     int server::start() {
+        // initialize the running flag ***
+        running_ = true;  // Assume this is a member variable
+
         // create server socket
         // AF_INET: IPv4 protocol, SOCK_STREAM: TCP socket
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -70,7 +101,7 @@ namespace http::server {
 
         std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << " in " << duration << '\n';
 
-        while (true) {
+        while (running_) {
             // Build pollfd array from active FDs
             pfds.clear();
             pfds.reserve(MAX_CONNS);
@@ -90,7 +121,7 @@ namespace http::server {
             }
 
             // Wait for events (infinite timeout)
-            int n = poll(pfds.data(), pfds.size(), -1);
+            int n = poll(pfds.data(), pfds.size(), 100);
             if (n < 0) {
                 perror("poll");
                 break;

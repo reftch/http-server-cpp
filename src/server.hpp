@@ -48,8 +48,6 @@ namespace http::server {
      */
     class server {
        public:
-        server();
-
         /**
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
@@ -70,6 +68,11 @@ namespace http::server {
         int start();
 
         /**
+         * Signals the server to shut down, stops the polling loop, and closes all sockets.
+         */
+        void stop();
+
+        /**
          * Registers a handler function for a specific HTTP method and path.
          *
          * @param method The HTTP method (e.g., "GET", "POST").
@@ -81,8 +84,9 @@ namespace http::server {
 
        private:
         // Private members related to the server state (optional, but good practice)
-        std::string host_; /**< Hostname or IP address to bind to */
-        std::string port_; /**< Port number to listen on */
+        std::string host_;     /**< Hostname or IP address to bind to */
+        std::string port_;     /**< Port number to listen on */
+        bool running_ = false; /** is server running flag */
 
         std::chrono::high_resolution_clock::time_point start_time; /**< Time when server started */
 
