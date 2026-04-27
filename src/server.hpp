@@ -83,6 +83,21 @@ namespace http::server {
          */
         int register_handler(const std::string& method, const std::string& path, request_handler handler);
 
+        // Structure to hold route information
+        struct route_info {
+            std::string method;
+            std::string pattern;
+            std::regex regex_pattern;
+            std::vector<std::string> param_names;
+            request_handler handler;
+        };
+
+        // getters
+        std::vector<route_info> get_routes() { return routes_; }
+        bool is_running() const { return running_; }
+        std::string get_host() const { return host_; }
+        std::string get_port() const { return port_; }
+
        private:
         // Private members related to the server state (optional, but good practice)
         std::string host_;     /**< Hostname or IP address to bind to */
@@ -92,14 +107,6 @@ namespace http::server {
         std::chrono::high_resolution_clock::time_point start_time; /**< Time when server started */
 
         int sockfd; /**< File descriptor for the listening socket */
-
-        // Structure to hold route information
-        struct route_info {
-            std::string pattern;
-            std::regex regex_pattern;
-            std::vector<std::string> param_names;
-            request_handler handler;
-        };
 
         // map for routes
         std::vector<route_info> routes_;

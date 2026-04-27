@@ -14,4 +14,22 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(src)
 
 enable_testing() 
-add_subdirectory(test)
+
+option(BUILD_TESTS "Build tests" ON)
+
+if(BUILD_TESTS)
+    enable_testing()
+    include(FetchContent)
+
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.17.0
+    )
+    FetchContent_MakeAvailable(googletest)
+endif()
+
+# add_subdirectory(src)
+if(BUILD_TESTS)
+    add_subdirectory(test)
+endif()

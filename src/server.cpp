@@ -35,7 +35,7 @@ namespace http::server {
      * Signals the server to shut down, stops the polling loop, and closes all sockets.
      */
     void server::stop() {
-        std::cout << "\nServer stopping..." << '\n';
+        std::cout << "\nserver stopping..." << '\n';
 
         // set the running flag to false to break the while loop in start()
         running_ = false;
@@ -43,7 +43,7 @@ namespace http::server {
         // close all active client connections
         for (int i = 0; i < MAX_CONNS; ++i) {
             if (ctxs[i].fd != -1) {
-                std::cout << "Closing client connection FD: " << ctxs[i].fd << '\n';
+                std::cout << "closing client connection FD: " << ctxs[i].fd << '\n';
                 close(ctxs[i].fd);
                 fd_to_idx[ctxs[i].fd] = -1;
                 ctxs[i].fd = -1;
@@ -52,11 +52,11 @@ namespace http::server {
 
         // close the listening socket (the main server socket)
         if (sockfd != -1) {
-            std::cout << "Closing listening socket FD: " << sockfd << '\n';
+            std::cout << "closing listening socket FD: " << sockfd << '\n';
             close(sockfd);
         }
 
-        std::cout << "Server stopped successfully." << '\n';
+        std::cout << "server stopped successfully." << '\n';
     }
 
     /**
@@ -124,7 +124,7 @@ namespace http::server {
             }
 
             // Wait for events (infinite timeout)
-            int n = poll(pfds.data(), pfds.size(), 100);
+            int n = poll(pfds.data(), pfds.size(), 2000);
             if (n < 0) {
                 perror("poll");
                 break;
@@ -248,7 +248,11 @@ namespace http::server {
         return 0;
     }
 
-    // check routes
+    /**
+     * Hanlde routes
+     *
+     *
+     */
     std::string server::handle_route(const std::string& method, const std::string& path) {
         for (const auto& route_info : routes_) {
             std::smatch matches;
@@ -311,6 +315,7 @@ namespace http::server {
 
         // Create route_info structure
         route_info info;
+        info.method = method;
         info.pattern = path;
         info.regex_pattern = std::regex(regex_pattern);
         info.param_names = param_names;
