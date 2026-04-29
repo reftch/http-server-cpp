@@ -41,32 +41,35 @@ std::string api_handler(const std::string& path, const std::unordered_map<std::s
     return json_output;
 }
 
-http::server::server* server_ptr;
+http::server::server* server_ptr = nullptr;
 
-// Signal Handler Function
-// This function is executed when SIGINT (Ctrl+C) is received.
+// signal handler function
 void signal_handler(int sig) {
-    // Set the running flag to false on the server object
+    std::cout << "\n[Signal Handler] Received signal " << sig << ". Requesting server stop." << std::endl;
     if (server_ptr) {
         server_ptr->stop();
     }
 }
 
 int main() {
-    // setup the server object
-    http::server::server s("127.0.0.1", "8080");
-    s.register_handler("GET", "/", home_handler);
-    s.register_handler("GET", "/api/v1/users/:id", api_handler);
+    // setup the server object using std::make_unique
+    std::unique_ptr<http::server::server> s_ptr = std::make_unique<http::server::server>("127.0.0.1", "8080");
 
-    // --- Register the Signal Handler ---
-    server_ptr = &s;
-    // Register the signal_handler function to intercept SIGINT
+    // Get a raw pointer to pass to the signal handler.
+    server_ptr = s_ptr.get();
+
+    // register handlers
+    s_ptr->register_handler("GET", "/", home_handler);
+    s_ptr->register_handler("GET", "/api/v1/users/:id", api_handler);
+
+    // register the signal handler
     if (signal(SIGINT, signal_handler) == SIG_ERR) {
         perror("Failed to register signal handler");
         return 1;
     }
 
-    s.start();
+    // start the server
+    s_ptr->start();
 
     return 0;
 }

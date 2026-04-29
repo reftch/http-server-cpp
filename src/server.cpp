@@ -175,7 +175,7 @@ namespace http::server {
         }
 
         if (connfd >= MAX_CONNS) {
-            std::cout << "too many connections" << std::endl;
+            std::cout << "too many connections" << '\n';
             close(connfd);
             return -1;
         }
@@ -323,7 +323,7 @@ namespace http::server {
 
         routes_.push_back(info);
 
-        std::cout << "Successfully registered pattern handler for: " << method << " " << path << std::endl;
+        std::cout << "Registered handler for: " << method << " " << path << '\n';
         return 0;
     }
 
