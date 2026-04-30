@@ -1,5 +1,5 @@
 #include <signal.h>
-#include <unistd.h>  // For exit()
+#include <unistd.h>
 
 #include <chrono>
 #include <iostream>
