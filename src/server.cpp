@@ -225,7 +225,7 @@ namespace http::server {
                 // handle route
                 std::string body = handle_route(request.method, request.path);
                 if (write(fd, body.c_str(), body.size()) == -1) {
-                    perror("Error writing response body");
+                    perror("error writing response body");
                 }
             } else if (nread == 0) {
                 // Client closed connection
@@ -250,8 +250,6 @@ namespace http::server {
 
     /**
      * Hanlde routes
-     *
-     *
      */
     std::string server::handle_route(const std::string& method, const std::string& path) {
         for (const auto& route_info : routes_) {
@@ -293,14 +291,14 @@ namespace http::server {
      * Implementation of the required method to register handlers.
      */
     int server::register_handler(const std::string& method, const std::string& path, request_handler handler) {
-        // Convert path with :id to regex pattern
+        // convert path with :id to regex pattern
         std::string regex_pattern = "^" + path + "$";
         std::vector<std::string> param_names;
 
-        // Replace :param with regex group
+        // replace :param with regex group
         size_t pos = 0;
         while ((pos = regex_pattern.find(':')) != std::string::npos) {
-            // Find the end of the parameter name (next slash or end of string)
+            // find the end of the parameter name (next slash or end of string)
             size_t end_pos = pos + 1;
             while (end_pos < regex_pattern.length() && regex_pattern[end_pos] != '/' && regex_pattern[end_pos] != '$') {
                 end_pos++;
@@ -309,7 +307,7 @@ namespace http::server {
             std::string param_name = regex_pattern.substr(pos + 1, end_pos - pos - 1);
             param_names.push_back(param_name);
 
-            // Replace :param_name with regex group
+            // replace :param_name with regex group
             regex_pattern.replace(pos, end_pos - pos, "([^/]+)");
         }
 
@@ -323,7 +321,7 @@ namespace http::server {
 
         routes_.push_back(info);
 
-        std::cout << "Registered handler for: " << method << " " << path << '\n';
+        std::cout << "registered handler for: " << method << " " << path << '\n';
         return 0;
     }
 
