@@ -18,7 +18,7 @@ class ServerTestFixture : public ::testing::Test {
    protected:
     // Define standard test parameters
     const std::string test_host = "127.0.0.1";
-    const std::string test_port = "8080";
+    const int test_port = 8080;
 
     // The object under test, managed by smart pointer
     std::unique_ptr<server> server_;
@@ -41,7 +41,7 @@ TEST_F(ServerTestFixture, ConstructorSetsState) {
     // Assert that the server object was initialized correctly
     EXPECT_EQ(test_host, server_->get_host());
     EXPECT_EQ(test_port, server_->get_port());
-    EXPECT_FALSE(server_->is_running());
+    EXPECT_FALSE(server_->running());
 }
 
 // Test Suite for testing route registration
@@ -136,7 +136,7 @@ void stop_server_thread(std::unique_ptr<server>& server_ptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     // check running state
-    EXPECT_TRUE(server_ptr->is_running());
+    EXPECT_TRUE(server_ptr->running());
     server_ptr->stop();
 }
 
@@ -152,7 +152,7 @@ TEST_F(ServerTestFixture, StartAndStopControlsState) {
     t.join();
 
     // check stopped state
-    EXPECT_FALSE(server_->is_running());
+    EXPECT_FALSE(server_->running());
 }
 
 // ====================================================================

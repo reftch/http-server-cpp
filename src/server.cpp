@@ -7,31 +7,6 @@
 namespace http::server {
 
     /**
-     * Constructor implementation
-     * Initializes the server with the specified host and port configuration.
-     * Does not establish any network connections or start listening.
-     *
-     * @param host The hostname or IP address to bind to
-     * @param port The port number to listen on
-     */
-    server::server(const std::string& host, const std::string& port) : host_(host), port_(port) {
-        start_time = std::chrono::high_resolution_clock::now();
-
-        // Initialize connection tracking structures
-        ctxs.reserve(MAX_CONNS);
-        for (int i = 0; i < MAX_CONNS; ++i) {
-            ctxs[i].fd = -1;
-        }
-
-        // fd -> index mapping (simple for FDs < MAX_CONNS)
-        fd_to_idx.reserve(MAX_CONNS);
-        fd_to_idx.resize(MAX_CONNS, -1);
-
-        // Build pollfd array
-        pfds.reserve(MAX_CONNS);
-    }
-
-    /**
      * Signals the server to shut down, stops the polling loop, and closes all sockets.
      */
     void server::stop() {
@@ -40,13 +15,13 @@ namespace http::server {
         // set the running flag to false to break the while loop in start()
         running_ = false;
 
+        std::cout << "Client list size " << client_list.size() << '\n';
         // close all active client connections
-        for (int i = 0; i < MAX_CONNS; ++i) {
-            if (ctxs[i].fd != -1) {
-                std::cout << "closing client connection FD: " << ctxs[i].fd << '\n';
-                close(ctxs[i].fd);
-                fd_to_idx[ctxs[i].fd] = -1;
-                ctxs[i].fd = -1;
+        for (size_t i = 0; i < client_list.size(); ++i) {
+            int sd = client_list[i];
+            if (sd != -1) {
+                std::cout << "closing client connection FD: " << sd << '\n';
+                close(sd);
             }
         }
 
@@ -67,185 +42,136 @@ namespace http::server {
      * @return 0 on successful start, non-zero on error
      */
     int server::start() {
-        // initialize the running flag ***
-        running_ = true;  // Assume this is a member variable
-
-        // create server socket
-        // AF_INET: IPv4 protocol, SOCK_STREAM: TCP socket
-        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd < 0) {
-            perror("socket");
-            return 1;
+        // open socket
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);  // for tcp connection
+        // error handling
+        if (sockfd <= 0) {
+            std::cerr << "socket creation error\n";
+            exit(1);
         }
 
-        // set sockek options
-        // SO_REUSEADDR: allow local address reuse
-        int one = 1;
-        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-
-        // define server address
-        struct sockaddr_in addr{};
-        addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;              // INADDR_ANY: Accept connections on any IP
-        addr.sin_port = htons(std::stoi(this->port_));  // htons(): Converts port to network byte order
-
-        // bind Socket to Address and listen for incoming Connections
-        if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0 || listen(sockfd, 100) < 0) {
-            perror("bind/listen");
-            close(sockfd);
-            return 1;
+        // setting serverFd to allow multiple connection
+        int opt = 1;
+        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof opt) < 0) {
+            std::cerr << "setSocketopt error\n";
+            exit(2);
         }
 
-        // fd -> index mapping (simple for FDs < MAX_CONNS)
-        fd_to_idx[sockfd] = sockfd;  // Use FD as index
+        // setting the server address
+        struct sockaddr_in serverAddr;
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_port = htons(port);
+        inet_pton(AF_INET, host.data(), &serverAddr.sin_addr);
+
+        // binding the server address
+        if (bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+            std::cerr << "bind error\n";
+            exit(3);
+        }
+
+        // listening to the port
+        if (listen(sockfd, MAX_CONNS) < 0) {
+            std::cerr << "listen error\n";
+            exit(4);
+        }
+
+        // initialize the running flag
+        running_ = true;
 
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
-        std::cout << "server listening on http://" << this->host_ << ":" << this->port_ << " in " << duration << '\n';
+        std::cout << "server listening on http://" << host << ":" << port << " in " << duration << '\n';
 
-        int max_fd = sockfd;
+        handle_requests();
+
+        return 0;
+    }
+
+    void server::handle_requests() {
+        // Vector to hold pollfd structures
+        std::vector<struct pollfd> pollfds;
 
         while (running_) {
-            // clear pollfd array from active FDs
-            pfds.clear();
+            // Clear and rebuild pollfds vector
+            pollfds.clear();
 
-            // Add listening socket
-            struct pollfd pfd_sock = {sockfd, POLLIN, 0};
-            pfds.push_back(pfd_sock);
+            // Add server socket
+            struct pollfd server_pollfd;
+            server_pollfd.fd = sockfd;
+            server_pollfd.events = POLLIN;
+            server_pollfd.revents = 0;
+            pollfds.push_back(server_pollfd);
 
-            // Add client sockets
-            for (int i = 0; i < MAX_CONNS; ++i) {
-                if (ctxs[i].fd != -1) {
-                    struct pollfd pfd = {ctxs[i].fd, POLLIN, 0};
-                    pfds.push_back(pfd);
-                    if (ctxs[i].fd > max_fd) max_fd = ctxs[i].fd;
+            // Add all client sockets
+            for (auto sd : client_list) {
+                struct pollfd pfd;
+                pfd.fd = sd;
+                pfd.events = POLLIN;
+                pfd.revents = 0;
+                pollfds.push_back(pfd);
+            }
+
+            // Using poll for listening to multiple clients
+            int activity = poll(pollfds.data(), pollfds.size(), 2000);
+            if (activity < 0) {
+                std::cerr << "poll error\n";
+                continue;
+            }
+
+            // Check for new connection on server socket
+            if (pollfds[0].revents & POLLIN) {
+                // client file descriptor
+                auto clientfd = accept(sockfd, (struct sockaddr*)NULL, NULL);
+                if (clientfd < 0) {
+                    std::cerr << "accept error\n";
+                    continue;
                 }
+                // Set non-blocking mode for client socket
+                int flags = fcntl(clientfd, F_GETFL, 0);
+                fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
+
+                // adding client to list
+                client_list.push_back(clientfd);
+                // std::cout << "new client connected, fd: " << client->clientfd << std::endl;
             }
 
-            // Wait for events (infinite timeout)
-            int n = poll(pfds.data(), pfds.size(), 2000);
-            if (n < 0) {
-                perror("poll");
-                break;
-            }
+            // check for activity on client sockets, process each client socket
+            for (size_t i = 0; i < client_list.size();) {
+                int pollfd_index = i + 1;  // +1 because server socket is at index 0
 
-            if (n == 0) continue;
+                if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
+                    int sd = client_list[i];
+                    char buffer[4096];
+                    ssize_t nread = read(sd, buffer, sizeof(buffer) - 1);
 
-            // std::cout << "Size: " << pfds.size() << '\n';
-
-            // Process events
-            for (size_t j = 0; j < pfds.size(); ++j) {
-                if (pfds[j].revents == 0) continue;
-
-                int fd = pfds[j].fd;
-
-                if (fd == sockfd) {
-                    // New connection
-                    accept_connection(sockfd);
+                    if (nread > 0) {
+                        std::string raw_request(buffer, nread);
+                        // Parse the request line to find method and path
+                        request::http_request request = request::parse(raw_request);
+                        // handle route
+                        std::string body = handle_route(request.method, request.path);
+                        if (write(sd, body.c_str(), body.size()) == -1) {
+                            perror("error writing response body");
+                        }
+                    } else if (nread == 0) {
+                        // Client disconnected
+                        close(sd);
+                        // Remove from client list
+                        client_list.erase(client_list.begin() + i);
+                        continue;  // Don't increment i since we removed an element
+                    } else {
+                        // Error or would block (non-blocking socket)
+                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                            // std::cerr << "read error: " << strerror(errno) << '\n';
+                        }
+                        i++;  // Increment if no error
+                    }
                 } else {
-                    // Existing client
-                    handle_request(fd, j);
+                    i++;  // Increment if no activity
                 }
             }
         }
-
-        // close socket
-        close(sockfd);
-        return 0;
-    }
-
-    /**
-     * Handle new incoming connection.
-     * Accepts a new connection from the listening socket and sets it up for non-blocking I/O.
-     * Adds the new connection to the connection tracking system.
-     *
-     * @param sockfd Listening socket file descriptor
-     * @return 0 on success, -1 on error
-     */
-    int server::accept_connection(int sockfd) {
-        // accept client connection
-        struct sockaddr_in client_addr{};
-        socklen_t client_len = sizeof(client_addr);
-        int connfd = accept(sockfd, (struct sockaddr*)&client_addr, &client_len);
-        if (connfd < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) return -1;
-            perror("accept");
-            return -1;
-        }
-
-        if (connfd >= MAX_CONNS) {
-            std::cout << "too many connections" << '\n';
-            close(connfd);
-            return -1;
-        }
-
-        // set socket to non-blocking mode
-        if (set_nonblocking(connfd) < 0) {
-            close(connfd);
-            return -1;
-        }
-
-        fd_to_idx[connfd] = connfd;
-        ctxs[connfd].fd = connfd;
-
-        return 0;
-    }
-
-    /**
-     * Handle an incoming HTTP request on a given connection.
-     * Processes data received on the connection and handles the request logic.
-     *
-     * @param fd File descriptor of the connection
-     * @param i Index in the internal context vector
-     * @return 0 on success, -1 on error or connection close
-     */
-    int server::handle_request(int fd, int i) {
-        int idx = fd_to_idx[fd];
-        if (idx < 0 || idx >= MAX_CONNS || ctxs[idx].fd != fd) return -1;
-
-        Ctx& ctx = ctxs[idx];
-
-        if (pfds[i].revents & POLLHUP || pfds[i].revents & POLLERR) {
-            close(fd);
-            fd_to_idx[fd] = -1;
-            ctx.fd = -1;
-            return -1;
-        }
-
-        if (pfds[i].revents & POLLIN) {
-            char buffer[4096];
-            ssize_t nread = read(fd, buffer, sizeof(buffer));
-            if (nread > 0) {
-                std::string raw_request(buffer, nread);
-
-                // Parse the request line to find method and path
-                request::http_request request = request::parse(raw_request);
-
-                // handle route
-                std::string body = handle_route(request.method, request.path);
-                if (write(fd, body.c_str(), body.size()) == -1) {
-                    perror("error writing response body");
-                }
-            } else if (nread == 0) {
-                // Client closed connection
-                close(fd);
-                fd_to_idx[fd] = -1;
-                ctx.fd = -1;
-            } else {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // More data coming
-                } else {
-                    // Handle read error
-                    std::cout << "read error on fd " << fd << "\n";
-                    close(fd);
-                    fd_to_idx[fd] = -1;
-                    ctx.fd = -1;
-                }
-            }
-        }
-
-        return 0;
     }
 
     /**
@@ -263,28 +189,13 @@ namespace http::server {
                     }
                 }
 
-                std::string body = route_info.handler(path, params);
-                return response::get(response::status::ok, response::content_type::JSON, body);
+                return route_info.handler(path, params);
+                // return response::get(response::status::ok, response::content_type::JSON, body);
             }
         }
 
         std::cout << "No handler found for: " << method << " " << path << '\n';
-        return response::get(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
-    }
-
-    /**
-     * Set socket to non-blocking mode.
-     * Configures the socket to operate in non-blocking mode, which is essential for efficient
-     * polling-based I/O multiplexing.
-     *
-     * @param fd Socket file descriptor
-     * @return 0 on success, -1 on error
-     */
-    int server::set_nonblocking(int fd) {
-        int flags = fcntl(fd, F_GETFL, 0);
-        if (flags == -1) return -1;
-        if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
-        return 0;
+        return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
     }
 
     /**
