@@ -42,14 +42,7 @@ namespace http::server {
      * @return 0 on successful start, non-zero on error
      */
     int server::start() {
-        start_time = std::chrono::high_resolution_clock::now();
-
-        // initialize the running flag ***
-        running_ = true;  // Assume this is a member variable
-
-        // start time
-        auto start_time = std::chrono::high_resolution_clock::now();
-
+        // open socket
         sockfd = socket(AF_INET, SOCK_STREAM, 0);  // for tcp connection
         // error handling
         if (sockfd <= 0) {
@@ -81,6 +74,9 @@ namespace http::server {
             std::cerr << "listen error\n";
             exit(4);
         }
+
+        // initialize the running flag
+        running_ = true;
 
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
@@ -193,13 +189,13 @@ namespace http::server {
                     }
                 }
 
-                std::string body = route_info.handler(path, params);
-                return response::get(response::status::ok, response::content_type::JSON, body);
+                return route_info.handler(path, params);
+                // return response::get(response::status::ok, response::content_type::JSON, body);
             }
         }
 
         std::cout << "No handler found for: " << method << " " << path << '\n';
-        return response::get(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
+        return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
     }
 
     /**

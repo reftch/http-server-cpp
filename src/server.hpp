@@ -51,7 +51,9 @@ namespace http::server {
          * @param host The hostname or IP address to bind to.
          * @param port The port number to listen on.
          */
-        server(const std::string& host, const int& port) : host(host), port(port) {}
+        server(const std::string& host, const int& port) : host(host), port(port) {
+            start_time = std::chrono::high_resolution_clock::now();
+        }
 
         /**
          * Starts the server and begins listening for incoming connections.

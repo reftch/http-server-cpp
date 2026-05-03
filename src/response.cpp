@@ -8,8 +8,7 @@
 namespace http::server {
 
     namespace response {
-        std::string get(const status& status_type, const char* type, const std::string& content) {
-            //
+        std::string create(const status& status_type, const char* type, const std::string& content) {
             std::vector<header> headers;
             headers.resize(3);
             headers[0].name = "Content-Type";
