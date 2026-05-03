@@ -53,7 +53,7 @@ void signal_handler(int sig) {
 
 int main() {
     // setup the server object using std::make_unique
-    std::unique_ptr<http::server::server> s_ptr = std::make_unique<http::server::server>("127.0.0.1", "8080");
+    std::unique_ptr<http::server::server> s_ptr = std::make_unique<http::server::server>("127.0.0.1", 8080);
 
     // Get a raw pointer to pass to the signal handler.
     server_ptr = s_ptr.get();
