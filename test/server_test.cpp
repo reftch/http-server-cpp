@@ -7,7 +7,7 @@
 
 #include "gtest/gtest.h"
 
-using namespace http::server;
+using namespace http;
 
 // ====================================================================
 // Test Fixture Setup

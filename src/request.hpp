@@ -6,7 +6,7 @@
 
 #include "request.hpp"
 
-namespace http::server {
+namespace http {
 
     namespace request {
         /**
@@ -29,5 +29,5 @@ namespace http::server {
         http_request parse(const std::string& raw_request);
     }  // namespace request
 
-}  // namespace http::server
+}  // namespace http
 #endif  // REQUEST_HPP

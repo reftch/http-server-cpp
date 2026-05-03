@@ -28,8 +28,7 @@ std::string map_to_json(const std::unordered_map<std::string, std::string>& para
 
 std::string home_handler(const std::string& path, const std::unordered_map<std::string, std::string>& params) {
     std::string json = R"({"name": "Alice"})";
-    return http::server::response::create(http::server::response::status::ok,
-                                          http::server::response::content_type::JSON, json);
+    return http::response::create(http::response::status::ok, http::response::content_type::JSON, json);
 }
 
 std::string api_handler(const std::string& path, const std::unordered_map<std::string, std::string>& params) {
@@ -39,11 +38,10 @@ std::string api_handler(const std::string& path, const std::unordered_map<std::s
 
     // This now calls the defined helper function
     std::string json = map_to_json(mutable_params);
-    return http::server::response::create(http::server::response::status::ok,
-                                          http::server::response::content_type::JSON, json);
+    return http::response::create(http::response::status::ok, http::response::content_type::JSON, json);
 }
 
-http::server::server* server_ptr = nullptr;
+http::server* server_ptr = nullptr;
 
 // signal handler function
 void signal_handler(int sig) {
@@ -55,7 +53,7 @@ void signal_handler(int sig) {
 
 int main() {
     // setup the server object using std::make_unique
-    std::unique_ptr<http::server::server> s_ptr = std::make_unique<http::server::server>("127.0.0.1", 8080);
+    std::unique_ptr<http::server> s_ptr = std::make_unique<http::server>("127.0.0.1", 8080);
 
     // Get a raw pointer to pass to the signal handler.
     server_ptr = s_ptr.get();

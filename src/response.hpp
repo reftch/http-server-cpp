@@ -6,7 +6,7 @@
 
 #include "header.hpp"
 
-namespace http::server {
+namespace http {
 
     namespace response {
 
@@ -81,6 +81,6 @@ namespace http::server {
 
     }  // namespace response
 
-}  // namespace http::server
+}  // namespace http
 
 #endif  // RESPONSE_HPP

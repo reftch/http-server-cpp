@@ -4,7 +4,7 @@
 #include "request.hpp"
 #include "response.hpp"
 
-namespace http::server {
+namespace http {
 
     /**
      * Signals the server to shut down, stops the polling loop, and closes all sockets.
@@ -236,4 +236,4 @@ namespace http::server {
         return 0;
     }
 
-}  // namespace http::server
+}  // namespace http

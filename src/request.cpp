@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace http::server {
+namespace http {
 
     namespace request {
 
@@ -40,4 +40,4 @@ namespace http::server {
         }
     }  // namespace request
 
-}  // namespace http::server
+}  // namespace http

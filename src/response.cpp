@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace http::server {
+namespace http {
 
     namespace response {
         std::string create(const status& status_type, const char* type, const std::string& content) {
@@ -73,4 +73,4 @@ namespace http::server {
 
     }  // namespace response
 
-}  // namespace http::server
+}  // namespace http

@@ -29,7 +29,7 @@
 #include "response.hpp"
 #include "utils.hpp"
 
-namespace http::server {
+namespace http {
 
     // Define the type for our request handler function.
     // The handler now returns the response body (string).
@@ -131,6 +131,6 @@ namespace http::server {
         std::string handle_route(const std::string& method, const std::string& path);
     };
 
-}  // namespace http::server
+}  // namespace http
 
 #endif  // SERVER_HPP

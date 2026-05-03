@@ -3,11 +3,11 @@
 
 #include <string>
 
-namespace http::server {
+namespace http {
     struct header {
         std::string name;
         std::string value;
     };
-}  // namespace http::server
+}  // namespace http
 
 #endif  // HEADER_HPP
