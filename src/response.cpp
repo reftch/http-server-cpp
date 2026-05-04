@@ -8,6 +8,30 @@
 namespace http {
 
     namespace response {
+        std::string create(const char* type, const std::string& content) {
+            std::vector<header> headers;
+            headers.resize(3);
+            headers[0].name = "Content-Type";
+            headers[0].value = type;
+            headers[1].name = "Content-Length";
+            headers[1].value = std::to_string(content.size());
+            headers[2].name = "Connection";
+            headers[2].value = "keep-alive";
+
+            std::string body = status_strings::ok;
+            for (std::size_t i = 0; i < headers.size(); ++i) {
+                header& h = headers[i];
+                body.append(h.name);
+                body.append(misc_strings::name_value_separator);
+                body.append(h.value);
+                body.append(misc_strings::crlf);
+            }
+            body.append(misc_strings::crlf);
+            body.append(content);
+
+            return body;
+        }
+
         std::string create(const status& status_type, const char* type, const std::string& content) {
             std::vector<header> headers;
             headers.resize(3);
@@ -30,6 +54,15 @@ namespace http {
             body.append(content);
 
             return body;
+        }
+
+        std::string json(const std::string& content) {
+            std::string response = "HTTP/1.1 200 OK\r\n";
+            response += "Content-Type: application/json\r\n";
+            response += "Content-Length: " + std::to_string(content.length()) + "\r\n";
+            response += "Connection: keep-alive\r\n\r\n";
+            response += content;
+            return response;
         }
 
         std::string to_string(const status& status_type) {

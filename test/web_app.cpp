@@ -28,7 +28,7 @@ std::string map_to_json(const std::unordered_map<std::string, std::string>& para
 
 std::string home_handler(const std::string& path, const std::unordered_map<std::string, std::string>& params) {
     std::string json = R"({"name": "Alice"})";
-    return http::response::create(http::response::status::ok, http::response::content_type::JSON, json);
+    return http::response::create(http::response::content_type::JSON, json);
 }
 
 std::string api_handler(const std::string& path, const std::unordered_map<std::string, std::string>& params) {
@@ -38,7 +38,7 @@ std::string api_handler(const std::string& path, const std::unordered_map<std::s
 
     // This now calls the defined helper function
     std::string json = map_to_json(mutable_params);
-    return http::response::create(http::response::status::ok, http::response::content_type::JSON, json);
+    return http::response::json(json);
 }
 
 http::server* server_ptr = nullptr;

@@ -76,7 +76,9 @@ namespace http {
             const char crlf[] = {'\r', '\n', '\0'};
         }  // namespace misc_strings
 
+        std::string create(const char* type, const std::string& content);
         std::string create(const status& status_type, const char* type, const std::string& content);
+        std::string json(const std::string& content);
         std::string to_string(const status& status);
 
     }  // namespace response

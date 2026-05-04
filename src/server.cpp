@@ -81,7 +81,7 @@ namespace http {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
-        std::cout << "server listening on http://" << host << ":" << port << " in " << duration << '\n';
+        std::cout << "server started on http://" << host << ":" << port << " in " << duration << '\n';
 
         handle_requests();
 
@@ -190,7 +190,6 @@ namespace http {
                 }
 
                 return route_info.handler(path, params);
-                // return response::get(response::status::ok, response::content_type::JSON, body);
             }
         }
 
