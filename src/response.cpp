@@ -8,6 +8,7 @@
 namespace http {
 
     namespace response {
+
         std::string create(const char* type, const std::string& content) {
             std::vector<header> headers;
             headers.resize(3);
