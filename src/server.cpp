@@ -15,7 +15,6 @@ namespace http {
         // set the running flag to false to break the while loop in start()
         running_ = false;
 
-        std::cout << "Client list size " << client_list.size() << '\n';
         // close all active client connections
         for (size_t i = 0; i < client_list.size(); ++i) {
             int sd = client_list[i];
@@ -31,7 +30,7 @@ namespace http {
             close(sockfd);
         }
 
-        std::cout << "server stopped successfully." << '\n';
+        std::cout << "server stopped successfully" << '\n';
     }
 
     /**
@@ -115,7 +114,7 @@ namespace http {
             // Using poll for listening to multiple clients
             int activity = poll(pollfds.data(), pollfds.size(), 2000);
             if (activity < 0) {
-                std::cerr << "poll error\n";
+                // std::cerr << "polling stop\n";
                 continue;
             }
 

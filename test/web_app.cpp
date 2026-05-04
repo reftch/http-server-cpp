@@ -7,28 +7,12 @@
 #include <thread>
 #include <unordered_map>
 
-// assuming this is the header for your HTTP server implementation
+// HTTP server implementation
 #include "server.hpp"
-
-// must define the function used in api_handler
-std::string map_to_json(const std::unordered_map<std::string, std::string>& params) {
-    // Example implementation
-    std::string json = "{";
-    bool first = true;
-    for (const auto& pair : params) {
-        if (!first) {
-            json += ", ";
-        }
-        json += "\"" + pair.first + "\": \"" + pair.second + "\"";
-        first = false;
-    }
-    json += "}";
-    return json;
-}
 
 std::string home_handler(const std::string& path, const std::unordered_map<std::string, std::string>& params) {
     std::string json = R"({"name": "Alice"})";
-    return http::response::create(http::response::content_type::JSON, json);
+    return http::response::json(json);
 }
 
 std::string api_handler(const std::string& path, const std::unordered_map<std::string, std::string>& params) {
@@ -43,30 +27,23 @@ std::string api_handler(const std::string& path, const std::unordered_map<std::s
 
 http::server* server_ptr = nullptr;
 
-// signal handler function
-void signal_handler(int sig) {
-    std::cout << "\n[Signal Handler] Received signal " << sig << ". Requesting server stop." << std::endl;
-    if (server_ptr) {
-        server_ptr->stop();
-    }
-}
-
 int main() {
     // setup the server object using std::make_unique
-    std::unique_ptr<http::server> s_ptr = std::make_unique<http::server>("127.0.0.1", 8080);
+    auto s_ptr = std::make_unique<http::server>("127.0.0.1", 8080);
 
-    // Get a raw pointer to pass to the signal handler.
+    // get a raw pointer to pass to the signal handler
     server_ptr = s_ptr.get();
 
     // register handlers
     s_ptr->register_handler("GET", "/", home_handler);
     s_ptr->register_handler("GET", "/api/v1/users/:id", api_handler);
 
-    // register the signal handler
-    if (signal(SIGINT, signal_handler) == SIG_ERR) {
-        perror("Failed to register signal handler");
-        return 1;
-    }
+    // register the signal handler using lambda
+    signal(SIGINT, [](int sig) {
+        if (server_ptr) {
+            server_ptr->stop();
+        }
+    });
 
     // start the server
     s_ptr->start();
