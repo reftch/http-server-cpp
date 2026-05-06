@@ -20,13 +20,14 @@
 #include <future>
 #include <iostream>
 #include <map>
-#include <regex>
+// #include <regex>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include "request.hpp"
 #include "response.hpp"
+#include "router.hpp"
 #include "utils.hpp"
 
 namespace http {
@@ -80,22 +81,24 @@ namespace http {
          * @param handler The function to call when this endpoint is hit.
          * @return 0 on success, -1 if the route is already registered or invalid input.
          */
-        int register_handler(const std::string& method, const std::string& path, request_handler handler);
+        // int register_handler(const std::string& method, const std::string& path, request_handler handler);
 
         // Structure to hold route information
-        struct route_info {
-            std::string method;
-            std::string pattern;
-            std::regex regex_pattern;
-            std::vector<std::string> param_names;
-            request_handler handler;
-        };
+        // struct route_info {
+        //     std::string method;
+        //     std::string pattern;
+        //     std::regex regex_pattern;
+        //     std::vector<std::string> param_names;
+        //     request_handler handler;
+        // };
 
         // getters
-        std::vector<route_info> get_routes() { return routes_; }
+        // std::vector<route_info> get_routes() { return routes_; }
         std::string get_host() const { return host; }
         int get_port() const { return port; }
         bool running() { return running_; }
+
+        http::router g_router;
 
        private:
         // Private members related to the server state (optional, but good practice)
@@ -112,7 +115,7 @@ namespace http {
         // int sockfd; /**< File descriptor for the listening socket */
 
         // map for routes
-        std::vector<route_info> routes_;
+        // std::vector<route_info> routes_;
 
         /**
          * Maximum number of connections allowed.
