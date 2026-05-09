@@ -52,7 +52,7 @@ namespace http {
          * @param host The hostname or IP address to bind to.
          * @param port The port number to listen on.
          */
-        server(const std::string& host, const int& port) : host(host), port(port) {
+        server(const std::string& host, const int& port) : port(port), host(host) {
             start_time = std::chrono::high_resolution_clock::now();
         }
 

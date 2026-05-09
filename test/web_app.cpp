@@ -35,7 +35,7 @@ int main() {
     });
 
     // register the signal handler using lambda
-    signal(SIGINT, [](int sig) {
+    signal(SIGINT, [](int) {
         if (server_ptr) {
             server_ptr->stop();
         }

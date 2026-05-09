@@ -137,7 +137,7 @@ namespace http {
 
             // check for activity on client sockets, process each client socket
             for (size_t i = 0; i < client_list.size();) {
-                int pollfd_index = i + 1;  // +1 because server socket is at index 0
+                auto pollfd_index = i + 1;  // +1 because server socket is at index 0
 
                 if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
                     int sd = client_list[i];
