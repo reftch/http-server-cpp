@@ -22,6 +22,11 @@ int main() {
     // handlers
     s_ptr->path("GET", "/", [](const std::string&, const auto&) {
         std::string json = R"({"name": "Alice"})";
+
+        // std::unordered_map<std::string, std::string> mutable_params = {
+            // {"name", "Alice"}, {"age", "33"}, {"id", "1"}};
+        // std::string json = map_to_json(mutable_params);
+
         return http::response::json(json);
     });
 
