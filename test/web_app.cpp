@@ -21,12 +21,12 @@ int main() {
 
     // register handlers
 
-    s_ptr->register_handler("GET", "/", [](const std::string&, const auto&) {
+    s_ptr->path("GET", "/", [](const std::string&, const auto&) {
         std::string json = R"({"name": "Alice"})";
         return http::response::json(json);
     });
 
-    s_ptr->register_handler("GET", "/api/v1/users/:id", [](const std::string&, const auto& params) {
+    s_ptr->path("GET", "/api/v1/users/:id", [](const std::string&, const auto& params) {
         std::unordered_map<std::string, std::string> mutable_params = {
             {"name", "Alice"}, {"age", "34"}, {"id", params.at("id")}};
 

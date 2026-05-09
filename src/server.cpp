@@ -192,7 +192,7 @@ namespace http {
     /**
      * Implementation of the required method to register handlers.
      */
-    int server::register_handler(const std::string& method, const std::string& path, request_handler handler) {
+    int server::path(const std::string& method, const std::string& path, request_handler handler) {
         return g_router.register_handler(method, path, handler);
     }
 
