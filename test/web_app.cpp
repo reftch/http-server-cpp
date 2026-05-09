@@ -19,8 +19,7 @@ int main() {
     // get a raw pointer to pass to the signal handler
     server_ptr = s_ptr.get();
 
-    // register handlers
-
+    // handlers
     s_ptr->path("GET", "/", [](const std::string&, const auto&) {
         std::string json = R"({"name": "Alice"})";
         return http::response::json(json);

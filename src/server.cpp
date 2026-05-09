@@ -173,6 +173,9 @@ namespace http {
         }
     }
 
+    /**
+     * Handle route
+     */
     std::string server::handle_route(const std::string& method, const std::string& path) {
         http::request_handler handler;
         std::unordered_map<std::string, std::string> params;
@@ -182,15 +185,11 @@ namespace http {
         }
 
         // Call handler and generate HTTP‑style response body
-        // http::response_body body = handler(path, params);
         return handler(path, params);
-
-        // Simple HTTP/1.1 response (you can adjust headers separately)
-        // return "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(body.size()) + "\r\n\r\n" + body;
     }
 
     /**
-     * Implementation of the required method to register handlers.
+     * Register handlers in router
      */
     int server::path(const std::string& method, const std::string& path, request_handler handler) {
         return g_router.register_handler(method, path, handler);
