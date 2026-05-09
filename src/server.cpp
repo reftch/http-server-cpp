@@ -174,64 +174,25 @@ namespace http {
     }
 
     /**
-     * Hanlde routes
+     * Handle route
      */
     std::string server::handle_route(const std::string& method, const std::string& path) {
-        for (const auto& route_info : routes_) {
-            std::smatch matches;
-            if (std::regex_match(path, matches, route_info.regex_pattern)) {
-                // Extract parameters
-                std::unordered_map<std::string, std::string> params;
-                for (size_t i = 0; i < route_info.param_names.size(); ++i) {
-                    if (i + 1 < matches.size()) {
-                        params[route_info.param_names[i]] = matches[i + 1].str();
-                    }
-                }
+        http::request_handler handler;
+        std::unordered_map<std::string, std::string> params;
 
-                return route_info.handler(path, params);
-            }
+        if (!g_router.match(method, path, &handler, &params)) {
+            return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
         }
 
-        std::cout << "No handler found for: " << method << " " << path << '\n';
-        return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
+        // Call handler and generate HTTP‑style response body
+        return handler(path, params);
     }
 
     /**
-     * Implementation of the required method to register handlers.
+     * Register handlers in router
      */
-    int server::register_handler(const std::string& method, const std::string& path, request_handler handler) {
-        // convert path with :id to regex pattern
-        std::string regex_pattern = "^" + path + "$";
-        std::vector<std::string> param_names;
-
-        // replace :param with regex group
-        size_t pos = 0;
-        while ((pos = regex_pattern.find(':')) != std::string::npos) {
-            // find the end of the parameter name (next slash or end of string)
-            size_t end_pos = pos + 1;
-            while (end_pos < regex_pattern.length() && regex_pattern[end_pos] != '/' && regex_pattern[end_pos] != '$') {
-                end_pos++;
-            }
-
-            std::string param_name = regex_pattern.substr(pos + 1, end_pos - pos - 1);
-            param_names.push_back(param_name);
-
-            // replace :param_name with regex group
-            regex_pattern.replace(pos, end_pos - pos, "([^/]+)");
-        }
-
-        // Create route_info structure
-        route_info info;
-        info.method = method;
-        info.pattern = path;
-        info.regex_pattern = std::regex(regex_pattern);
-        info.param_names = param_names;
-        info.handler = handler;
-
-        routes_.push_back(info);
-
-        std::cout << "registered handler for: " << method << " " << path << '\n';
-        return 0;
+    int server::path(const std::string& method, const std::string& path, request_handler handler) {
+        return g_router.register_handler(method, path, handler);
     }
 
 }  // namespace http
