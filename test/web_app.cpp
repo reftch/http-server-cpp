@@ -25,9 +25,9 @@ int main() {
         return http::response::json(json);
     });
 
-    s_ptr->path("GET", "/api/v1/users/:id", [](const std::string&, const auto& params) {
+    s_ptr->path("GET", "/api/v1/users/:id/age/:age", [](const std::string&, const auto& params) {
         std::unordered_map<std::string, std::string> mutable_params = {
-            {"name", "Alice"}, {"age", "34"}, {"id", params.at("id")}};
+            {"name", "Alice"}, {"age", params.at("age")}, {"id", params.at("id")}};
 
         // This now calls the defined helper function
         std::string json = map_to_json(mutable_params);
