@@ -4,6 +4,8 @@ add_library(http-server
     request.hpp
     response.hpp
     response.cpp
+    router.hpp
+    router.cpp
     server.cpp
     server.hpp
     utils.cpp
