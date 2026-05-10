@@ -7,9 +7,6 @@
 #include <thread>
 #include <unordered_map>
 
-// HTTP server implementation
-#include <filesystem>
-
 #include "server.hpp"
 
 http::server* server_ptr = nullptr;
