@@ -1,6 +1,7 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
+#include <map>
 #include <sstream>  // Required for std::stringstream
 #include <string>
 
@@ -13,9 +14,10 @@ namespace http {
          * @brief Structure to hold the essential components of an HTTP request line.
          */
         struct http_request {
-            std::string method;   // The HTTP method (e.g., "GET", "POST").
-            std::string path;     // The requested path (e.g., "/index.html").
-            std::string version;  // The HTTP version (e.g., "HTTP/1.1").
+            std::string method;     // The HTTP method (e.g., "GET", "POST").
+            std::string path;       // The requested path (e.g., "/index.html").
+            std::string version;    // The HTTP version (e.g., "HTTP/1.1").
+            std::string mime_type;  // The Mime Type
         };
 
         /**
@@ -27,6 +29,8 @@ namespace http {
          * @return http_request A structure containing the extracted method, path, and version.
          */
         http_request parse(const std::string& raw_request);
+
+        std::string get_mime_type(const std::string& path);
     }  // namespace request
 
 }  // namespace http

@@ -8,6 +8,8 @@
 #include <unordered_map>
 
 // HTTP server implementation
+#include <filesystem>
+
 #include "server.hpp"
 
 http::server* server_ptr = nullptr;
@@ -21,12 +23,8 @@ int main() {
 
     // handlers
     s_ptr->path("GET", "/", [](const std::string&, const auto&) {
-        // std::string json = R"({"name": "Alice"})";
-
-        std::unordered_map<std::string, std::string> mutable_params = {{"name", "Alice"}, {"age", "33"}, {"id", "1"}};
-        std::string json = map_to_json(mutable_params);
-
-        return http::response::json(json);
+        auto content = read_file("./static/index.html");
+        return http::response::create(http::response::content_type::HTML, content);
     });
 
     s_ptr->path("GET", "/api/v1/users/:id", [](const std::string&, const auto& params) {

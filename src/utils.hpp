@@ -47,4 +47,6 @@ std::map<std::string, std::string> parseArguments(int argc, char* argv[]);
 
 std::string map_to_json(const std::unordered_map<std::string, std::string>& params);
 
+std::string read_file(const std::string& path);
+
 #endif  // UTILS_HPP

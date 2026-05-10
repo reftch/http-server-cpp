@@ -32,11 +32,23 @@ namespace http {
                     req.method = method;
                     req.path = path;
                     req.version = version;
+                    req.mime_type = get_mime_type(path);
                 }
                 // Note: If the format is incorrect, req remains default-initialized.
             }
 
             return req;
+        }
+
+        std::string get_mime_type(const std::string& path) {
+            std::map<std::string, std::string> mimeTypes = {{"html", "text/html"},
+                                                            {"css", "text/css"},
+                                                            {"js", "text/javascript"},
+                                                            {"jpg", "image/jpeg"},
+                                                            {"png", "image/png"}};
+            std::string fileExtension = path.substr(path.find_last_of(".") + 1);
+            // std::cout<<fileExtension<<std::endl;
+            return mimeTypes[fileExtension];
         }
     }  // namespace request
 

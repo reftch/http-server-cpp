@@ -111,7 +111,7 @@ namespace http {
                 pollfds.push_back(pfd);
             }
 
-            // Using poll for listening to multiple clients
+            // Using poll for listening to multiple clients with timeout
             int activity = poll(pollfds.data(), pollfds.size(), 1000);
             if (activity < 0) {
                 // std::cerr << "polling stop\n";
@@ -137,7 +137,7 @@ namespace http {
 
             // check for activity on client sockets, process each client socket
             for (size_t i = 0; i < client_list.size();) {
-                auto pollfd_index = i + 1;  // +1 because server socket is at index 0
+                size_t pollfd_index = i + 1;  // +1 because server socket is at index 0
 
                 if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
                     int sd = client_list[i];
@@ -148,8 +148,17 @@ namespace http {
                         std::string raw_request(buffer, nread);
                         // Parse the request line to find method and path
                         request::http_request request = request::parse(raw_request);
-                        // handle route
-                        std::string body = handle_route(request.method, request.path);
+
+                        std::string body;
+                        if (request.mime_type != "") {
+                            // handle static resource
+                            body = handle_resources(request.mime_type.c_str(), request.path);
+                        } else {
+                            // handle route
+                            body = handle_route(request.method, request.path);
+                        }
+
+                        // write response
                         if (write(sd, body.c_str(), body.size()) == -1) {
                             perror("error writing response body");
                         }
@@ -161,10 +170,10 @@ namespace http {
                         continue;  // Don't increment i since we removed an element
                     } else {
                         // Error or would block (non-blocking socket)
-                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                            // std::cerr << "read error: " << strerror(errno) << '\n';
-                        }
-                        i++;  // Increment if no error
+                        // if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                        // std::cerr << "read error: " << strerror(errno) << '\n';
+                        // }
+                        i++;
                     }
                 } else {
                     i++;  // Increment if no activity
@@ -186,6 +195,19 @@ namespace http {
 
         // Call handler and generate HTTP‑style response body
         return handler(path, params);
+    }
+
+    /**
+     * Handle static resources
+     */
+    std::string server::handle_resources(const char* mime_type, const std::string& path) {
+        // handle static resource
+        auto content = read_file("./static" + path);
+        if (content != "") {
+            return response::create(mime_type, content);
+        }
+
+        return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
     }
 
     /**

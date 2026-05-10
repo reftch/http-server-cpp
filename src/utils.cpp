@@ -1,6 +1,7 @@
 #include "utils.hpp"
 
-#include <ctime>    // For time functions
+#include <ctime>  // For time functions
+#include <fstream>
 #include <iomanip>  // For stream manipulation (like std::put_time)
 #include <iostream>
 #include <map>
@@ -86,3 +87,19 @@ std::string map_to_json(const std::unordered_map<std::string, std::string>& para
     return ss.str();
 }
 
+std::string read_file(const std::string& path) {
+    std::ifstream file(path);  // ifstream used for reading file if exists.
+    int flag = 0;
+    if (!file) {
+        flag = 1;
+        std::cerr << "File not found." << std::endl;
+    }
+
+    if (flag == 0) {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        return buffer.str();
+    }
+
+    return "";
+}
