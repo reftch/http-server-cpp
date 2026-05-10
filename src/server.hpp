@@ -109,10 +109,8 @@ namespace http {
         // Handle an incoming HTTP request on a given connection.
         void handle_requests();
 
-        // This function serves as the main entry point for processing HTTP requests.
-        std::string handle_route(const std::string& method, const std::string& path);
-        // This function serves the static resources
-        std::string handle_resources(const char* mime_type, const std::string& path);
+        // This function serves as the main entry point for processing HTTP requests
+        std::string handle_route(const http::request::http_request& request);
     };
 
 }  // namespace http

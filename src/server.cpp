@@ -148,16 +148,8 @@ namespace http {
                         std::string raw_request(buffer, nread);
                         // Parse the request line to find method and path
                         request::http_request request = request::parse(raw_request);
-
-                        std::string body;
-                        if (request.mime_type != "") {
-                            // handle static resource
-                            body = handle_resources(request.mime_type.c_str(), request.path);
-                        } else {
-                            // handle route
-                            body = handle_route(request.method, request.path);
-                        }
-
+                        // Handle route
+                        std::string body = handle_route(request);
                         // write response
                         if (write(sd, body.c_str(), body.size()) == -1) {
                             perror("error writing response body");
@@ -185,26 +177,24 @@ namespace http {
     /**
      * Handle route
      */
-    std::string server::handle_route(const std::string& method, const std::string& path) {
-        http::request_handler handler;
-        std::unordered_map<std::string, std::string> params;
+    std::string server::handle_route(const http::request::http_request& request) {
+        std::string path = request.path;
+        std::string method = request.method;
+        std::string mime_type = request.mime_type;
 
-        if (!g_router.match(method, path, &handler, &params)) {
-            return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
-        }
+        if (mime_type == "") {
+            http::request_handler handler;
+            std::unordered_map<std::string, std::string> params;
 
-        // Call handler and generate HTTP‑style response body
-        return handler(path, params);
-    }
-
-    /**
-     * Handle static resources
-     */
-    std::string server::handle_resources(const char* mime_type, const std::string& path) {
-        // handle static resource
-        auto content = read_file("./static" + path);
-        if (content != "") {
-            return response::create(mime_type, content);
+            if (g_router.match(method, path, &handler, &params)) {
+                // Call handler and generate HTTP‑style response body
+                return handler(path, params);
+            }
+        } else {
+            auto content = read_file("./static" + path);
+            if (content != "") {
+                return response::create(mime_type.c_str(), content);
+            }
         }
 
         return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
