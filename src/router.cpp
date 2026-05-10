@@ -1,6 +1,26 @@
 // router.cpp
 #include "router.hpp"
 
+/**
+ * @brief Registers a request handler for a specific HTTP method and URL path
+ *
+ * This function builds the routing trie structure by creating nodes for each
+ * path segment. It supports both static path segments and parameterized segments
+ * (indicated by a leading colon ':').
+ *
+ * @param method The HTTP method (GET, POST, PUT, DELETE, etc.) to register for
+ * @param path The URL path pattern to register (e.g., "/users/:id/profile")
+ * @param handler The request handler function to associate with this path
+ * @return int Returns 0 on successful registration, -1 if a handler already exists for this method/path combination
+ *
+ * @note Parameterized segments are specified with a leading colon (e.g., ":id")
+ * @note Static segments are literal path components (e.g., "users", "profile")
+ *
+ * @example
+ * router.register_handler("GET", "/users/:id", [](const std::string& path, const std::unordered_map<std::string,
+ * std::string>& params) { return "User ID: " + params.at("id");
+ * });
+ */
 int http::router::register_handler(const std::string& method, const std::string& path, request_handler handler) {
     auto parts = split_path(path);
     Node* node = &root;
@@ -28,6 +48,29 @@ int http::router::register_handler(const std::string& method, const std::string&
     return 0;
 }
 
+/**
+ * @brief Matches an HTTP request to a registered handler
+ *
+ * This function traverses the routing trie to find a matching handler for the
+ * given HTTP method and path. It extracts path parameters from parameterized
+ * segments and stores them in the output parameter map.
+ *
+ * @param method The HTTP method of the request (GET, POST, etc.)
+ * @param path The URL path of the request
+ * @param out_handler Pointer to store the matched handler function (output parameter)
+ * @param out_params Pointer to store extracted path parameters (output parameter)
+ * @return bool True if a matching handler was found, false otherwise
+ *
+ * @note The out_params map will contain key-value pairs where keys are parameter names
+ *       (from the path segments like ":id") and values are the actual path segment values
+ *
+ * @example
+ * std::unordered_map<std::string, std::string> params;
+ * request_handler handler;
+ * if (router.match("GET", "/users/123/profile", &handler, &params)) {
+ *     // handler found, params contains {"id": "123"}
+ * }
+ */
 bool http::router::match(const std::string& method, const std::string& path, request_handler* out_handler,
                          std::unordered_map<std::string, std::string>* out_params) const {
     *out_params = {};
@@ -55,6 +98,24 @@ bool http::router::match(const std::string& method, const std::string& path, req
     return true;
 }
 
+/**
+ * @brief Splits a URL path into its component segments
+ *
+ * This helper function parses a URL path string and splits it into individual
+ * path segments using '/' as the delimiter. Empty segments (from leading/trailing
+ * slashes) are ignored.
+ *
+ * @param path The URL path to split (e.g., "/users/:id/profile")
+ * @return std::vector<std::string> Vector of path segments
+ *
+ * @note This function handles edge cases like leading/trailing slashes and
+ *       consecutive slashes by ignoring empty segments
+ *
+ * @example
+ * split_path("/users/:id/profile") returns {"users", "id", "profile"}
+ * split_path("/") returns {}
+ * split_path("users/profile") returns {"users", "profile"}
+ */
 std::vector<std::string> http::router::split_path(const std::string& path) {
     std::vector<std::string> parts;
     std::string current;
