@@ -24,6 +24,11 @@ int main() {
         return http::response::create(http::response::content_type::HTML, content);
     });
 
+    s_ptr->path("GET", "/home", [](const std::string&, const auto&) {
+        auto content = read_file("./static/home.html");
+        return http::response::create(http::response::content_type::HTML, content);
+    });
+
     s_ptr->path("GET", "/api/v1/users/:id", [](const std::string&, const auto& params) {
         std::unordered_map<std::string, std::string> mutable_params = {
             {"name", "Alice"}, {"age", "33"}, {"id", params.at("id")}};
