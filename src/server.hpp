@@ -80,7 +80,7 @@ namespace http {
          * @param handler The function to call when this endpoint is hit.
          * @return 0 on success, -1 if the route is already registered or invalid input.
          */
-        int path(const std::string& method, const std::string& path, request_handler handler);
+        server& path(const std::string& method, const std::string& path, request_handler handler);
 
         // Getters
         std::string get_host() const { return host; }

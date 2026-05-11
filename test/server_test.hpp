@@ -17,9 +17,7 @@ class ServerTestFixture : public ::testing::Test {
     std::unique_ptr<server> server_;
 
     // Helper function to create a simple handler for testing
-    static response_body dummy_handler(const std::string& path, const auto& params) {
-        return "Test Response for " + path;
-    }
+    static response_body dummy_handler(const std::string& path, const auto&) { return "Test Response for " + path; }
 
     // SetUp runs before EVERY test in this fixture
     void SetUp() override {

@@ -24,7 +24,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
       FILE_SET public_headers
       TYPE HEADERS
       FILES 
+        header.hpp
+        request.hpp
+        response.hpp
+        router.hpp
         server.hpp
+        utils.hpp
   )
 
   install(TARGETS http-server

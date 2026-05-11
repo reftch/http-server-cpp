@@ -203,8 +203,9 @@ namespace http {
     /**
      * Register handlers in router
      */
-    int server::path(const std::string& method, const std::string& path, request_handler handler) {
-        return g_router.register_handler(method, path, handler);
+    server& server::path(const std::string& method, const std::string& path, request_handler handler) {
+        g_router.register_handler(method, path, handler);
+        return *this;
     }
 
 }  // namespace http
