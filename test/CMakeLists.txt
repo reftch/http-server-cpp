@@ -4,17 +4,19 @@ file(COPY static DESTINATION ${CMAKE_BINARY_DIR}/test)
 add_executable (web_app web_app.cpp)
 target_link_libraries(web_app http-server)
 
-add_executable (server server_test.cpp)
-add_executable (router router_test.cpp)
-
-# Link:
-target_link_libraries(server PRIVATE
-    http-server
-    GTest::gtest
-    GTest::gtest_main
+# Create a combined tests executable
+add_executable (tests
+    server_test.cpp
+    router_test.cpp
 )
 
-target_link_libraries(router PRIVATE
+# Add compile definitions to distinguish between test types
+target_compile_definitions(tests PRIVATE
+    SERVER_TEST
+    ROUTER_TEST
+)
+
+target_link_libraries(tests PRIVATE
     http-server
     GTest::gtest
     GTest::gtest_main
