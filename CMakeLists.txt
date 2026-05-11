@@ -12,29 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
-# Include the header files
-include_directories(${PROJECT_SOURCE_DIR}/src)
-
 add_subdirectory(src)
-
-enable_testing() 
-
-option(BUILD_TESTS "Build tests" ON)
-
-if(BUILD_TESTS)
-    enable_testing()
-    include(FetchContent)
-
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG        v1.17.0
-    )
-    FetchContent_MakeAvailable(googletest)
-endif()
-
-# add_subdirectory(src)
-if(BUILD_TESTS)
+    
+# Tests
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    enable_testing() 
     add_subdirectory(test)
 endif()
 
