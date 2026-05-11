@@ -1,8 +1,3 @@
-# copy static resources
-file(COPY static DESTINATION ${CMAKE_BINARY_DIR}/test)
-
-add_executable (web_app web_app.cpp)
-target_link_libraries(web_app http-server)
 
 # Create a combined tests executable
 add_executable (tests

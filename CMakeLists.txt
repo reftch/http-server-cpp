@@ -12,11 +12,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
+# Include the header files
+include_directories(${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(src)
     
 # Tests
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     enable_testing() 
     add_subdirectory(test)
+    add_subdirectory(examples)
 endif()
 
