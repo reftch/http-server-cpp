@@ -1,4 +1,3 @@
-
 # Create a combined tests executable
 add_executable (tests
     server_test.cpp
