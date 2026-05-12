@@ -5,6 +5,9 @@ project(http-server
     HOMEPAGE_URL "https://github.com/reftch/http-server-cpp"
     LANGUAGES CXX)
 
+# User-configurable options
+option(BUILD_EXAMPLES "Build example applications" ON)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -22,3 +25,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_subdirectory(test)
 endif()
 
+if(BUILD_EXAMPLES) 
+    add_subdirectory(examples)
+endif()
