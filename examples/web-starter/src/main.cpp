@@ -19,9 +19,7 @@ int main() {
                    return http::response::create(http::response::content_type::HTML, read_file("./assets/index.html"));
                })
         .path("GET", "/home",
-              [](const std::string&, const auto&) {
-                  return http::response::create(http::response::content_type::HTML, read_file("./assets/home.html"));
-              })
+              [](const std::string&, const auto&) { return http::response::html(read_file("./assets/home.html")); })
         .path("GET", "/api/v1/time",
               [](const std::string&, const auto&) {
                   auto now = std::chrono::system_clock::now();

@@ -66,6 +66,15 @@ namespace http {
             return response;
         }
 
+        std::string html(const std::string& content) {
+            std::string response = "HTTP/1.1 200 OK\r\n";
+            response += "Content-Type: text/html\r\n";
+            response += "Content-Length: " + std::to_string(content.length()) + "\r\n";
+            response += "Connection: keep-alive\r\n\r\n";
+            response += content;
+            return response;
+        }
+
         std::string to_string(const status& status_type) {
             switch (status_type) {
                 case status::ok:

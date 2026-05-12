@@ -3,12 +3,14 @@
 add_executable (tests
     server_test.cpp
     router_test.cpp
+    request_test.cpp
 )
 
 # Add compile definitions to distinguish between test types
 target_compile_definitions(tests PRIVATE
     SERVER_TEST
     ROUTER_TEST
+    REQUEST_TEST
 )
 
 include(FetchContent)
