@@ -12,7 +12,6 @@ target_compile_definitions(tests PRIVATE
 )
 
 include(FetchContent)
-
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git

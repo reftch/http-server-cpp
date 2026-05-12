@@ -191,7 +191,7 @@ namespace http {
                 return handler(path, params);
             }
         } else {
-            auto content = read_file("./static" + path);
+            auto content = read_file("./assets" + path);
             if (content != "") {
                 return response::create(mime_type.c_str(), content);
             }

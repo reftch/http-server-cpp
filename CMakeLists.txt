@@ -7,6 +7,7 @@ project(http-server
 
 # User-configurable options
 option(BUILD_EXAMPLES "Build example applications" ON)
+option(BUILD_TESTS "Build example applications" ON)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,7 +21,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(src)
     
 # Tests
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(BUILD_TESTS)
     enable_testing() 
     add_subdirectory(test)
 endif()
