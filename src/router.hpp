@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "context.hpp"
+
 namespace http {
 
     /**
@@ -27,9 +29,9 @@ namespace http {
      * @param query Query parameters extracted from the path
      * @return response_body The response content to send back to client
      */
-    using request_handler =
-        std::function<response_body(const std::string& path, const std::unordered_map<std::string, std::string>& params,
-                                    const std::unordered_map<std::string, std::string>& query)>;
+    using request_handler = std::function<response_body(const context& ctx)>;
+    // std::function<response_body(const std::string& path, const std::unordered_map<std::string, std::string>& params,
+    //                             const std::unordered_map<std::string, std::string>& query)>;
 
     /**
      * @brief HTTP router class for mapping URL paths to request handlers
@@ -85,9 +87,10 @@ namespace http {
          * @param out_params Pointer to store extracted path parameters (output parameter)
          * @return bool True if a handler was found and matched, false otherwise
          */
-        bool match(const std::string& method, const std::string& path, request_handler* out_handler,
-                   std::unordered_map<std::string, std::string>* out_params,
-                   std::unordered_map<std::string, std::string>* query_params) const;
+        // bool match(const std::string& method, const std::string& path, request_handler* out_handler,
+        //            std::unordered_map<std::string, std::string>* out_params,
+        //            std::unordered_map<std::string, std::string>* query_params) const;
+        bool match(http::context* ctx, request_handler* out_handler) const;
     };
 
 }  // namespace http

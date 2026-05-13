@@ -4,6 +4,7 @@
 #include <map>
 #include <sstream>  // Required for std::stringstream
 #include <string>
+#include <unordered_map>
 
 #include "request.hpp"
 
@@ -18,6 +19,8 @@ namespace http {
             std::string path;       // The requested path (e.g., "/index.html").
             std::string version;    // The HTTP version (e.g., "HTTP/1.1").
             std::string mime_type;  // The Mime Type
+            std::unordered_map<std::string, std::string> params;
+            std::unordered_map<std::string, std::string> query;
         };
 
         /**

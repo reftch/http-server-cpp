@@ -187,9 +187,12 @@ namespace http {
             std::unordered_map<std::string, std::string> params;
             std::unordered_map<std::string, std::string> query;
 
-            if (g_router.match(method, path, &handler, &params, &query)) {
+            http::context ctx = {request};
+            if (g_router.match(&ctx, &handler)) {
+                // if (g_router.match(method, path, &handler, &params, &query)) {
                 // Call handler and generate HTTP‑style response body
-                return handler(path, params, query);
+                // return handler(path, params, query);
+                return handler(ctx);
             }
         } else {
             auto content = read_file("./assets" + path);
