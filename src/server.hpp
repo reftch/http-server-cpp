@@ -24,19 +24,12 @@
 #include <thread>
 #include <vector>
 
-#include "context.hpp"
 #include "request.hpp"
 #include "response.hpp"
 #include "router.hpp"
 #include "utils.hpp"
 
 namespace http {
-
-    // Define the type for our request handler function.
-    // The handler now returns the response body (string).
-    // It takes the file descriptor (fd) and the context index (i) for interaction.
-    using response_body = std::string;
-    using request_handler = std::function<response_body(const context& ctx)>;
 
     /**
      * Represents an HTTP server instance.
@@ -110,7 +103,7 @@ namespace http {
         void handle_requests();
 
         // This function serves as the main entry point for processing HTTP requests
-        std::string handle_route(const http::request::http_request& request);
+        std::string handle_route(http::request::context& request);
     };
 
 }  // namespace http

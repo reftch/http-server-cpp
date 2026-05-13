@@ -14,7 +14,7 @@ namespace http {
         /**
          * @brief Structure to hold the essential components of an HTTP request line.
          */
-        struct http_request {
+        struct context {
             std::string method;                                   // The HTTP method (e.g., "GET", "POST").
             std::string path;                                     // The requested path (e.g., "/index.html").
             std::string version;                                  // The HTTP version (e.g., "HTTP/1.1").
@@ -31,7 +31,7 @@ namespace http {
          * @param raw_request The raw string containing the HTTP request.
          * @return http_request A structure containing the extracted method, path, and version.
          */
-        http_request parse(const std::string& raw_request);
+        context parse(const std::string& raw_request);
 
         std::string get_mime_type(const std::string& path);
     }  // namespace request

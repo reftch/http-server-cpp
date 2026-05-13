@@ -4,6 +4,7 @@
 #include <string>
 
 #include "response.hpp"
+#include "router.hpp"
 
 namespace http {
 
@@ -17,8 +18,8 @@ namespace http {
          * @param raw_request The raw string containing the HTTP request.
          * @return http_request A structure containing the extracted method, path, and version.
          */
-        http_request parse(const std::string& raw_request) {
-            http_request req;
+        context parse(const std::string& raw_request) {
+            context ctx;
 
             // Use stringstream to easily read the input string line by line
             std::stringstream ss(raw_request);
@@ -32,15 +33,15 @@ namespace http {
 
                 // Attempt to extract the three tokens (method, path, version) separated by spaces
                 if (line_ss >> method >> path >> version) {
-                    req.method = method;
-                    req.path = path;
-                    req.version = version;
-                    req.mime_type = get_mime_type(path);
+                    ctx.method = method;
+                    ctx.path = path;
+                    ctx.version = version;
+                    ctx.mime_type = get_mime_type(path);
                 }
                 // Note: If the format is incorrect, req remains default-initialized.
             }
 
-            return req;
+            return ctx;
         }
 
         std::string get_mime_type(const std::string& path) {
