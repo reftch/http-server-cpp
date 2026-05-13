@@ -51,12 +51,26 @@ int http::router::register_handler(const std::string& method, const std::string&
  * @param path The URL path of the request
  * @param out_handler Pointer to store the matched handler function (output parameter)
  * @param out_params Pointer to store extracted path parameters (output parameter)
+ * @param query_params Pointer to store extracted query parameters
  * @return bool True if a matching handler was found, false otherwise
  */
 bool http::router::match(const std::string& method, const std::string& path, request_handler* out_handler,
-                         std::unordered_map<std::string, std::string>* out_params) const {
+                         std::unordered_map<std::string, std::string>* out_params,
+                         std::unordered_map<std::string, std::string>* query_params) const {
     *out_params = {};
-    auto parts = split_path(path);
+    std::string path_without_query;
+    std::string query_string;
+
+    // Split path and query string
+    size_t query_pos = path.find('?');
+    if (query_pos != std::string::npos) {
+        path_without_query = path.substr(0, query_pos);
+        query_string = path.substr(query_pos + 1);
+    } else {
+        path_without_query = path;
+    }
+
+    auto parts = split_path(path_without_query);
     const Node* node = &root;
 
     for (const auto& part : parts) {
@@ -77,6 +91,30 @@ bool http::router::match(const std::string& method, const std::string& path, req
     }
 
     *out_handler = it->second;
+
+    // Parse query parameters
+    if (!query_string.empty()) {
+        size_t pos = 0;
+        while (pos < query_string.length()) {
+            size_t ampersand_pos = query_string.find('&', pos);
+            if (ampersand_pos == std::string::npos) {
+                ampersand_pos = query_string.length();
+            }
+
+            size_t equals_pos = query_string.find('=', pos);
+            if (equals_pos != std::string::npos && equals_pos < ampersand_pos) {
+                std::string key = query_string.substr(pos, equals_pos - pos);
+                std::string value = query_string.substr(equals_pos + 1, ampersand_pos - equals_pos - 1);
+
+                // URL decode the key and value if needed
+                // (You might want to add URL decoding here)
+                (*query_params)[key] = value;
+            }
+
+            pos = ampersand_pos + 1;
+        }
+    }
+
     return true;
 }
 

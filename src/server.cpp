@@ -10,7 +10,7 @@ namespace http {
      * Signals the server to shut down, stops the polling loop, and closes all sockets.
      */
     void server::stop() {
-        std::cout << "\nserver stopping..." << '\n';
+        std::println("\nserver stopping...");
 
         // set the running flag to false to break the while loop in start()
         running_ = false;
@@ -19,18 +19,18 @@ namespace http {
         for (size_t i = 0; i < client_list.size(); ++i) {
             int sd = client_list[i];
             if (sd != -1) {
-                std::cout << "closing client connection FD: " << sd << '\n';
+                std::println("closing client connection FD: {}", sd);
                 close(sd);
             }
         }
 
         // close the listening socket (the main server socket)
         if (sockfd != -1) {
-            std::cout << "closing listening socket FD: " << sockfd << '\n';
+            std::println("closing listening socket FD: {}", sockfd);
             close(sockfd);
         }
 
-        std::cout << "server stopped successfully" << '\n';
+        std::println("server stopped successfully");
     }
 
     /**
@@ -45,14 +45,14 @@ namespace http {
         sockfd = socket(AF_INET, SOCK_STREAM, 0);  // for tcp connection
         // error handling
         if (sockfd <= 0) {
-            std::cerr << "socket creation error\n";
+            std::println(std::cerr, "socket creation error");
             exit(1);
         }
 
         // setting serverFd to allow multiple connection
         int opt = 1;
         if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof opt) < 0) {
-            std::cerr << "setSocketopt error\n";
+            std::println(std::cerr, "setSocketopt error");
             exit(2);
         }
 
@@ -64,13 +64,13 @@ namespace http {
 
         // binding the server address
         if (bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-            std::cerr << "bind error\n";
+            std::println(std::cerr, "bind error");
             exit(3);
         }
 
         // listening to the port
         if (listen(sockfd, MAX_CONNS) < 0) {
-            std::cerr << "listen error\n";
+            std::println(std::cerr, "listen error");
             exit(4);
         }
 
@@ -80,7 +80,7 @@ namespace http {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
-        std::cout << "server started on http://" << host << ":" << port << " in " << duration << '\n';
+        std::println("server started on http://{}:{} in {}", host, port, duration);
 
         handle_requests();
 
@@ -152,7 +152,7 @@ namespace http {
                         std::string body = handle_route(request);
                         // write response
                         if (write(sd, body.c_str(), body.size()) == -1) {
-                            perror("error writing response body");
+                            std::println(std::cerr, "error writing response body");
                         }
                     } else if (nread == 0) {
                         // Client disconnected
@@ -185,10 +185,11 @@ namespace http {
         if (mime_type == "") {
             http::request_handler handler;
             std::unordered_map<std::string, std::string> params;
+            std::unordered_map<std::string, std::string> query;
 
-            if (g_router.match(method, path, &handler, &params)) {
+            if (g_router.match(method, path, &handler, &params, &query)) {
                 // Call handler and generate HTTP‑style response body
-                return handler(path, params);
+                return handler(path, params, query);
             }
         } else {
             auto content = read_file("./assets" + path);
