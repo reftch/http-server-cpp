@@ -92,7 +92,7 @@ std::string read_file(const std::string& path) {
     int flag = 0;
     if (!file) {
         flag = 1;
-        std::cerr << "File not found [" << path << "]" << '\n';
+        std::println(std::cerr, "File not found [{}]", path);
     }
 
     if (flag == 0) {

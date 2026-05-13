@@ -35,8 +35,9 @@ namespace http {
     // The handler now returns the response body (string).
     // It takes the file descriptor (fd) and the context index (i) for interaction.
     using response_body = std::string;
-    using request_handler = std::function<response_body(const std::string& path,
-                                                        const std::unordered_map<std::string, std::string>& params)>;
+    using request_handler =
+        std::function<response_body(const std::string& path, const std::unordered_map<std::string, std::string>& params,
+                                    const std::unordered_map<std::string, std::string>& query)>;
 
     /**
      * Represents an HTTP server instance.
