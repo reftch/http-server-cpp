@@ -24,6 +24,7 @@
 #include <thread>
 #include <vector>
 
+#include "context.hpp"
 #include "request.hpp"
 #include "response.hpp"
 #include "router.hpp"
@@ -35,9 +36,7 @@ namespace http {
     // The handler now returns the response body (string).
     // It takes the file descriptor (fd) and the context index (i) for interaction.
     using response_body = std::string;
-    using request_handler =
-        std::function<response_body(const std::string& path, const std::unordered_map<std::string, std::string>& params,
-                                    const std::unordered_map<std::string, std::string>& query)>;
+    using request_handler = std::function<response_body(const context& ctx)>;
 
     /**
      * Represents an HTTP server instance.

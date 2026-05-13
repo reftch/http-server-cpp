@@ -15,17 +15,17 @@ int main() {
 
     server
         ->path("GET", "/",
-               [](const std::string&, const auto&, const auto&) {
+               [](const http::context&) {
                    // index.html
                    return http::response::html(read_file("./assets/index.html"));
                })
         .path("GET", "/home",
-              [](const std::string&, const auto&, const auto&) {
+              [](const http::context&) {
                   // home.html
                   return http::response::html(read_file("./assets/home.html"));
               })
         .path("GET", "/api/v1/time",
-              [](const std::string&, const auto&, const auto&) {
+              [](const http::context&) {
                   auto now = std::chrono::system_clock::now();
                   auto time_t = std::chrono::system_clock::to_time_t(now);
                   std::stringstream ss;

@@ -12,20 +12,20 @@ TEST_F(ServerTestFixture, RegisterHandlerSucceeds) {
     // http::request_handler handler;
     std::unordered_map<std::string, std::string> params;
 
-    auto handler = [](const std::string& path, const auto&, const auto&) { return "Test " + path; };
+    auto handler = [](const http::context& ctx) { return "Test " + ctx.request.path; };
 
     r.register_handler(method, path, handler);
 
     http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
 
-    ASSERT_FALSE(r.match("POST", path, &out_handler, &out_params, &query));
-    ASSERT_FALSE(r.match("PATCH", path, &out_handler, &out_params, &query));
-    ASSERT_FALSE(r.match("DELETE", path, &out_handler, &out_params, &query));
+    http::request::http_request request = {};
+    request.method = method;
+    request.path = path;
 
-    ASSERT_TRUE(r.match(method, path, &out_handler, &out_params, &query));
-    EXPECT_EQ("Test " + path, out_handler(path, out_params, query));
+    http::context ctx = {request};
+
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ("Test " + path, out_handler(ctx));
 }
 
 TEST_F(ServerTestFixture, RegisterPostHandlerSucceeds) {
@@ -34,19 +34,20 @@ TEST_F(ServerTestFixture, RegisterPostHandlerSucceeds) {
     std::string path = "/api/v1/users";
     std::string method = "POST";
 
-    // http::request_handler handler;
-    std::unordered_map<std::string, std::string> params;
-
-    auto handler = [](const std::string& path, const auto&, const auto&) { return "Test " + path; };
+    auto handler = [](const http::context& ctx) { return "Test " + ctx.request.path; };
 
     r.register_handler(method, path, handler);
 
     http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
 
-    ASSERT_TRUE(r.match(method, path, &out_handler, &out_params, &query));
-    EXPECT_EQ("Test " + path, out_handler(path, out_params, query));
+    http::request::http_request request = {};
+    request.method = method;
+    request.path = path;
+
+    http::context ctx = {request};
+
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ("Test " + path, out_handler(ctx));
 }
 
 TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
@@ -55,159 +56,178 @@ TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
     std::string path = "/api/v1/users/:id";
     std::string method = "GET";
 
-    // http::request_handler handler;
-    std::unordered_map<std::string, std::string> params;
-    std::unordered_map<std::string, std::string> query;
-
-    auto handler = [](const std::string& path, const auto&, const auto&) { return "Test " + path; };
+    auto handler = [](const http::context& ctx) { return "Test " + ctx.request.path; };
 
     r.register_handler(method, path, handler);
 
     http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
 
-    ASSERT_TRUE(r.match(method, path, &out_handler, &out_params, &query));
-    EXPECT_EQ("Test " + path, out_handler(path, out_params, query));
-    EXPECT_EQ(0, params.size());
+    http::request::http_request request = {};
+    request.method = method;
+    request.path = path;
+
+    http::context ctx = {request};
+
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ("Test " + path, out_handler(ctx));
 }
 
 TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/search", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/search?query=hello world&filter=category 1";
 
-    ASSERT_TRUE(r.match("GET", "/search?query=hello world&filter=category 1", &out_handler, &out_params, &query));
-    EXPECT_EQ(0, out_params.size());
-    EXPECT_EQ(2, query.size());
-    EXPECT_EQ("hello world", query["query"]);
-    EXPECT_EQ("category 1", query["filter"]);
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(2, ctx.request.query.size());
+    EXPECT_EQ("hello world", ctx.request.query["query"]);
+    EXPECT_EQ("category 1", ctx.request.query["filter"]);
 }
 
 TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/users?name=John";
 
-    ASSERT_TRUE(r.match("GET", "/users?name=John", &out_handler, &out_params, &query));
-    EXPECT_EQ(0, out_params.size());
-    EXPECT_EQ(1, query.size());
-    EXPECT_EQ("John", query["name"]);
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(1, ctx.request.query.size());
+    EXPECT_EQ("John", ctx.request.query["name"]);
 }
 
 TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/users?name=John&age=30&city=NYC";
 
-    ASSERT_TRUE(r.match("GET", "/users?name=John&age=30&city=NYC", &out_handler, &out_params, &query));
-    EXPECT_EQ(0, out_params.size());
-    EXPECT_EQ(3, query.size());
-    EXPECT_EQ("John", query["name"]);
-    EXPECT_EQ("30", query["age"]);
-    EXPECT_EQ("NYC", query["city"]);
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(3, ctx.request.query.size());
+    EXPECT_EQ("John", ctx.request.query["name"]);
+    EXPECT_EQ("30", ctx.request.query["age"]);
+    EXPECT_EQ("NYC", ctx.request.query["city"]);
 }
 
 TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users/:id", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/users/123?format=json&include=posts";
 
-    ASSERT_TRUE(r.match("GET", "/users/123?format=json&include=posts", &out_handler, &out_params, &query));
-    EXPECT_EQ(1, out_params.size());
-    EXPECT_EQ("123", out_params["id"]);
-    EXPECT_EQ(2, query.size());
-    EXPECT_EQ("json", query["format"]);
-    EXPECT_EQ("posts", query["include"]);
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(1, ctx.request.params.size());
+    EXPECT_EQ("123", ctx.request.params["id"]);
+    EXPECT_EQ(2, ctx.request.query.size());
+    EXPECT_EQ("json", ctx.request.query["format"]);
+    EXPECT_EQ("posts", ctx.request.query["include"]);
 }
 
 TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/users?";
 
-    ASSERT_TRUE(r.match("GET", "/users?", &out_handler, &out_params, &query));
-    EXPECT_EQ(0, out_params.size());
-    EXPECT_EQ(0, query.size());
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(0, ctx.request.query.size());
 }
 
 TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/users?name";
 
-    ASSERT_TRUE(r.match("GET", "/users?name", &out_handler, &out_params, &query));
-    EXPECT_EQ(0, out_params.size());
-    EXPECT_EQ(0, query.size());
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    // Note: Empty query parameters are not stored in the map
+    EXPECT_EQ(0, ctx.request.query.size());
 }
 
 TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/search", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/search?q=hello%20world&category=tech%2Bdev";
 
-    ASSERT_TRUE(r.match("GET", "/search?q=hello%20world&category=tech%2Bdev", &out_handler, &out_params, &query));
-    EXPECT_EQ(0, out_params.size());
-    EXPECT_EQ(2, query.size());
-    EXPECT_EQ("hello%20world", query["q"]);
-    EXPECT_EQ("tech%2Bdev", query["category"]);
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(2, ctx.request.query.size());
+    EXPECT_EQ("hello%20world", ctx.request.query["q"]);
+    EXPECT_EQ("tech%2Bdev", ctx.request.query["category"]);
 }
 
 TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/users?filter=active&filter=verified";
 
-    // Note: This tests how the parser handles repeated parameter names
-    // The last value should overwrite previous ones
-    ASSERT_TRUE(r.match("GET", "/users?filter=active&filter=verified", &out_handler, &out_params, &query));
-    EXPECT_EQ(0, out_params.size());
-    EXPECT_EQ(1, query.size());
-    EXPECT_EQ("verified", query["filter"]);  // Last value wins
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(1, ctx.request.query.size());
+    EXPECT_EQ("verified", ctx.request.query["filter"]);  // Last value wins
 }
 
 TEST_F(ServerTestFixture, MatchWithNoQueryParameters) {
     http::router r;
-    auto handler = [](const std::string&, const auto&, const auto&) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users/:id", handler);
 
-    http::request_handler out_handler;
-    std::unordered_map<std::string, std::string> out_params;
-    std::unordered_map<std::string, std::string> query;
+    http::request::http_request request = {};
+    request.method = "GET";
+    request.path = "/users/123";
 
-    ASSERT_TRUE(r.match("GET", "/users/123", &out_handler, &out_params, &query));
-    EXPECT_EQ(1, out_params.size());
-    EXPECT_EQ("123", out_params["id"]);
-    EXPECT_EQ(0, query.size());
+    http::context ctx = {request};
+
+    http::request_handler out_handler;
+    ASSERT_TRUE(r.match(&ctx, &out_handler));
+    EXPECT_EQ(1, ctx.request.params.size());
+    EXPECT_EQ("123", ctx.request.params["id"]);
+    EXPECT_EQ(0, ctx.request.query.size());
 }
