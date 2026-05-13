@@ -147,9 +147,9 @@ namespace http {
                     if (nread > 0) {
                         std::string raw_request(buffer, nread);
                         // Parse the request line to find method and path
-                        request::http_request request = request::parse(raw_request);
+                        request::context ctx = request::parse(raw_request);
                         // Handle route
-                        std::string body = handle_route(request);
+                        std::string body = handle_route(ctx);
                         // write response
                         if (write(sd, body.c_str(), body.size()) == -1) {
                             std::println(std::cerr, "error writing response body");
@@ -177,14 +177,13 @@ namespace http {
     /**
      * Handle route
      */
-    std::string server::handle_route(const http::request::http_request& request) {
-        std::string path = request.path;
-        std::string mime_type = request.mime_type;
+    std::string server::handle_route(http::request::context& ctx) {
+        std::string path = ctx.path;
+        std::string mime_type = ctx.mime_type;
 
         if (mime_type == "") {
             http::request_handler handler;
 
-            http::context ctx = {request};
             if (g_router.match(&ctx, &handler)) {
                 // Call handler and generate HTTP‑style response body
                 return handler(ctx);

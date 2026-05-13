@@ -18,7 +18,7 @@ TEST_F(ServerTestFixture, RegisterHandlerSucceeds) {
 
     http::request_handler out_handler;
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = method;
     request.path = path;
 
@@ -40,7 +40,7 @@ TEST_F(ServerTestFixture, RegisterPostHandlerSucceeds) {
 
     http::request_handler out_handler;
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = method;
     request.path = path;
 
@@ -62,7 +62,7 @@ TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
 
     http::request_handler out_handler;
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = method;
     request.path = path;
 
@@ -77,7 +77,7 @@ TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/search", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/search?query=hello world&filter=category 1";
 
@@ -95,7 +95,7 @@ TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/users?name=John";
 
@@ -112,7 +112,7 @@ TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/users?name=John&age=30&city=NYC";
 
@@ -131,7 +131,7 @@ TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users/:id", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/users/123?format=json&include=posts";
 
@@ -151,7 +151,7 @@ TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/users?";
 
@@ -167,7 +167,7 @@ TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/users?name";
 
@@ -184,7 +184,7 @@ TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/search", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/search?q=hello%20world&category=tech%2Bdev";
 
@@ -202,7 +202,7 @@ TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/users?filter=active&filter=verified";
 
@@ -219,7 +219,7 @@ TEST_F(ServerTestFixture, MatchWithNoQueryParameters) {
     auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users/:id", handler);
 
-    http::request::http_request request = {};
+    http::request::context request = {};
     request.method = "GET";
     request.path = "/users/123";
 
