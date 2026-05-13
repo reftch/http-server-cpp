@@ -74,7 +74,7 @@ TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
 
 TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/search", handler);
 
     http::request::http_request request = {};
@@ -92,7 +92,7 @@ TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
 
 TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
     http::request::http_request request = {};
@@ -109,7 +109,7 @@ TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
 
 TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
     http::request::http_request request = {};
@@ -128,7 +128,7 @@ TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
 
 TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users/:id", handler);
 
     http::request::http_request request = {};
@@ -148,7 +148,7 @@ TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
 
 TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
     http::request::http_request request = {};
@@ -164,7 +164,7 @@ TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
 
 TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
     http::request::http_request request = {};
@@ -181,7 +181,7 @@ TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
 
 TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/search", handler);
 
     http::request::http_request request = {};
@@ -199,7 +199,7 @@ TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
 
 TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users", handler);
 
     http::request::http_request request = {};
@@ -216,7 +216,7 @@ TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
 
 TEST_F(ServerTestFixture, MatchWithNoQueryParameters) {
     http::router r;
-    auto handler = [](const http::context& ctx) { return "Test"; };
+    auto handler = [](const http::context&) { return "Test"; };
     r.register_handler("GET", "/users/:id", handler);
 
     http::request::http_request request = {};
