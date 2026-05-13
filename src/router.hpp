@@ -30,8 +30,6 @@ namespace http {
      * @return response_body The response content to send back to client
      */
     using request_handler = std::function<response_body(const context& ctx)>;
-    // std::function<response_body(const std::string& path, const std::unordered_map<std::string, std::string>& params,
-    //                             const std::unordered_map<std::string, std::string>& query)>;
 
     /**
      * @brief HTTP router class for mapping URL paths to request handlers
@@ -81,15 +79,14 @@ namespace http {
         /**
          * @brief Matches an HTTP request to a registered handler
          *
-         * @param method The HTTP method of the request
-         * @param path The URL path of the request
-         * @param out_handler Pointer to store the matched handler (output parameter)
-         * @param out_params Pointer to store extracted path parameters (output parameter)
-         * @return bool True if a handler was found and matched, false otherwise
+         * This function traverses the routing trie to find a matching handler for the
+         * given HTTP request. It extracts path parameters from parameterized segments
+         * and stores them in the context object's params member.
+         *
+         * @param ctx Pointer to the request context containing method, path, params, and query
+         * @param out_handler Pointer to store the matched handler function (output parameter)
+         * @return bool True if a matching handler was found, false otherwise
          */
-        // bool match(const std::string& method, const std::string& path, request_handler* out_handler,
-        //            std::unordered_map<std::string, std::string>* out_params,
-        //            std::unordered_map<std::string, std::string>* query_params) const;
         bool match(http::context* ctx, request_handler* out_handler) const;
     };
 

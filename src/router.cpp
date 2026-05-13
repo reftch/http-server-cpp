@@ -55,10 +55,6 @@ int http::router::register_handler(const std::string& method, const std::string&
  * @return bool True if a matching handler was found, false otherwise
  */
 bool http::router::match(http::context* ctx, request_handler* out_handler) const {
-    // boole const http::context &ctx, request_handler *out_handler bool http::router::match(
-    //                                     const std::string& method, const std::string& path, request_handler*
-    //                                     out_handler, std::unordered_map<std::string, std::string>* out_params,
-    //                                     std::unordered_map<std::string, std::string>* query_params) const {
     ctx->request.params = {};
     std::string path = ctx->request.path;
     std::string method = ctx->request.method;

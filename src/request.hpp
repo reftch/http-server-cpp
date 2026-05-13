@@ -15,12 +15,12 @@ namespace http {
          * @brief Structure to hold the essential components of an HTTP request line.
          */
         struct http_request {
-            std::string method;     // The HTTP method (e.g., "GET", "POST").
-            std::string path;       // The requested path (e.g., "/index.html").
-            std::string version;    // The HTTP version (e.g., "HTTP/1.1").
-            std::string mime_type;  // The Mime Type
-            std::unordered_map<std::string, std::string> params;
-            std::unordered_map<std::string, std::string> query;
+            std::string method;                                   // The HTTP method (e.g., "GET", "POST").
+            std::string path;                                     // The requested path (e.g., "/index.html").
+            std::string version;                                  // The HTTP version (e.g., "HTTP/1.1").
+            std::string mime_type;                                // The Mime Type
+            std::unordered_map<std::string, std::string> params;  // Path parameters
+            std::unordered_map<std::string, std::string> query;   // Query parameters
         };
 
         /**
