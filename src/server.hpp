@@ -31,12 +31,6 @@
 
 namespace http {
 
-    // Define the type for our request handler function.
-    // The handler now returns the response body (string).
-    // It takes the file descriptor (fd) and the context index (i) for interaction.
-    // using response_body = std::string;
-    // using request_handler = std::function<response_body(const context& ctx)>;
-
     /**
      * Represents an HTTP server instance.
      * Provides functionality to create, configure, and run an HTTP server.
