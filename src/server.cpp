@@ -179,13 +179,13 @@ namespace http {
      */
     std::string server::handle_route(const http::request::http_request& request) {
         std::string path = request.path;
-        std::string method = request.method;
+        // std::string method = request.method;
         std::string mime_type = request.mime_type;
 
         if (mime_type == "") {
             http::request_handler handler;
-            std::unordered_map<std::string, std::string> params;
-            std::unordered_map<std::string, std::string> query;
+            // std::unordered_map<std::string, std::string> params;
+            // std::unordered_map<std::string, std::string> query;
 
             http::context ctx = {request};
             if (g_router.match(&ctx, &handler)) {
