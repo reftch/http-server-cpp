@@ -1,6 +1,8 @@
 // server.cpp
 #include "server.hpp"
 
+#include <thread>
+
 #include "request.hpp"
 #include "response.hpp"
 
@@ -111,6 +113,8 @@ namespace http {
                 pollfds.push_back(pfd);
             }
 
+            // std::cout << "Client size: " << client_list.size() << '\n';
+
             // Using poll for listening to multiple clients with timeout
             int activity = poll(pollfds.data(), pollfds.size(), 1000);
             if (activity < 0) {
@@ -142,19 +146,12 @@ namespace http {
                 if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
                     int sd = client_list[i];
                     char buffer[4096];
-                    ssize_t nread = read(sd, buffer, sizeof(buffer) - 1);
-
+                    ssize_t nread = read(sd, &buffer, sizeof(buffer) - 1);
                     if (nread > 0) {
-                        std::string raw_request(buffer, nread);
-                        // Parse the request line to find method and path
-                        request::context ctx = request::parse(raw_request);
-                        // Handle route
-                        std::string body = handle_route(ctx);
-                        // write response
-                        if (write(sd, body.c_str(), body.size()) == -1) {
-                            // (std::cerr, "error writing response body");
-                            std::cerr << "error writing response body\n";
-                        }
+                        // perform request
+                        perform_request(sd, buffer, nread);
+                        // std::thread t([&]() { perform_request(sd, buffer, nread); });
+                        // t.join();
                     } else if (nread == 0) {
                         // Client disconnected
                         close(sd);
@@ -172,6 +169,18 @@ namespace http {
                     i++;  // Increment if no activity
                 }
             }
+        }
+    }
+
+    void server::perform_request(const int sd, const char* buffer, const ssize_t nread) {
+        std::string raw_request(buffer, nread);
+        // Parse the request line to find method and path
+        request::context ctx = request::parse(raw_request);
+        // Handle route
+        std::string body = handle_route(ctx);
+        // write response
+        if (write(sd, body.c_str(), body.size()) == -1) {
+            std::cerr << "error writing response body\n";
         }
     }
 

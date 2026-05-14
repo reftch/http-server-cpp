@@ -99,6 +99,9 @@ namespace http {
         // Maximum number of connections allowed.
         static constexpr int MAX_CONNS = 96;
 
+        // perform request
+        void perform_request(const int sd, const char* buffer, const ssize_t nread);
+
         // Handle an incoming HTTP request on a given connection.
         void handle_requests();
 
