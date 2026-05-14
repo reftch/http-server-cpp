@@ -18,7 +18,7 @@ TEST_F(ServerTestFixture, ConstructorSetsState) {
     // Assert that the server object was initialized correctly
     EXPECT_EQ(test_host, server_->get_host());
     EXPECT_EQ(test_port, server_->get_port());
-    EXPECT_FALSE(server_->running());
+    EXPECT_FALSE(server_->is_running());
 }
 
 void stop_server_thread(std::unique_ptr<server>& server_ptr) {
@@ -27,7 +27,7 @@ void stop_server_thread(std::unique_ptr<server>& server_ptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     // check running state
-    EXPECT_TRUE(server_ptr->running());
+    EXPECT_TRUE(server_ptr->is_running());
     server_ptr->stop();
 }
 
@@ -43,7 +43,7 @@ TEST_F(ServerTestFixture, StartAndStopControlsState) {
     t.join();
 
     // check stopped state
-    EXPECT_FALSE(server_->running());
+    EXPECT_FALSE(server_->is_running());
 }
 
 // ====================================================================

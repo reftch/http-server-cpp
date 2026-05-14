@@ -78,14 +78,14 @@ namespace http {
         // Getters
         std::string get_host() const { return host; }
         int get_port() const { return port; }
-        bool running() { return running_; }
+        bool is_running() { return running_; }
 
        private:
-        const int port;          // Port number to listen on
-        const std::string host;  // Hostname or IP address to bind to
-        int32_t sockfd;          // server file descriptor
-        std::vector<int> client_list;
-        std::vector<struct pollfd> pollfds;
+        const int port;                      // Port number to listen on
+        const std::string host;              // Hostname or IP address to bind to
+        int32_t sockfd;                      // server file descriptor
+        std::vector<int> client_list;        // client list
+        std::vector<struct pollfd> pollfds;  // Vector to hold pollfd structures
 
         // router
         http::router g_router;
@@ -103,7 +103,7 @@ namespace http {
         void handle_requests();
 
         // This function serves as the main entry point for processing HTTP requests
-        std::string handle_route(http::request::context& request);
+        std::string handle_route(http::request::context& ctx);
     };
 
 }  // namespace http
