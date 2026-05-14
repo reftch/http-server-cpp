@@ -114,7 +114,7 @@ namespace http {
             // Using poll for listening to multiple clients with timeout
             int activity = poll(pollfds.data(), pollfds.size(), 1000);
             if (activity < 0) {
-                // std::cerr << "polling stop\n";
+                std::cerr << "polling stop\n";
                 continue;
             }
 
