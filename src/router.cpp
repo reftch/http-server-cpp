@@ -55,8 +55,7 @@ int http::router::register_handler(const std::string& method, const std::string&
  * @return bool True if a matching handler was found, false otherwise
  */
 bool http::router::match(http::request::context* ctx, request_handler* out_handler) const {
-    ctx->params = {};
-    std::string path = ctx->path;
+        std::string path = ctx->path;
     std::string method = ctx->method;
     std::string path_without_query;
     std::string query_string;

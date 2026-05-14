@@ -23,6 +23,7 @@
 #include <thread>
 #include <vector>
 
+#include "header.hpp"
 #include "request.hpp"
 #include "response.hpp"
 #include "router.hpp"
@@ -84,7 +85,6 @@ namespace http {
         const std::string host;        // Hostname or IP address to bind to
         int32_t sockfd;                // server file descriptor
         std::vector<int> client_list;  // client list
-        // std::vector<struct pollfd> pollfds;  // Vector to hold pollfd structures
 
         // router
         http::router g_router;

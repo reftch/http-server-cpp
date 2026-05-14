@@ -16,6 +16,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
+# Enable clang-tidy performance checks
+option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
+if(ENABLE_CLANG_TIDY)
+    set(CMAKE_CXX_CLANG_TIDY
+        clang-tidy;
+        -checks=performance-unnecessary-value-param,
+                performance-unnecessary-copy-initialization,
+                performance-unnecessary-move,
+                performance-inefficient-algorithm
+    )
+endif()
+
 # Include the header files
 include_directories(${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(src)

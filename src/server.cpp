@@ -175,11 +175,8 @@ namespace http {
         }
     }
 
-        std::string server::handle_route(http::request::context& ctx) {
-        std::string path = ctx.path;
-        std::string mime_type = ctx.mime_type;
-
-        if (mime_type == "") {
+    std::string server::handle_route(http::request::context& ctx) {
+        if (ctx.mime_type == "") {
             http::request_handler handler;
 
             if (g_router.match(&ctx, &handler)) {
@@ -187,27 +184,15 @@ namespace http {
                 return handler(ctx);
             }
         } else {
-            auto content = read_file("./assets" + path);
+            auto content = read_file("./assets" + ctx.path);
             if (content != "") {
-                return response::create(mime_type.c_str(), content);
+                return response::create(ctx.mime_type.c_str(), content);
             }
         }
 
         return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
     }
 
-    /**
-     * Registers a request handler for a specific HTTP method and path
-     * @param method The HTTP method (GET, POST, PUT, DELETE, etc.)
-     * @param path The URL path to match against incoming requests
-     * @param handler The request handler function to call when a matching request is received
-     * @return Reference to the server instance for method chaining
-     * @details This function adds a route handler to the global router. When an HTTP request
-     *          arrives, the router will match the request method and path against the registered
-     *          handlers and call the appropriate handler function.
-     * @note This function supports method chaining, allowing multiple route registrations
-     *       to be chained together in a single statement
-     */
     server& server::path(const std::string& method, const std::string& path, request_handler handler) {
         g_router.register_handler(method, path, handler);
         return *this;

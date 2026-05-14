@@ -37,6 +37,8 @@ namespace http {
                     ctx.path = path;
                     ctx.version = version;
                     ctx.mime_type = get_mime_type(path);
+                    ctx.params = {};
+                    ctx.query = {};
                 }
                 // Note: If the format is incorrect, req remains default-initialized.
             }
