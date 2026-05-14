@@ -1,4 +1,3 @@
-// server.hpp
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
@@ -71,7 +70,7 @@ namespace http {
          * @param method The HTTP method (e.g., "GET", "POST").
          * @param path The URL path (e.g., "/index.html").
          * @param handler The function to call when this endpoint is hit.
-         * @return 0 on success, -1 if the route is already registered or invalid input.
+         * @return Reference to the server instance for method chaining
          */
         server& path(const std::string& method, const std::string& path, request_handler handler);
 
@@ -99,13 +98,40 @@ namespace http {
         // Maximum number of connections allowed.
         static constexpr int MAX_CONNS = 96;
 
-        // perform request
+        /**
+         * Performs an asynchronous HTTP request handling operation
+         * @param sd The socket descriptor for the client connection
+         * @param buffer The raw request data received from the client
+         * @param nread The number of bytes read from the socket
+         * @details This function processes an incoming HTTP request by:
+         *          1. Converting the raw buffer data to a string
+         *          2. Parsing the HTTP request to extract method and path
+         *          3. Routing the request to the appropriate handler
+         *          4. Writing the response back to the client socket
+         * @note This function is typically called asynchronously to handle multiple concurrent connections
+         */
         void perform_request(const int sd, const char* buffer, const ssize_t nread);
 
-        // Handle an incoming HTTP request on a given connection.
+        /**
+         * Main event loop for handling incoming HTTP requests
+         * @details This function implements a non-blocking I/O event loop using poll() to monitor
+         *          both the server socket for new connections and client sockets for incoming data.
+         *          It continuously monitors multiple file descriptors and processes events as they occur.
+         * @note This function runs in an infinite loop until the server's running_ flag is set to false
+         */
         void handle_requests();
 
-        // This function serves as the main entry point for processing HTTP requests
+        /**
+         * Handles HTTP route matching and request processing
+         * @param ctx Reference to the HTTP request context containing method, path, and other request data
+         * @return String containing the HTTP response body
+         * @details This function processes the HTTP request by:
+         *          1. Checking if the request has a specific MIME type
+         *          2. If no MIME type is specified, using the global router to match the request
+         *          3. If MIME type is specified, treating it as a file request and reading from assets directory
+         *          4. Returning appropriate HTTP response based on the processing outcome
+         * @note This function is typically called from perform_request() to generate responses for client requests
+         */
         std::string handle_route(http::request::context& ctx);
     };
 

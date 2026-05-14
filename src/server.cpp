@@ -1,6 +1,7 @@
 // server.cpp
 #include "server.hpp"
 
+#include <future>
 #include <thread>
 
 #include "request.hpp"
@@ -8,9 +9,6 @@
 
 namespace http {
 
-    /**
-     * Signals the server to shut down, stops the polling loop, and closes all sockets.
-     */
     void server::stop() {
         std::cout << "\nserver stopping...\n";
 
@@ -35,13 +33,6 @@ namespace http {
         std::cout << "server stopped successfully" << '\n';
     }
 
-    /**
-     * Implementation of the start method
-     * Sets up the server socket, binds to the specified address, and enters the main event loop.
-     * The server will continuously listen for new connections and handle existing connections.
-     *
-     * @return 0 on successful start, non-zero on error
-     */
     int server::start() {
         // open socket
         sockfd = socket(AF_INET, SOCK_STREAM, 0);  // for tcp connection
@@ -150,8 +141,8 @@ namespace http {
                     if (nread > 0) {
                         // perform request
                         perform_request(sd, buffer, nread);
-                        // std::thread t([&]() { perform_request(sd, buffer, nread); });
-                        // t.join();
+                        // Launch asynchronously
+                        // auto future = std::async(std::launch::async, [&]() { perform_request(sd, buffer, nread); });
                     } else if (nread == 0) {
                         // Client disconnected
                         close(sd);
@@ -184,10 +175,7 @@ namespace http {
         }
     }
 
-    /**
-     * Handle route
-     */
-    std::string server::handle_route(http::request::context& ctx) {
+        std::string server::handle_route(http::request::context& ctx) {
         std::string path = ctx.path;
         std::string mime_type = ctx.mime_type;
 
@@ -209,7 +197,16 @@ namespace http {
     }
 
     /**
-     * Register handlers in router
+     * Registers a request handler for a specific HTTP method and path
+     * @param method The HTTP method (GET, POST, PUT, DELETE, etc.)
+     * @param path The URL path to match against incoming requests
+     * @param handler The request handler function to call when a matching request is received
+     * @return Reference to the server instance for method chaining
+     * @details This function adds a route handler to the global router. When an HTTP request
+     *          arrives, the router will match the request method and path against the registered
+     *          handlers and call the appropriate handler function.
+     * @note This function supports method chaining, allowing multiple route registrations
+     *       to be chained together in a single statement
      */
     server& server::path(const std::string& method, const std::string& path, request_handler handler) {
         g_router.register_handler(method, path, handler);
