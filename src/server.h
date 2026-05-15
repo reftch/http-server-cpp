@@ -35,7 +35,7 @@ namespace http {
      * Represents an HTTP server instance.
      * Provides functionality to create, configure, and run an HTTP server.
      */
-    class server {
+    class Server {
        public:
         /**
          * Constructor for the server.
@@ -44,7 +44,7 @@ namespace http {
          * @param host The hostname or IP address to bind to.
          * @param port The port number to listen on.
          */
-        server(const std::string& host, const int& port) : port(port), host(host) {
+        Server(const std::string& host, const int& port) : port(port), host(host) {
             start_time = std::chrono::high_resolution_clock::now();
         }
 
@@ -73,7 +73,7 @@ namespace http {
          * @param handler The function to call when this endpoint is hit.
          * @return Reference to the server instance for method chaining
          */
-        server& path(const std::string& method, const std::string& path, request_handler handler);
+        Server& set_path(const std::string& method, const std::string& path, request_handler handler);
 
         // Getters
         std::string get_host() const {

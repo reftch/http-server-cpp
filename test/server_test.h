@@ -4,8 +4,6 @@
 #include "gtest/gtest.h"
 #include "server.h"
 
-using namespace http;
-
 // Define a fixture class to hold setup logic and shared objects
 class ServerTestFixture : public ::testing::Test {
    protected:
@@ -14,17 +12,17 @@ class ServerTestFixture : public ::testing::Test {
     const int test_port = 8080;
 
     // The object under test, managed by smart pointer
-    std::unique_ptr<server> server_;
+    std::unique_ptr<http::Server> server_;
 
     // Helper function to create a simple handler for testing
-    static response_body dummy_handler(const http::Request& req, http::Response& res) {
+    static http::response_body dummy_handler(const http::Request& req, http::Response& res) {
         res.set_content("Test Response for " + req.path(), http::content_type::PLAIN_TEXT);
     }
 
     // SetUp runs before EVERY test in this fixture
     void SetUp() override {
         // Instantiate the server object before each test runs
-        server_ = std::make_unique<server>(test_host, test_port);
+        server_ = std::make_unique<http::Server>(test_host, test_port);
     }
 };
 

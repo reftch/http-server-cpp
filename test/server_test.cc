@@ -21,7 +21,7 @@ TEST_F(ServerTestFixture, ConstructorSetsState) {
     EXPECT_FALSE(server_->is_running());
 }
 
-void stop_server_thread(std::unique_ptr<server>& server_ptr) {
+void stop_server_thread(std::unique_ptr<Server>& server_ptr) {
     std::cout << "thread reading server host: " << server_ptr->get_host() << std::endl;
     // Pause the execution of this specific thread for the 1 second
     std::this_thread::sleep_for(std::chrono::milliseconds(300));

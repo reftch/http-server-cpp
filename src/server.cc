@@ -6,7 +6,7 @@
 
 namespace http {
 
-    void server::stop() {
+    void Server::stop() {
         std::cout << "\nserver stopping...\n";
 
         // set the running flag to false to break the while loop in start()
@@ -30,7 +30,7 @@ namespace http {
         std::cout << "server stopped successfully" << '\n';
     }
 
-    int server::start() {
+    int Server::start() {
         // open socket
         sockfd = socket(AF_INET, SOCK_STREAM, 0);  // for tcp connection
         // error handling
@@ -77,7 +77,7 @@ namespace http {
         return 0;
     }
 
-    void server::handle_requests() {
+    void Server::handle_requests() {
         // Vector to hold pollfd structures
         std::vector<struct pollfd> pollfds;
 
@@ -160,7 +160,7 @@ namespace http {
         }
     }
 
-    void server::perform_request(const int sd, const char* buffer, const ssize_t nread) {
+    void Server::perform_request(const int sd, const char* buffer, const ssize_t nread) {
         std::string raw_request(buffer, nread);
         // Parse the request line to find method and path
         http::Request req(raw_request);
@@ -172,7 +172,7 @@ namespace http {
         }
     }
 
-    std::string server::handle_route(http::Request& req) {
+    std::string Server::handle_route(http::Request& req) {
         http::Response res;
 
         if (req.mime_type() == "") {
@@ -194,7 +194,7 @@ namespace http {
         return res.build();
     }
 
-    server& server::path(const std::string& method, const std::string& path, request_handler handler) {
+    Server& Server::set_path(const std::string& method, const std::string& path, request_handler handler) {
         g_router.register_handler(method, path, handler);
         return *this;
     }
