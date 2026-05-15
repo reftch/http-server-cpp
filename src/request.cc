@@ -1,10 +1,10 @@
-#include "request.hpp"
+#include "request.h"
 
 #include <iostream>
 #include <string>
 
-#include "response.hpp"
-#include "router.hpp"
+#include "response.h"
+#include "router.h"
 
 namespace http {
 

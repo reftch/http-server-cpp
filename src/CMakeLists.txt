@@ -1,15 +1,15 @@
 add_library(http-server STATIC
-  header.hpp
-  request.cpp
-  request.hpp
-  response.hpp
-  response.cpp
-  router.hpp
-  router.cpp
-  server.cpp
-  server.hpp
-  utils.cpp
-  utils.hpp
+  header.h
+  request.cc
+  request.h
+  response.h
+  response.cc
+  router.h
+  router.cc
+  server.cc
+  server.h
+  utils.cc
+  utils.h
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -24,12 +24,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
       FILE_SET public_headers
       TYPE HEADERS
       FILES 
-        header.hpp
-        request.hpp
-        response.hpp
-        router.hpp
-        server.hpp
-        utils.hpp
+        header.h
+        request.h
+        response.h
+        router.h
+        server.h
+        utils.h
   )
 
   install(TARGETS http-server

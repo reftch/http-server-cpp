@@ -1,8 +1,8 @@
 # Create a combined tests executable
 add_executable (tests
-    server_test.cpp
-    router_test.cpp
-    request_test.cpp
+    server_test.cc
+    router_test.cc
+    request_test.cc
 )
 
 # Add compile definitions to distinguish between test types

@@ -1,6 +1,6 @@
 
-#include "server.hpp"
-#include "server_test.hpp"
+#include "server.h"
+#include "server_test.h"
 
 TEST_F(ServerTestFixture, RegisterHandlerSucceeds) {
     // Arrange

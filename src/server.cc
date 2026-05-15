@@ -1,11 +1,8 @@
 // server.cpp
-#include "server.hpp"
+#include "server.h"
 
 #include <future>
 #include <thread>
-
-#include "request.hpp"
-#include "response.hpp"
 
 namespace http {
 

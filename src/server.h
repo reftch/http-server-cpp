@@ -23,11 +23,11 @@
 #include <thread>
 #include <vector>
 
-#include "header.hpp"
-#include "request.hpp"
-#include "response.hpp"
-#include "router.hpp"
-#include "utils.hpp"
+#include "header.h"
+#include "request.h"
+#include "response.h"
+#include "router.h"
+#include "utils.h"
 
 namespace http {
 

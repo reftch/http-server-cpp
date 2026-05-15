@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
-#include "server.hpp"
+#include "server.h"
 
 int main() {
     http::server s("0.0.0.0", 8080);

@@ -22,6 +22,7 @@ namespace http {
         const std::string& version() const {
             return version_;
         }
+
         const std::string& mime_type() const {
             return mime_type_;
         }
@@ -44,9 +45,11 @@ namespace http {
         void set_mime_type(const std::string& mime_type) {
             mime_type_ = mime_type;
         }
+
         void set_param(const std::string& key, const std::string& value) {
             params_[key] = value;
         }
+
         void set_query(const std::string& key, const std::string& value) {
             query_[key] = value;
         }

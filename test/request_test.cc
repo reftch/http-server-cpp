@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "server.hpp"
+#include "server.h"
 
 TEST(MimeTypeTest, KnownExtensions) {
     http::Request req;
