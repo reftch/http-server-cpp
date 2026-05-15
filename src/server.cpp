@@ -166,7 +166,7 @@ namespace http {
     void server::perform_request(const int sd, const char* buffer, const ssize_t nread) {
         std::string raw_request(buffer, nread);
         // Parse the request line to find method and path
-        http::request req(raw_request);
+        http::Request req(raw_request);
         // request::context ctx = request::parse(raw_request);
         // Handle route
         std::string body = handle_route(req);
@@ -176,8 +176,8 @@ namespace http {
         }
     }
 
-    std::string server::handle_route(http::request& req) {
-        if (req.getMimeType() == "") {
+    std::string server::handle_route(http::Request& req) {
+        if (req.mime_type() == "") {
             http::request_handler handler;
 
             if (g_router.match(&req, &handler)) {
@@ -185,9 +185,9 @@ namespace http {
                 return handler(req);
             }
         } else {
-            auto content = read_file("./assets" + req.getPath());
+            auto content = read_file("./assets" + req.path());
             if (content != "") {
-                return response::create(req.getMimeType().c_str(), content);
+                return response::create(req.mime_type().c_str(), content);
             }
         }
 

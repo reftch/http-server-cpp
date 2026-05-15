@@ -8,7 +8,7 @@
 
 namespace http {
 
-    request::request(const std::string& raw_request) {
+    Request::Request(const std::string& raw_request) {
         // Use stringstream to easily read the input string line by line
         std::stringstream ss(raw_request);
         std::string line;
@@ -21,17 +21,17 @@ namespace http {
 
             // Attempt to extract the three tokens (method, path, version) separated by spaces
             if (line_ss >> method >> path >> version) {
-                this->method = method;
-                this->path = path;
-                this->version = version;
-                this->mime_type = get_mime_type(path);
-                this->params = {};
-                this->query = {};
+                this->method_ = method;
+                this->path_ = path;
+                this->version_ = version;
+                this->mime_type_ = get_mime_type(path);
+                this->params_ = {};
+                this->query_ = {};
             }
         }
     }
 
-    std::string request::get_mime_type(const std::string& path) {
+    std::string Request::get_mime_type(const std::string& path) {
         // Extract just the filename part (before any query parameters)
         std::string clean_path = path;
         size_t query_pos = path.find('?');

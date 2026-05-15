@@ -138,7 +138,7 @@ namespace http {
          *          4. Returning appropriate HTTP response based on the processing outcome
          * @note This function is typically called from perform_request() to generate responses for client requests
          */
-        std::string handle_route(http::request& ctx);
+        std::string handle_route(http::Request& ctx);
     };
 
 }  // namespace http

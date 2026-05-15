@@ -3,7 +3,7 @@
 #include "server.hpp"
 
 TEST(MimeTypeTest, KnownExtensions) {
-    http::request req;
+    http::Request req;
     EXPECT_EQ(req.get_mime_type("index.html"), http::response::content_type::HTML);
     EXPECT_EQ(req.get_mime_type("style.css"), http::response::content_type::CSS);
     EXPECT_EQ(req.get_mime_type("script.js"), http::response::content_type::JavaScript);
@@ -12,100 +12,100 @@ TEST(MimeTypeTest, KnownExtensions) {
 }
 
 TEST(MimeTypeTest, UnknownExtensions) {
-    http::request req;
+    http::Request req;
     EXPECT_EQ(req.get_mime_type("unknown.xyz"), "");
     EXPECT_EQ(req.get_mime_type("file"), "");
     EXPECT_EQ(req.get_mime_type(""), "");
 }
 
 TEST(MimeTypeTest, EdgeCases) {
-    http::request req;
+    http::Request req;
     EXPECT_EQ(req.get_mime_type(".hidden"), "");
     EXPECT_EQ(req.get_mime_type("."), "");
     EXPECT_EQ(req.get_mime_type("file."), "");
 }
 
 TEST(ParseRequestTest, ValidGetRequest) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/index.html");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/index.html");
     EXPECT_EQ(req.get_mime_type("/index.html"), http::response::content_type::HTML);
 }
 
 TEST(ParseRequestTest, ValidPostRequest) {
-    http::request req;
-    req.setMethod("POST");
-    req.setPath("/api/data");
+    http::Request req;
+    req.set_method("POST");
+    req.set_path("/api/data");
     EXPECT_EQ(req.get_mime_type("/api/data"), "");
 }
 
 TEST(ParseRequestTest, ValidRequestWithQueryParams) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/page.html?param=value");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/page.html?param=value");
     EXPECT_EQ(req.get_mime_type("/page.html?param=value"), http::response::content_type::HTML);
 }
 
 TEST(ParseRequestTest, ValidRequestWithDirectoryPath) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/assets/css/style.css");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/assets/css/style.css");
     EXPECT_EQ(req.get_mime_type("/assets/css/style.css"), http::response::content_type::CSS);
 }
 
 TEST(ParseRequestTest, ValidRequestWithNoExtension) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/api/users");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/api/users");
     EXPECT_EQ(req.get_mime_type("/api/users"), "");
 }
 
 TEST(ParseRequestTest, ValidRequestWithJsonExtension) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/data.json");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/data.json");
     EXPECT_EQ(req.get_mime_type("/data.json"), http::response::content_type::JSON);
 }
 
 TEST(ParseRequestTest, ValidRequestWithJsExtension) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/script.js");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/script.js");
     EXPECT_EQ(req.get_mime_type("/script.js"), http::response::content_type::JavaScript);
 }
 
 TEST(ParseRequestTest, ValidRequestWithMp4Extension) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/video.mp4");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/video.mp4");
     EXPECT_EQ(req.get_mime_type("/video.mp4"), http::response::content_type::MP4);
 }
 
 TEST(ParseRequestTest, EmptyRequest) {
-    http::request req;
-    req.setMethod("");
-    req.setPath("");
+    http::Request req;
+    req.set_method("");
+    req.set_path("");
     EXPECT_EQ(req.get_mime_type(""), "");
 }
 
 TEST(ParseRequestTest, RequestWithOnlyMethod) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("");
     EXPECT_EQ(req.get_mime_type(""), "");
 }
 
 TEST(ParseRequestTest, RequestWithOnlyMethodAndPath) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/index.html");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/index.html");
     EXPECT_EQ(req.get_mime_type("/index.html"), http::response::content_type::HTML);
 }
 
 TEST(ParseRequestTest, ValidRequestWithDifferentHttpVersion) {
-    http::request req;
-    req.setMethod("GET");
-    req.setPath("/index.html");
+    http::Request req;
+    req.set_method("GET");
+    req.set_path("/index.html");
 
     EXPECT_EQ(req.get_mime_type("/index.html"), http::response::content_type::HTML);
 }

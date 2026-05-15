@@ -54,9 +54,9 @@ int http::router::register_handler(const std::string& method, const std::string&
  * @param query_params Pointer to store extracted query parameters
  * @return bool True if a matching handler was found, false otherwise
  */
-bool http::router::match(http::request* req, request_handler* out_handler) const {
-    std::string path = req->getPath();
-    std::string method = req->getMethod();
+bool http::router::match(http::Request* req, request_handler* out_handler) const {
+    std::string path = req->path();
+    std::string method = req->method();
     std::string path_without_query;
     std::string query_string;
 
@@ -77,7 +77,7 @@ bool http::router::match(http::request* req, request_handler* out_handler) const
         if (it != node->static_children.end()) {
             node = it->second.get();
         } else if (node->param_child) {
-            req->setParam(node->param_child->param_name, part);
+            req->set_param(node->param_child->param_name, part);
             node = node->param_child.get();
         } else {
             return false;
@@ -106,7 +106,7 @@ bool http::router::match(http::request* req, request_handler* out_handler) const
                 std::string value = query_string.substr(equals_pos + 1, ampersand_pos - equals_pos - 1);
 
                 // TODO: URL decode the key and value if needed
-                req->setQuery(key, value);
+                req->set_query(key, value);
             }
 
             pos = ampersand_pos + 1;

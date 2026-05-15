@@ -15,15 +15,15 @@ int main() {
         s_ptr->stop();
     });
 
-    s.path("GET", "/", [](const http::request&) {
+    s.path("GET", "/", [](const http::Request&) {
         return http::response::html(read_file("./assets/index.html"));
     });
 
-    s.path("GET", "/home", [](const http::request&) {
+    s.path("GET", "/home", [](const http::Request&) {
         return http::response::html(read_file("./assets/home.html"));
     });
 
-    s.path("GET", "/api/v1/time", [](const http::request&) {
+    s.path("GET", "/api/v1/time", [](const http::Request&) {
         auto now = std::chrono::system_clock::now();
         auto time_t = std::chrono::system_clock::to_time_t(now);
         std::stringstream ss;
