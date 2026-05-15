@@ -4,6 +4,11 @@
 #include <string>
 
 namespace http {
+    struct Header {
+        std::string key;
+        std::string value;
+    };
+
     struct header {
         std::string name;
         std::string value;

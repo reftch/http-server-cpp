@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "request.h"
+#include "response.h"
 
 namespace http {
 
@@ -17,7 +18,7 @@ namespace http {
      * Represents the string content that will be returned as the response body
      * to an HTTP request.
      */
-    using response_body = std::string;
+    using response_body = void;
 
     /**
      * @brief Type alias for HTTP request handler function
@@ -29,7 +30,7 @@ namespace http {
      * @param query Query parameters extracted from the path
      * @return response_body The response content to send back to client
      */
-    using request_handler = std::function<response_body(const http::Request& req)>;
+    using request_handler = std::function<response_body(const http::Request& req, http::Response& res)>;
 
     /**
      * @brief HTTP router class for mapping URL paths to request handlers

@@ -174,21 +174,25 @@ namespace http {
     }
 
     std::string server::handle_route(http::Request& req) {
+        Response res;
+
         if (req.mime_type() == "") {
             http::request_handler handler;
 
             if (g_router.match(&req, &handler)) {
-                // Call handler and generate HTTP‑style response body
-                return handler(req);
+                // Call handler and generate HTTP‑style response bod
+                handler(req, res);
+            } else {
+                res.set_content(Status::not_found, "Not Found", content_type::PLAIN_TEXT);
             }
         } else {
             auto content = read_file("./assets" + req.path());
             if (content != "") {
-                return response::create(req.mime_type().c_str(), content);
+                res.set_content(content, req.mime_type().c_str());
             }
         }
 
-        return response::create(response::status::not_found, response::content_type::PLAIN_TEXT, "Not Found");
+        return res.build();
     }
 
     server& server::path(const std::string& method, const std::string& path, request_handler handler) {

@@ -40,15 +40,12 @@ namespace http {
         }
 
         static const std::map<std::string, const char*> mimeTypes = {
-            {"html", response::content_type::HTML},     {"css", response::content_type::CSS},
-            {"js", response::content_type::JavaScript}, {"jpg", response::content_type::JPEG},
-            {"png", response::content_type::PNG},       {"xml", response::content_type::XML},
-            {"json", response::content_type::JSON},     {"txt", response::content_type::PLAIN_TEXT},
-            {"gif", response::content_type::GIF},       {"svg", response::content_type::SVG},
-            {"pdf", response::content_type::PDF},       {"mp3", response::content_type::MP3},
-            {"mp4", response::content_type::MP4},       {"webm", response::content_type::WEBM},
-            {"woff2", response::content_type::WOFF2},   {"ttf", response::content_type::TTF},
-            {"eot", response::content_type::EOT}};
+            {"html", content_type::HTML}, {"css", content_type::CSS},        {"js", content_type::JavaScript},
+            {"jpg", content_type::JPEG},  {"png", content_type::PNG},        {"xml", content_type::XML},
+            {"json", content_type::JSON}, {"txt", content_type::PLAIN_TEXT}, {"gif", content_type::GIF},
+            {"svg", content_type::SVG},   {"pdf", content_type::PDF},        {"mp3", content_type::MP3},
+            {"mp4", content_type::MP4},   {"webm", content_type::WEBM},      {"woff2", content_type::WOFF2},
+            {"ttf", content_type::TTF},   {"eot", content_type::EOT}};
 
         std::string fileExtension = clean_path.substr(clean_path.find_last_of(".") + 1);
         auto it = mimeTypes.find(fileExtension);
