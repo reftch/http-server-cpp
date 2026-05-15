@@ -23,11 +23,11 @@
 #include <thread>
 #include <vector>
 
-#include "header.hpp"
-#include "request.hpp"
-#include "response.hpp"
-#include "router.hpp"
-#include "utils.hpp"
+#include "header.h"
+#include "request.h"
+#include "response.h"
+#include "router.h"
+#include "utils.h"
 
 namespace http {
 
@@ -76,9 +76,15 @@ namespace http {
         server& path(const std::string& method, const std::string& path, request_handler handler);
 
         // Getters
-        std::string get_host() const { return host; }
-        int get_port() const { return port; }
-        bool is_running() { return running_; }
+        std::string get_host() const {
+            return host;
+        }
+        int get_port() const {
+            return port;
+        }
+        bool is_running() {
+            return running_;
+        }
 
        private:
         const int port;                // Port number to listen on
@@ -132,7 +138,7 @@ namespace http {
          *          4. Returning appropriate HTTP response based on the processing outcome
          * @note This function is typically called from perform_request() to generate responses for client requests
          */
-        std::string handle_route(http::request::context& ctx);
+        std::string handle_route(http::Request& ctx);
     };
 
 }  // namespace http

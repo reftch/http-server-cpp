@@ -1,5 +1,5 @@
 // router.cpp
-#include "router.hpp"
+#include "router.h"
 
 /**
  * @brief Registers a request handler for a specific HTTP method and URL path
@@ -54,9 +54,9 @@ int http::router::register_handler(const std::string& method, const std::string&
  * @param query_params Pointer to store extracted query parameters
  * @return bool True if a matching handler was found, false otherwise
  */
-bool http::router::match(http::request::context* ctx, request_handler* out_handler) const {
-        std::string path = ctx->path;
-    std::string method = ctx->method;
+bool http::router::match(http::Request* req, request_handler* out_handler) const {
+    std::string path = req->path();
+    std::string method = req->method();
     std::string path_without_query;
     std::string query_string;
 
@@ -77,7 +77,7 @@ bool http::router::match(http::request::context* ctx, request_handler* out_handl
         if (it != node->static_children.end()) {
             node = it->second.get();
         } else if (node->param_child) {
-            (ctx->params)[node->param_child->param_name] = part;
+            req->set_param(node->param_child->param_name, part);
             node = node->param_child.get();
         } else {
             return false;
@@ -105,9 +105,8 @@ bool http::router::match(http::request::context* ctx, request_handler* out_handl
                 std::string key = query_string.substr(pos, equals_pos - pos);
                 std::string value = query_string.substr(equals_pos + 1, ampersand_pos - equals_pos - 1);
 
-                // URL decode the key and value if needed
-                // (You might want to add URL decoding here)
-                (ctx->query)[key] = value;
+                // TODO: URL decode the key and value if needed
+                req->set_query(key, value);
             }
 
             pos = ampersand_pos + 1;

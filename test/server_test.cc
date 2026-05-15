@@ -1,11 +1,11 @@
-#include "server.hpp"  // Include the header for the class we are testing
+#include "server.h"
 
 #include <memory>
 #include <regex>
 #include <string>
 #include <unordered_map>
 
-#include "server_test.hpp"
+#include "server_test.h"
 
 using namespace http;
 

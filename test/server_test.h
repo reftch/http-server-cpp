@@ -2,7 +2,7 @@
 #define SERVER_TEST_HPP
 
 #include "gtest/gtest.h"
-#include "server.hpp"
+#include "server.h"
 
 using namespace http;
 
@@ -17,7 +17,9 @@ class ServerTestFixture : public ::testing::Test {
     std::unique_ptr<server> server_;
 
     // Helper function to create a simple handler for testing
-    static response_body dummy_handler(const std::string& path, const auto&) { return "Test Response for " + path; }
+    static response_body dummy_handler(const http::Request& req, http::Response& res) {
+        res.set_content("Test Response for " + req.path(), http::content_type::PLAIN_TEXT);
+    }
 
     // SetUp runs before EVERY test in this fixture
     void SetUp() override {

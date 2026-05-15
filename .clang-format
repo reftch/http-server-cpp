@@ -4,3 +4,6 @@ TabWidth: 4
 UseTab: Never
 ColumnLimit: 120
 NamespaceIndentation: All
+AllowShortLambdasOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None

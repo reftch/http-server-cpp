@@ -1,4 +1,4 @@
-#include "utils.hpp"
+#include "utils.h"
 
 #include <ctime>  // For time functions
 #include <fstream>
