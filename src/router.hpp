@@ -29,7 +29,7 @@ namespace http {
      * @param query Query parameters extracted from the path
      * @return response_body The response content to send back to client
      */
-    using request_handler = std::function<response_body(const http::request::context& ctx)>;
+    using request_handler = std::function<response_body(const http::request& req)>;
 
     /**
      * @brief HTTP router class for mapping URL paths to request handlers
@@ -87,7 +87,7 @@ namespace http {
          * @param out_handler Pointer to store the matched handler function (output parameter)
          * @return bool True if a matching handler was found, false otherwise
          */
-        bool match(http::request::context* ctx, request_handler* out_handler) const;
+        bool match(http::request* req, request_handler* out_handler) const;
     };
 
 }  // namespace http
