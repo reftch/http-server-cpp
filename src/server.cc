@@ -164,7 +164,6 @@ namespace http {
         std::string raw_request(buffer, nread);
         // Parse the request line to find method and path
         http::Request req(raw_request);
-        // request::context ctx = request::parse(raw_request);
         // Handle route
         std::string body = handle_route(req);
         // write response
@@ -174,13 +173,13 @@ namespace http {
     }
 
     std::string server::handle_route(http::Request& req) {
-        Response res;
+        http::Response res;
 
         if (req.mime_type() == "") {
             http::request_handler handler;
 
             if (g_router.match(&req, &handler)) {
-                // Call handler and generate HTTP‑style response bod
+                // Call handler
                 handler(req, res);
             } else {
                 res.set_content(Status::not_found, "Not Found", content_type::PLAIN_TEXT);

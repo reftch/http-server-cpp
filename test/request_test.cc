@@ -4,11 +4,11 @@
 
 TEST(MimeTypeTest, KnownExtensions) {
     http::Request req;
-    EXPECT_EQ(req.get_mime_type("index.html"), http::response::content_type::HTML);
-    EXPECT_EQ(req.get_mime_type("style.css"), http::response::content_type::CSS);
-    EXPECT_EQ(req.get_mime_type("script.js"), http::response::content_type::JavaScript);
-    EXPECT_EQ(req.get_mime_type("image.jpg"), http::response::content_type::JPEG);
-    EXPECT_EQ(req.get_mime_type("photo.png"), http::response::content_type::PNG);
+    EXPECT_EQ(req.get_mime_type("index.html"), http::content_type::HTML);
+    EXPECT_EQ(req.get_mime_type("style.css"), http::content_type::CSS);
+    EXPECT_EQ(req.get_mime_type("script.js"), http::content_type::JavaScript);
+    EXPECT_EQ(req.get_mime_type("image.jpg"), http::content_type::JPEG);
+    EXPECT_EQ(req.get_mime_type("photo.png"), http::content_type::PNG);
 }
 
 TEST(MimeTypeTest, UnknownExtensions) {
@@ -29,7 +29,7 @@ TEST(ParseRequestTest, ValidGetRequest) {
     http::Request req;
     req.set_method("GET");
     req.set_path("/index.html");
-    EXPECT_EQ(req.get_mime_type("/index.html"), http::response::content_type::HTML);
+    EXPECT_EQ(req.get_mime_type("/index.html"), http::content_type::HTML);
 }
 
 TEST(ParseRequestTest, ValidPostRequest) {
@@ -43,14 +43,14 @@ TEST(ParseRequestTest, ValidRequestWithQueryParams) {
     http::Request req;
     req.set_method("GET");
     req.set_path("/page.html?param=value");
-    EXPECT_EQ(req.get_mime_type("/page.html?param=value"), http::response::content_type::HTML);
+    EXPECT_EQ(req.get_mime_type("/page.html?param=value"), http::content_type::HTML);
 }
 
 TEST(ParseRequestTest, ValidRequestWithDirectoryPath) {
     http::Request req;
     req.set_method("GET");
     req.set_path("/assets/css/style.css");
-    EXPECT_EQ(req.get_mime_type("/assets/css/style.css"), http::response::content_type::CSS);
+    EXPECT_EQ(req.get_mime_type("/assets/css/style.css"), http::content_type::CSS);
 }
 
 TEST(ParseRequestTest, ValidRequestWithNoExtension) {
@@ -64,21 +64,21 @@ TEST(ParseRequestTest, ValidRequestWithJsonExtension) {
     http::Request req;
     req.set_method("GET");
     req.set_path("/data.json");
-    EXPECT_EQ(req.get_mime_type("/data.json"), http::response::content_type::JSON);
+    EXPECT_EQ(req.get_mime_type("/data.json"), http::content_type::JSON);
 }
 
 TEST(ParseRequestTest, ValidRequestWithJsExtension) {
     http::Request req;
     req.set_method("GET");
     req.set_path("/script.js");
-    EXPECT_EQ(req.get_mime_type("/script.js"), http::response::content_type::JavaScript);
+    EXPECT_EQ(req.get_mime_type("/script.js"), http::content_type::JavaScript);
 }
 
 TEST(ParseRequestTest, ValidRequestWithMp4Extension) {
     http::Request req;
     req.set_method("GET");
     req.set_path("/video.mp4");
-    EXPECT_EQ(req.get_mime_type("/video.mp4"), http::response::content_type::MP4);
+    EXPECT_EQ(req.get_mime_type("/video.mp4"), http::content_type::MP4);
 }
 
 TEST(ParseRequestTest, EmptyRequest) {
@@ -99,7 +99,7 @@ TEST(ParseRequestTest, RequestWithOnlyMethodAndPath) {
     http::Request req;
     req.set_method("GET");
     req.set_path("/index.html");
-    EXPECT_EQ(req.get_mime_type("/index.html"), http::response::content_type::HTML);
+    EXPECT_EQ(req.get_mime_type("/index.html"), http::content_type::HTML);
 }
 
 TEST(ParseRequestTest, ValidRequestWithDifferentHttpVersion) {
@@ -107,5 +107,5 @@ TEST(ParseRequestTest, ValidRequestWithDifferentHttpVersion) {
     req.set_method("GET");
     req.set_path("/index.html");
 
-    EXPECT_EQ(req.get_mime_type("/index.html"), http::response::content_type::HTML);
+    EXPECT_EQ(req.get_mime_type("/index.html"), http::content_type::HTML);
 }

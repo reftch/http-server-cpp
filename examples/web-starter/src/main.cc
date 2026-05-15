@@ -16,13 +16,11 @@ int main() {
     });
 
     s.path("GET", "/", [](const http::Request&, http::Response& res) {
-        res.set_content(read_file("./assets/index.html"), http::content_type::HTML);
-        // return http::response::html(read_file("./assets/index.html"));
+        res.set_html(read_file("./assets/index.html"));
     });
 
     s.path("GET", "/home", [](const http::Request&, http::Response& res) {
-        res.set_content(read_file("./assets/home.html"), http::content_type::HTML);
-        // return http::response::html(read_file("./assets/home.html"));
+        res.set_html(read_file("./assets/home.html"));
     });
 
     s.path("GET", "/api/v1/time", [](const http::Request&, http::Response& res) {
