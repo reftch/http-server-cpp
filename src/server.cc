@@ -104,7 +104,7 @@ namespace http {
             // std::cout << "Client size: " << client_list.size() << '\n';
 
             // Using poll for listening to multiple clients with timeout
-            int activity = poll(pollfds.data(), pollfds.size(), 1000);
+            int activity = poll(pollfds.data(), pollfds.size(), 3000);
             if (activity < 0) {
                 std::cerr << "polling stop\n";
                 continue;
@@ -173,7 +173,7 @@ namespace http {
     }
 
     std::string Server::handle_route(http::Request& req) {
-        http::Response res(req.keep_alive());
+        Response res(req.is_keep_alive());
 
         if (req.mime_type() == "") {
             http::request_handler handler;

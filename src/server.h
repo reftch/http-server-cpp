@@ -23,7 +23,6 @@
 #include <thread>
 #include <vector>
 
-#include "header.h"
 #include "request.h"
 #include "response.h"
 #include "router.h"

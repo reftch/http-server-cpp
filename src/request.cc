@@ -8,77 +8,6 @@
 
 namespace http {
 
-    /*
-    Request::Request(const std::string& raw_request) {
-        // Use stringstream to easily read the input string line by line
-        std::stringstream ss(raw_request);
-        std::string line;
-
-        // Attempt to read the first line of the request
-        if (std::getline(ss, line)) {
-            // Use another stringstream to parse the tokens on the extracted line
-            std::stringstream line_ss(line);
-            std::string method, path, version, connection;
-
-            // Attempt to extract the three tokens (method, path, version) separated by spaces
-            if (line_ss >> method >> path >> version) {
-                this->method_ = method;
-                this->path_ = path;
-                this->version_ = version;
-                this->mime_type_ = get_mime_type(path);
-                this->params_ = {};
-                this->query_ = {};
-
-                // Parse headers
-                while (std::getline(ss, line)) {
-                    // Skip empty lines (end of headers)
-                    if (line.empty()) {
-                        break;
-                    }
-
-                    // Find the colon separator
-                    size_t colon_pos = line.find(':');
-                    if (colon_pos != std::string::npos) {
-                        std::string header_name = line.substr(0, colon_pos);
-                        std::string header_value = line.substr(colon_pos + 1);
-
-                        // Trim whitespace from header value
-                        header_value.erase(header_value.begin(),
-                                           std::find_if(header_value.begin(), header_value.end(), [](unsigned char ch) {
-                                               return !std::isspace(ch);
-                                           }));
-                        header_value.erase(std::find_if(header_value.rbegin(), header_value.rend(),
-                                                        [](unsigned char ch) {
-                                                            return !std::isspace(ch);
-                                                        })
-                                               .base(),
-                                           header_value.end());
-
-                        // Convert header name to lowercase for case-insensitive comparison
-                        std::transform(header_name.begin(), header_name.end(), header_name.begin(), ::tolower);
-
-                        // Parse specific headers
-                        if (header_name == "connection") {
-                            this->keep_alive_ = (header_value == "keep-alive" || header_value == "Keep-Alive");
-                        } else if (header_name == "content-length") {
-                            try {
-                                this->content_length_ = std::stoul(header_value);
-                            } catch (const std::exception&) {
-                                this->content_length_ = 0;
-                            }
-                        } else if (header_name == "host") {
-                            this->host_ = header_value;
-                        } else if (header_name == "user-agent") {
-                            this->user_agent_ = header_value;
-                        }
-                        // Add more headers as needed
-                    }
-                }
-            }
-        }
-    }
-*/
-
     Request::Request(const std::string& raw_request) {
         std::stringstream ss(raw_request);
         std::string line;
@@ -87,6 +16,19 @@ namespace http {
             parse_request_line(line);
             parse_headers(ss);
         }
+    }
+
+    bool Request::is_keep_alive() {
+        // HTTP/1.1 default is keep-alive
+        // Only close if explicitly requested
+        auto it = headers_.find("Connection");
+        if (it == headers_.end()) {
+            // No Connection header - assume keep-alive (HTTP/1.1 default)
+            return true;
+        }
+
+        // Check if explicitly closed
+        return it->second != "close";
     }
 
     void Request::parse_request_line(const std::string& line) {
@@ -114,36 +56,7 @@ namespace http {
             if (colon_pos != std::string::npos) {
                 std::string header_name = line.substr(0, colon_pos);
                 std::string header_value = line.substr(colon_pos + 1);
-
-                // Trim whitespace from header value
-                header_value.erase(header_value.begin(),
-                                   std::find_if(header_value.begin(), header_value.end(), [](unsigned char ch) {
-                                       return !std::isspace(ch);
-                                   }));
-                header_value.erase(std::find_if(header_value.rbegin(), header_value.rend(),
-                                                [](unsigned char ch) {
-                                                    return !std::isspace(ch);
-                                                })
-                                       .base(),
-                                   header_value.end());
-
-                // Convert header name to lowercase
-                std::transform(header_name.begin(), header_name.end(), header_name.begin(), ::tolower);
-
-                // Parse specific headers
-                if (header_name == "connection") {
-                    this->keep_alive_ = (header_value == "keep-alive" || header_value == "Keep-Alive");
-                } else if (header_name == "content-length") {
-                    try {
-                        this->content_length_ = std::stoul(header_value);
-                    } catch (const std::exception&) {
-                        this->content_length_ = 0;
-                    }
-                } else if (header_name == "host") {
-                    this->host_ = header_value;
-                } else if (header_name == "user-agent") {
-                    this->user_agent_ = header_value;
-                }
+                headers_[header_name] = header_name;
             }
         }
     }

@@ -2,9 +2,8 @@
 #define HTTP_RESPONSE_H_
 
 #include <string>
+#include <unordered_map>
 #include <vector>
-
-#include "header.h"
 
 namespace http {
 
@@ -32,7 +31,7 @@ namespace http {
         Response() = default;
         Response(bool is_keep_alive);
 
-        void set_header(const std::string& key, const std::string& val);
+        void set_header(const std::string& key, const std::string& val) { headers_[key] = val; }
 
         std::string content() { return content_; }
 
@@ -49,7 +48,7 @@ namespace http {
         std::string version_;
         std::string content_;
         std::string content_type_;
-        std::vector<Header> headers_;
+        std::unordered_map<std::string, std::string> headers_;
 
         std::string status();
     };

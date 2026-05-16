@@ -29,18 +29,6 @@ namespace http {
 
     void Response::set_json(const std::string& content) { set_content(Status::ok, content, content_type::JSON); }
 
-    void Response::set_header(const std::string& key, const std::string& val) {
-        // Check if header already exists and update it
-        for (auto& header : headers_) {
-            if (header.key == key) {
-                header.value = val;
-                return;
-            }
-        }
-        // If header doesn't exist, add it
-        headers_.emplace_back(key, val);
-    }
-
     std::string Response::status() {
         switch (status_) {
             case Status::ok:
@@ -82,11 +70,12 @@ namespace http {
 
     std::string Response::build() {
         std::string body = status();
-        for (std::size_t i = 0; i < headers_.size(); ++i) {
-            Header& h = headers_[i];
-            body.append(h.key);
+
+        // Add all headers (order not guaranteed, but acceptable for HTTP)
+        for (const auto& header : headers_) {
+            body.append(header.first);
             body.append(misc_strings::name_value_separator);
-            body.append(h.value);
+            body.append(header.second);
             body.append(misc_strings::crlf);
         }
 

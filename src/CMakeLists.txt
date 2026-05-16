@@ -1,5 +1,4 @@
 add_library(http-server STATIC
-  header.h
   request.cc
   request.h
   response.h
@@ -24,7 +23,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
       FILE_SET public_headers
       TYPE HEADERS
       FILES 
-        header.h
+
         request.h
         response.h
         router.h
