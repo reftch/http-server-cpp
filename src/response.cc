@@ -8,10 +8,10 @@
 
 namespace http {
 
-    void Response::set_content(const std::string& content, const std::string& content_type) {
-        set_header("Content-Type", content_type);
-        set_header("Content-Length", std::to_string(content.size()));
-        content_ = content;
+    Response::Response(bool is_keep_alive) {
+        if (is_keep_alive) {
+            set_header("Connection", "keep-alive");
+        }
     }
 
     void Response::set_content(const Status& status, const std::string& content, const std::string& content_type) {
@@ -21,16 +21,24 @@ namespace http {
         status_ = status;
     }
 
-    void Response::set_html(const std::string& content) {
-        set_header("Content-Type", content_type::HTML);
-        set_header("Content-Length", std::to_string(content.size()));
-        content_ = content;
+    void Response::set_content(const std::string& content, const std::string& content_type) {
+        set_content(Status::ok, content, content_type);
     }
 
-    void Response::set_json(const std::string& content) {
-        set_header("Content-Type", content_type::JSON);
-        set_header("Content-Length", std::to_string(content.size()));
-        content_ = content;
+    void Response::set_html(const std::string& content) { set_content(Status::ok, content, content_type::HTML); }
+
+    void Response::set_json(const std::string& content) { set_content(Status::ok, content, content_type::JSON); }
+
+    void Response::set_header(const std::string& key, const std::string& val) {
+        // Check if header already exists and update it
+        for (auto& header : headers_) {
+            if (header.key == key) {
+                header.value = val;
+                return;
+            }
+        }
+        // If header doesn't exist, add it
+        headers_.emplace_back(key, val);
     }
 
     std::string Response::status() {

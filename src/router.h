@@ -1,5 +1,5 @@
-#ifndef ROUTER_HPP
-#define ROUTER_HPP
+#ifndef HTTP_ROUTER_H_
+#define HTTP_ROUTER_H_
 
 #include <functional>
 #include <memory>
@@ -12,25 +12,7 @@
 
 namespace http {
 
-    /**
-     * @brief Type alias for HTTP response body
-     *
-     * Represents the string content that will be returned as the response body
-     * to an HTTP request.
-     */
-    using response_body = void;
-
-    /**
-     * @brief Type alias for HTTP request handler function
-     *
-     * A function that handles HTTP requests and returns a response body.
-     *
-     * @param path The requested URL path
-     * @param params URL parameters extracted from the path
-     * @param query Query parameters extracted from the path
-     * @return response_body The response content to send back to client
-     */
-    using request_handler = std::function<response_body(const http::Request& req, http::Response& res)>;
+    using request_handler = std::function<void(const http::Request& req, http::Response& res)>;
 
     /**
      * @brief HTTP router class for mapping URL paths to request handlers
@@ -39,7 +21,7 @@ namespace http {
      * matches HTTP requests to their corresponding handlers based on method
      * and path. It supports both static paths and parameterized paths.
      */
-    class router {
+    class Router {
        private:
         /**
          * @brief Internal node structure for the routing trie
@@ -65,6 +47,8 @@ namespace http {
          * @return std::vector<std::string> Vector of path segments
          */
         static std::vector<std::string> split_path(const std::string& path);
+
+        void parse_query_string(const std::string& query_string, http::Request* req) const;
 
        public:
         /**

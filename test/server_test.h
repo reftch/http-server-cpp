@@ -15,7 +15,7 @@ class ServerTestFixture : public ::testing::Test {
     std::unique_ptr<http::Server> server_;
 
     // Helper function to create a simple handler for testing
-    static http::response_body dummy_handler(const http::Request& req, http::Response& res) {
+    static void dummy_handler(const http::Request& req, http::Response& res) {
         res.set_content("Test Response for " + req.path(), http::content_type::PLAIN_TEXT);
     }
 

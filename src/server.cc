@@ -173,7 +173,7 @@ namespace http {
     }
 
     std::string Server::handle_route(http::Request& req) {
-        http::Response res;
+        http::Response res(req.keep_alive());
 
         if (req.mime_type() == "") {
             http::request_handler handler;
