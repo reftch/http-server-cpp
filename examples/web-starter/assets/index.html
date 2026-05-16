@@ -22,7 +22,7 @@
 
         async function updateServerTime() {
             try {
-                const response = await fetch('/api/v1/time');
+                const response = await fetch('/api/v1/time?timezone=Berlin');
                 const data = await response.json();
                 timeDisplay.textContent = data.time;
             } catch (error) {

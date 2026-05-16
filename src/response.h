@@ -1,5 +1,5 @@
-#ifndef RESPONSE_HPP
-#define RESPONSE_HPP
+#ifndef HTTP_RESPONSE_H_
+#define HTTP_RESPONSE_H_
 
 #include <string>
 #include <vector>
@@ -8,7 +8,7 @@
 
 namespace http {
 
-    enum Status {
+    enum class Status {
         ok = 200,
         created = 201,
         accepted = 202,
@@ -29,25 +29,12 @@ namespace http {
 
     class Response {
        public:
-        Response() {
-            set_header("Connection", "keep-alive");
-        };
+        Response() = default;
+        Response(bool is_keep_alive);
 
-        void set_header(const std::string& key, const std::string& val) {
-            // Check if header already exists and update it
-            for (auto& header : headers_) {
-                if (header.key == key) {
-                    header.value = val;
-                    return;
-                }
-            }
-            // If header doesn't exist, add it
-            headers_.emplace_back(key, val);
-        }
+        void set_header(const std::string& key, const std::string& val);
 
-        std::string content() {
-            return content_;
-        }
+        std::string content() { return content_; }
 
         void set_content(const std::string& s, const std::string& content_type);
         void set_content(const Status& status, const std::string& content, const std::string& content_type);
@@ -58,7 +45,7 @@ namespace http {
         std::string build();
 
        private:
-        http::Status status_ = ok;
+        http::Status status_ = Status::ok;
         std::string version_;
         std::string content_;
         std::string content_type_;

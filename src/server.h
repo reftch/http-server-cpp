@@ -1,5 +1,5 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef HTTP_SERVER_H_
+#define HTTP_SERVER_H_
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -76,15 +76,9 @@ namespace http {
         Server& set_path(const std::string& method, const std::string& path, request_handler handler);
 
         // Getters
-        std::string get_host() const {
-            return host;
-        }
-        int get_port() const {
-            return port;
-        }
-        bool is_running() {
-            return running_;
-        }
+        std::string get_host() const { return host; }
+        int get_port() const { return port; }
+        bool is_running() { return running_; }
 
        private:
         const int port;                // Port number to listen on
@@ -93,7 +87,7 @@ namespace http {
         std::vector<int> client_list;  // client list
 
         // router
-        http::router g_router;
+        http::Router g_router;
 
         // Is server running flag
         bool running_ = false;

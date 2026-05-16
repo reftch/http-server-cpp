@@ -103,3 +103,21 @@ std::string read_file(const std::string& path) {
 
     return "";
 }
+
+std::string url_decode(const std::string& encoded) {
+    std::string decoded;
+    for (size_t i = 0; i < encoded.length(); ++i) {
+        if (encoded[i] == '%' && i + 2 < encoded.length()) {
+            // Convert hex to char
+            char hex[3] = {encoded[i + 1], encoded[i + 2], '\0'};
+            char c = static_cast<char>(strtol(hex, nullptr, 16));
+            decoded += c;
+            i += 2;
+        } else if (encoded[i] == '+') {
+            decoded += ' ';
+        } else {
+            decoded += encoded[i];
+        }
+    }
+    return decoded;
+}

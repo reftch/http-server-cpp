@@ -1,5 +1,5 @@
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#ifndef HTTP_UTILS_H_
+#define HTTP_UTILS_H_
 
 #include <map>
 #include <string>
@@ -48,5 +48,7 @@ std::map<std::string, std::string> parseArguments(int argc, char* argv[]);
 std::string map_to_json(const std::unordered_map<std::string, std::string>& params);
 
 std::string read_file(const std::string& path);
+
+std::string url_decode(const std::string& encoded);
 
 #endif  // UTILS_HPP
