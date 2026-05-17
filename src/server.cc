@@ -186,7 +186,7 @@ namespace http {
                 res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
             }
         } else {
-            auto content = read_file("./assets" + req.path());
+            auto content = ReadFile("./assets" + req.path());
             if (content != "") {
                 res.SetContentByType(content, req.mime_type());
             }
