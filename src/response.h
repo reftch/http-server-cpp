@@ -35,8 +35,8 @@ namespace http {
 
         std::string content() { return content_; }
 
-        void set_content(const std::string& s, const std::string& content_type);
-        void set_content(const Status& status, const std::string& content, const std::string& content_type);
+        void SetContent(const std::string& s, const std::string& content_type);
+        void SetContent(const Status& status, const std::string& content, const std::string& content_type);
 
         void set_html(const std::string& s);
         void set_json(const std::string& s);

@@ -4,7 +4,7 @@
 
 namespace http {
 
-    int Router::register_handler(const std::string& method, const std::string& path, request_handler handler) {
+    int Router::RegisterHandler(const std::string& method, const std::string& path, request_handler handler) {
         auto parts = split_path(path);
         Node* node = &root;
 
@@ -31,7 +31,7 @@ namespace http {
         return 0;
     }
 
-    bool Router::match(http::Request* req, request_handler* out_handler) const {
+    bool Router::Match(http::Request* req, request_handler* out_handler) const {
         std::string path = req->path();
         std::string method = req->method();
         std::string path_without_query;

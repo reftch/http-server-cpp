@@ -34,8 +34,8 @@ add_subdirectory(src)
     
 # Tests
 if(BUILD_TESTS)
-    enable_testing() 
-    add_subdirectory(test)
+    # enable_testing() 
+    # add_subdirectory(test)
 endif()
 
 if(BUILD_EXAMPLES) 

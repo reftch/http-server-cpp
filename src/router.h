@@ -59,7 +59,7 @@ namespace http {
          * @param handler The handler function to call when matched
          * @return int Returns 0 on success, non-zero on failure
          */
-        int register_handler(const std::string& method, const std::string& path, request_handler handler);
+        int RegisterHandler(const std::string& method, const std::string& path, request_handler handler);
 
         /**
          * @brief Matches an HTTP request to a registered handler
@@ -72,7 +72,7 @@ namespace http {
          * @param out_handler Pointer to store the matched handler function (output parameter)
          * @return bool True if a matching handler was found, false otherwise
          */
-        bool match(http::Request* req, request_handler* out_handler) const;
+        bool Match(http::Request* req, request_handler* out_handler) const;
     };
 
 }  // namespace http

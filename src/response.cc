@@ -14,20 +14,20 @@ namespace http {
         }
     }
 
-    void Response::set_content(const Status& status, const std::string& content, const std::string& content_type) {
+    void Response::SetContent(const Status& status, const std::string& content, const std::string& content_type) {
         set_header("Content-Type", content_type);
         set_header("Content-Length", std::to_string(content.size()));
         content_ = content;
         status_ = status;
     }
 
-    void Response::set_content(const std::string& content, const std::string& content_type) {
-        set_content(Status::ok, content, content_type);
+    void Response::SetContent(const std::string& content, const std::string& content_type) {
+        SetContent(Status::ok, content, content_type);
     }
 
-    void Response::set_html(const std::string& content) { set_content(Status::ok, content, content_type::HTML); }
+    void Response::set_html(const std::string& content) { SetContent(Status::ok, content, content_type::HTML); }
 
-    void Response::set_json(const std::string& content) { set_content(Status::ok, content, content_type::JSON); }
+    void Response::set_json(const std::string& content) { SetContent(Status::ok, content, content_type::JSON); }
 
     std::string Response::status() {
         switch (status_) {
