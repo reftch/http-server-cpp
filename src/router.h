@@ -46,9 +46,9 @@ namespace http {
          * @param path The URL path to split
          * @return std::vector<std::string> Vector of path segments
          */
-        static std::vector<std::string> split_path(const std::string& path);
+        static std::vector<std::string> SplitPath(const std::string& path);
 
-        void parse_query_string(const std::string& query_string, http::Request* req) const;
+        void ParseQueryString(const std::string& query_string, http::Request* req) const;
 
        public:
         /**

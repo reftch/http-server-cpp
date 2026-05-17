@@ -61,37 +61,25 @@ namespace http {
         }
     }
 
-    // std::string Request::get_mime_type(const std::string& path) {
-    //     // Extract just the filename part (before any query parameters)
-    //     std::string clean_path = path;
-    //     size_t query_pos = path.find('?');
-    //     if (query_pos != std::string::npos) {
-    //         clean_path = path.substr(0, query_pos);
-    //     }
-
-    //     static const std::map<std::string, const char*> mimeTypes = {
-    //         {"html", content_type::HTML}, {"css", content_type::CSS},        {"js", content_type::JavaScript},
-    //         {"jpg", content_type::JPEG},  {"png", content_type::PNG},        {"xml", content_type::XML},
-    //         {"json", content_type::JSON}, {"txt", content_type::PLAIN_TEXT}, {"gif", content_type::GIF},
-    //         {"svg", content_type::SVG},   {"pdf", content_type::PDF},        {"mp3", content_type::MP3},
-    //         {"mp4", content_type::MP4},   {"webm", content_type::WEBM},      {"woff2", content_type::WOFF2},
-    //         {"ttf", content_type::TTF},   {"eot", content_type::EOT}};
-
-    //     std::string fileExtension = clean_path.substr(clean_path.find_last_of(".") + 1);
-    //     auto it = mimeTypes.find(fileExtension);
-    //     return (it != mimeTypes.end()) ? it->second : "";
-    // }
-
     ContentType Request::GetMimeType(const std::string& path) {
-        // Extract just the filename part (before any query parameters)
-        std::string clean_path = path;
+        // Find base path (up to '?' or whole string if no '?')
+        std::string_view root{path};
         size_t query_pos = path.find('?');
         if (query_pos != std::string::npos) {
-            clean_path = path.substr(0, query_pos);
+            root = std::string_view{path}.substr(0, query_pos);
         }
 
+        // Find last dot; skip if missing
+        size_t dot_pos = root.find_last_of('.');
+        if (dot_pos == std::string_view::npos) {
+            return ContentType::UNKNOWN;
+        }
+
+        // Extract extension (as string_view, no allocation)
+        std::string_view ext = root.substr(dot_pos + 1);
+
         // Map file extensions to ContentType enum
-        static const std::map<std::string, ContentType> mimeTypes = {
+        static constexpr std::pair<std::string_view, ContentType> mimeTypes[] = {
             {"html", ContentType::HTML},      {"htm", ContentType::HTML},    {"css", ContentType::CSS},
             {"js", ContentType::JAVASCRIPT},  {"jpg", ContentType::JPEG},    {"jpeg", ContentType::JPEG},
             {"png", ContentType::PNG},        {"xml", ContentType::XML},     {"json", ContentType::JSON},
@@ -100,23 +88,21 @@ namespace http {
             {"webm", ContentType::WEBM},      {"woff2", ContentType::WOFF2}, {"ttf", ContentType::TTF},
             {"eot", ContentType::EOT}};
 
-        // Extract file extension
-        size_t dot_pos = clean_path.find_last_of(".");
-        if (dot_pos == std::string::npos) {
-            return ContentType::UNKNOWN;  // Default fallback
+        // Convert extension to lowercase in a small buffer (no new string)
+        char buf[16];
+        size_t len = std::min(ext.size(), sizeof(buf) - 1);
+        std::transform(ext.begin(), ext.begin() + len, buf, ::tolower);
+        buf[len] = '\0';
+        std::string_view lower{buf, len};
+
+        // Linear search; very fast for small, hot lists
+        for (const auto& [k, v] : mimeTypes) {
+            if (k == lower) {
+                return v;
+            }
         }
 
-        std::string fileExtension = clean_path.substr(dot_pos + 1);
-
-        // Convert to lowercase for case-insensitive matching
-        std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
-
-        auto it = mimeTypes.find(fileExtension);
-        if (it != mimeTypes.end()) {
-            return it->second;
-        }
-
-        return ContentType::UNKNOWN;  // Default fallback
+        return ContentType::UNKNOWN;
     }
 
 }  // namespace http
