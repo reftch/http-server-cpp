@@ -44,8 +44,8 @@ namespace http {
         std::unordered_map<std::string, std::string> params_;
         std::unordered_map<std::string, std::string> query_;
 
-        void parse_request_line(const std::string& line);
-        void parse_headers(std::istream& ss);
+        void ParseRequestLine(const std::string& line);
+        void ParseHeaders(std::istream& ss);
     };
 
 }  // namespace http

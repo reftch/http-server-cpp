@@ -13,8 +13,8 @@ namespace http {
         std::string line;
 
         if (std::getline(ss, line)) {
-            parse_request_line(line);
-            parse_headers(ss);
+            ParseRequestLine(line);
+            ParseHeaders(ss);
         }
     }
 
@@ -31,7 +31,7 @@ namespace http {
         return it->second != "close";
     }
 
-    void Request::parse_request_line(const std::string& line) {
+    void Request::ParseRequestLine(const std::string& line) {
         std::stringstream line_ss(line);
         std::string method, path, version;
 
@@ -45,7 +45,7 @@ namespace http {
         }
     }
 
-    void Request::parse_headers(std::istream& ss) {
+    void Request::ParseHeaders(std::istream& ss) {
         std::string line;
         while (std::getline(ss, line)) {
             if (line.empty()) {
