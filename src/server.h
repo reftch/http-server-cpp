@@ -30,6 +30,9 @@
 
 namespace http {
 
+    // HTTP Method enum
+    enum class HttpMethod { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS };
+
     /**
      * Represents an HTTP server instance.
      * Provides functionality to create, configure, and run an HTTP server.
@@ -43,9 +46,14 @@ namespace http {
          * @param host The hostname or IP address to bind to.
          * @param port The port number to listen on.
          */
-        Server(const std::string& host, const int& port) : port(port), host(host) {
-            start_time = std::chrono::high_resolution_clock::now();
+        Server(const std::string& host, const int& port) : port_(port), host_(host) {
+            start_time_ = std::chrono::high_resolution_clock::now();
         }
+
+        // Getters
+        std::string host() const { return host_; }
+        int port() const { return port_; }
+        bool is_running() { return running_; }
 
         /**
          * Starts the server and begins listening for incoming connections.
@@ -57,45 +65,35 @@ namespace http {
          * @return 3 on connection binding error
          * @return 4 on connection listener error
          */
-        int start();
+        int Start();
 
         /**
          * Signals the server to shut down, stops the polling loop, and closes all sockets.
          */
-        void stop();
+        void Stop();
 
-        /**
-         * Registers a handler function for a specific HTTP method and path.
-         *
-         * @param method The HTTP method (e.g., "GET", "POST").
-         * @param path The URL path (e.g., "/index.html").
-         * @param handler The function to call when this endpoint is hit.
-         * @return Reference to the server instance for method chaining
-         */
-        Server& set_path(const std::string& method, const std::string& path, request_handler handler);
-
-        // Getters
-        std::string get_host() const { return host; }
-        int get_port() const { return port; }
-        bool is_running() { return running_; }
+        template <HttpMethod Method>
+        void SetRoute(const std::string& path, request_handler handler) {
+            router_.RegisterHandler(std::string(ToString(Method)), path, handler);
+        }
 
        private:
-        const int port;                // Port number to listen on
-        const std::string host;        // Hostname or IP address to bind to
-        int32_t sockfd;                // server file descriptor
-        std::vector<int> client_list;  // client list
+        const int port_;                // Port number to listen on
+        const std::string host_;        // Hostname or IP address to bind to
+        int32_t sockfd_;                // server file descriptor
+        std::vector<int> client_list_;  // client list
 
         // router
-        http::Router g_router;
+        http::Router router_;
 
         // Is server running flag
         bool running_ = false;
 
         // Time when server started
-        std::chrono::high_resolution_clock::time_point start_time;
+        std::chrono::high_resolution_clock::time_point start_time_;
 
         // Maximum number of connections allowed.
-        static constexpr int MAX_CONNS = 96;
+        static constexpr int kMAX_CONNS = 96;
 
         /**
          * Performs an asynchronous HTTP request handling operation
@@ -109,7 +107,7 @@ namespace http {
          *          4. Writing the response back to the client socket
          * @note This function is typically called asynchronously to handle multiple concurrent connections
          */
-        void perform_request(const int sd, const char* buffer, const ssize_t nread);
+        void PerformRequest(const int sd, const char* buffer, const ssize_t nread);
 
         /**
          * Main event loop for handling incoming HTTP requests
@@ -118,7 +116,7 @@ namespace http {
          *          It continuously monitors multiple file descriptors and processes events as they occur.
          * @note This function runs in an infinite loop until the server's running_ flag is set to false
          */
-        void handle_requests();
+        void HandleRequests();
 
         /**
          * Handles HTTP route matching and request processing
@@ -131,7 +129,27 @@ namespace http {
          *          4. Returning appropriate HTTP response based on the processing outcome
          * @note This function is typically called from perform_request() to generate responses for client requests
          */
-        std::string handle_route(http::Request& ctx);
+        std::string HandleRoute(http::Request& ctx);
+
+        constexpr std::string_view ToString(HttpMethod method) {
+            switch (method) {
+                case HttpMethod::GET:
+                    return "GET";
+                case HttpMethod::POST:
+                    return "POST";
+                case HttpMethod::PUT:
+                    return "PUT";
+                case HttpMethod::DELETE:
+                    return "DELETE";
+                case HttpMethod::PATCH:
+                    return "PATCH";
+                case HttpMethod::HEAD:
+                    return "HEAD";
+                case HttpMethod::OPTIONS:
+                    return "OPTIONS";
+            }
+            return "OPTIONS";  // or handle as unreachable
+        }
     };
 
 }  // namespace http

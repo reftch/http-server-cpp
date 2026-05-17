@@ -12,26 +12,26 @@ int main() {
     // Register signal handler with capture
     static auto s_ptr = &s;
     signal(SIGINT, [](int) {
-        s_ptr->stop();
+        s_ptr->Stop();
     });
 
-    s.set_path("GET", "/", [](const http::Request&, http::Response& res) {
-        res.set_html(read_file("./assets/index.html"));
+    s.SetRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
+        res.SetContent<http::ContentType::HTML>(ReadFile("./assets/index.html"));
     });
 
-    s.set_path("GET", "/home", [](const http::Request&, http::Response& res) {
-        res.set_html(read_file("./assets/home.html"));
+    s.SetRoute<http::HttpMethod::GET>("/home", [](const http::Request&, http::Response& res) {
+        res.SetContent<http::ContentType::HTML>(ReadFile("./assets/home.html"));
     });
 
-    s.set_path("GET", "/api/v1/time", [](const http::Request&, http::Response& res) {
+    s.SetRoute<http::HttpMethod::GET>("/api/v1/time", [](const http::Request&, http::Response& res) {
         auto now = std::chrono::system_clock::now();
         auto time_t = std::chrono::system_clock::to_time_t(now);
         std::stringstream ss;
         ss << std::put_time(std::localtime(&time_t), "%H:%M:%S");
-        res.set_content("{\"time\":\"" + ss.str() + "\"}", http::content_type::JSON);
+        res.SetContent<http::ContentType::JSON>("{\"time\":\"" + ss.str() + "\"}");
     });
 
-    s.start();
+    s.Start();
 
     return 0;
 }

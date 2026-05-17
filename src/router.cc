@@ -4,8 +4,8 @@
 
 namespace http {
 
-    int Router::register_handler(const std::string& method, const std::string& path, request_handler handler) {
-        auto parts = split_path(path);
+    int Router::RegisterHandler(const std::string& method, const std::string& path, request_handler handler) {
+        auto parts = SplitPath(path);
         Node* node = &root;
 
         for (const auto& part : parts) {
@@ -31,7 +31,7 @@ namespace http {
         return 0;
     }
 
-    bool Router::match(http::Request* req, request_handler* out_handler) const {
+    bool Router::Match(http::Request* req, request_handler* out_handler) const {
         std::string path = req->path();
         std::string method = req->method();
         std::string path_without_query;
@@ -46,7 +46,7 @@ namespace http {
             path_without_query = path;
         }
 
-        auto parts = split_path(path_without_query);
+        auto parts = SplitPath(path_without_query);
         const Node* node = &root;
 
         for (const auto& part : parts) {
@@ -68,12 +68,12 @@ namespace http {
 
         *out_handler = it->second;
 
-        parse_query_string(query_string, req);
+        ParseQueryString(query_string, req);
 
         return true;
     }
 
-    std::vector<std::string> Router::split_path(const std::string& path) {
+    std::vector<std::string> Router::SplitPath(const std::string& path) {
         std::vector<std::string> parts;
         std::string current;
         for (char c : path) {
@@ -92,7 +92,7 @@ namespace http {
         return parts;
     }
 
-    void Router::parse_query_string(const std::string& query_string, http::Request* req) const {
+    void Router::ParseQueryString(const std::string& query_string, http::Request* req) const {
         if (query_string.empty()) {
             return;
         }
@@ -116,8 +116,8 @@ namespace http {
             }
 
             // URL decode and store
-            key = url_decode(key);
-            value = url_decode(value);
+            key = UrlDecode(key);
+            value = UrlDecode(value);
             req->set_query(key, value);
 
             start = ampersand_pos + 1;

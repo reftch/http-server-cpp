@@ -34,7 +34,7 @@ void print_help() {
               << "  --port [num]   Specify the port number (default: 8080)\n";
 }
 
-std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
+std::map<std::string, std::string> ParseArguments(int argc, char* argv[]) {
     std::map<std::string, std::string> args;
 
     // Set default values
@@ -59,7 +59,7 @@ std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
     return args;
 }
 
-std::string map_to_json(const std::unordered_map<std::string, std::string>& params) {
+std::string MapToJson(const std::unordered_map<std::string, std::string>& params) {
     std::stringstream ss;
     ss << "{";  // Start the JSON object
 
@@ -87,7 +87,7 @@ std::string map_to_json(const std::unordered_map<std::string, std::string>& para
     return ss.str();
 }
 
-std::string read_file(const std::string& path) {
+std::string ReadFile(const std::string& path) {
     std::ifstream file(path);  // ifstream used for reading file if exists.
     int flag = 0;
     if (!file) {
@@ -104,7 +104,7 @@ std::string read_file(const std::string& path) {
     return "";
 }
 
-std::string url_decode(const std::string& encoded) {
+std::string UrlDecode(const std::string& encoded) {
     std::string decoded;
     for (size_t i = 0; i < encoded.length(); ++i) {
         if (encoded[i] == '%' && i + 2 < encoded.length()) {

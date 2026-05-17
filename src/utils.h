@@ -43,12 +43,12 @@ void print_help();
  * parseArguments(5, {"server", "--port", "9000", "--host", "192.168.1.1"})
  * // Returns map with "--host": "192.168.1.1" and "--port": "9000"
  */
-std::map<std::string, std::string> parseArguments(int argc, char* argv[]);
+std::map<std::string, std::string> ParseArguments(int argc, char* argv[]);
 
-std::string map_to_json(const std::unordered_map<std::string, std::string>& params);
+std::string MapToJson(const std::unordered_map<std::string, std::string>& params);
 
-std::string read_file(const std::string& path);
+std::string ReadFile(const std::string& path);
 
-std::string url_decode(const std::string& encoded);
+std::string UrlDecode(const std::string& encoded);
 
 #endif  // UTILS_HPP

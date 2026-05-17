@@ -9,15 +9,53 @@
 namespace http {
 
     Request::Request(const std::string& raw_request) {
-        std::stringstream ss(raw_request);
-        std::string line;
+        size_t line_end = raw_request.find("\r\n");
+        if (line_end == std::string::npos) return;
 
-        if (std::getline(ss, line)) {
-            parse_request_line(line);
-            parse_headers(ss);
-        }
+        ParseRequestLine(std::string_view(raw_request).substr(0, line_end));
+
+        size_t pos = line_end + 2;
+        ParseHeaders(std::string_view(raw_request), pos);
     }
 
+    void Request::ParseRequestLine(std::string_view line) {
+        size_t m1 = line.find(' ');
+        size_t m2 = line.find(' ', m1 + 1);
+        if (m1 == std::string_view::npos || m2 == std::string_view::npos) return;
+
+        method_ = std::string(line.substr(0, m1));
+        path_ = std::string(line.substr(m1 + 1, m2 - m1 - 1));
+        version_ = std::string(line.substr(m2 + 1));
+        mime_type_ = GetMimeType(path_);
+        params_.clear();
+        query_.clear();
+    }
+
+    void Request::ParseHeaders(std::string_view raw_request, size_t& pos) {
+        while (pos < raw_request.size()) {
+            size_t end = raw_request.find("\r\n", pos);
+            if (end == std::string_view::npos) break;
+            if (end == pos) {
+                pos = end + 2;
+                break;
+            }
+
+            size_t colon = raw_request.find(':', pos);
+            if (colon != std::string_view::npos && colon < end) {
+                std::string_view name = raw_request.substr(pos, colon - pos);
+
+                size_t value_start = colon + 1;
+                if (value_start < end && raw_request[value_start] == ' ') {
+                    ++value_start;
+                }
+
+                std::string_view value = raw_request.substr(value_start, end - value_start);
+                headers_[name] = value;
+            }
+
+            pos = end + 2;
+        }
+    }
     bool Request::is_keep_alive() {
         // HTTP/1.1 default is keep-alive
         // Only close if explicitly requested
@@ -31,37 +69,7 @@ namespace http {
         return it->second != "close";
     }
 
-    void Request::parse_request_line(const std::string& line) {
-        std::stringstream line_ss(line);
-        std::string method, path, version;
-
-        if (line_ss >> method >> path >> version) {
-            this->method_ = method;
-            this->path_ = path;
-            this->version_ = version;
-            this->mime_type_ = get_mime_type(path);
-            this->params_ = {};
-            this->query_ = {};
-        }
-    }
-
-    void Request::parse_headers(std::istream& ss) {
-        std::string line;
-        while (std::getline(ss, line)) {
-            if (line.empty()) {
-                break;
-            }
-
-            size_t colon_pos = line.find(':');
-            if (colon_pos != std::string::npos) {
-                std::string header_name = line.substr(0, colon_pos);
-                std::string header_value = line.substr(colon_pos + 1);
-                headers_[header_name] = header_name;
-            }
-        }
-    }
-
-    std::string Request::get_mime_type(const std::string& path) {
+    std::string Request::GetMimeType(const std::string& path) {
         // Extract just the filename part (before any query parameters)
         std::string clean_path = path;
         size_t query_pos = path.find('?');
@@ -69,15 +77,29 @@ namespace http {
             clean_path = path.substr(0, query_pos);
         }
 
-        static const std::map<std::string, const char*> mimeTypes = {
-            {"html", content_type::HTML}, {"css", content_type::CSS},        {"js", content_type::JavaScript},
-            {"jpg", content_type::JPEG},  {"png", content_type::PNG},        {"xml", content_type::XML},
-            {"json", content_type::JSON}, {"txt", content_type::PLAIN_TEXT}, {"gif", content_type::GIF},
-            {"svg", content_type::SVG},   {"pdf", content_type::PDF},        {"mp3", content_type::MP3},
-            {"mp4", content_type::MP4},   {"webm", content_type::WEBM},      {"woff2", content_type::WOFF2},
-            {"ttf", content_type::TTF},   {"eot", content_type::EOT}};
-
+        // Extract file extension
         std::string fileExtension = clean_path.substr(clean_path.find_last_of(".") + 1);
+
+        // Convert to lowercase for case-insensitive matching
+        std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
+
+        // If no extension found, return empty string
+        if (fileExtension.empty()) {
+            return "";
+        }
+
+        static const std::map<std::string, const char*> mimeTypes = {
+            {"html", "text/html"},        {"htm", "text/html"},
+            {"css", "text/css"},          {"js", "application/javascript"},
+            {"jpg", "image/jpeg"},        {"jpeg", "image/jpeg"},
+            {"png", "image/png"},         {"gif", "image/gif"},
+            {"svg", "image/svg+xml"},     {"xml", "application/xml"},
+            {"json", "application/json"}, {"txt", "text/plain"},
+            {"pdf", "application/pdf"},   {"mp3", "audio/mpeg"},
+            {"mp4", "video/mp4"},         {"webm", "video/webm"},
+            {"woff", "font/woff"},        {"woff2", "font/woff2"},
+            {"ttf", "font/ttf"},          {"eot", "application/vnd.ms-fontobject"}};
+
         auto it = mimeTypes.find(fileExtension);
         return (it != mimeTypes.end()) ? it->second : "";
     }

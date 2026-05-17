@@ -1,11 +1,33 @@
 #ifndef HTTP_RESPONSE_H_
 #define HTTP_RESPONSE_H_
 
+#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace http {
+
+    enum class ContentType {
+        HTML,
+        CSS,
+        JAVASCRIPT,
+        JPEG,
+        PNG,
+        XML,
+        JSON,
+        PLAIN_TEXT,
+        GIF,
+        SVG,
+        PDF,
+        MP3,
+        MP4,
+        WEBM,
+        WOFF2,
+        TTF,
+        EOT,
+        UNKNOWN
+    };
 
     enum class Status {
         ok = 200,
@@ -35,13 +57,23 @@ namespace http {
 
         std::string content() { return content_; }
 
-        void set_content(const std::string& s, const std::string& content_type);
-        void set_content(const Status& status, const std::string& content, const std::string& content_type);
+        template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
+        void SetContent(const std::string& content) {
+            set_header("Content-Type", ContentTypeToString(T));
+            set_header("Content-Length", std::to_string(content.size()));
+            content_ = content;
+            status_ = S;
+        }
 
-        void set_html(const std::string& s);
-        void set_json(const std::string& s);
+        template <Status S = Status::ok>
+        void SetContentByType(const std::string& content, std::string type) {
+            set_header("Content-Type", type);
+            set_header("Content-Length", std::to_string(content.size()));
+            content_ = content;
+            status_ = S;
+        }
 
-        std::string build();
+        std::string Build();
 
        private:
         http::Status status_ = Status::ok;
@@ -50,36 +82,56 @@ namespace http {
         std::string content_type_;
         std::unordered_map<std::string, std::string> headers_;
 
-        std::string status();
+        std::string StatusToString();
+
+        constexpr std::string ContentTypeToString(ContentType type) {
+            switch (type) {
+                case ContentType::JSON:
+                    return "application/json";
+                case ContentType::HTML:
+                    return "text/html";
+                case ContentType::PLAIN_TEXT:
+                    return "text/plain; charset=utf-8";
+                case ContentType::CSS:
+                    return "text/css";
+                case ContentType::JAVASCRIPT:
+                    return "application/javascript";
+                case ContentType::JPEG:
+                    return "image/jpeg";
+                case ContentType::PNG:
+                    return "image/png";
+                case ContentType::GIF:
+                    return "image/gif";
+                case ContentType::SVG:
+                    return "image/svg+xml";
+                case ContentType::PDF:
+                    return "application/pdf";
+                case ContentType::MP3:
+                    return "audio/mpeg";
+                case ContentType::MP4:
+                    return "video/mp4";
+                case ContentType::WEBM:
+                    return "video/webm";
+                case ContentType::WOFF2:
+                    return "font/woff2";
+                case ContentType::TTF:
+                    return "font/ttf";
+                case ContentType::EOT:
+                    return "application/vnd.ms-fontobject";
+                case ContentType::XML:
+                    return "application/xml";
+                case ContentType::UNKNOWN:
+                    return "application/octet-stream";
+            }
+            // This should never be reached due to exhaustive switch
+            return "application/octet-stream";
+        }
     };
 
     namespace misc_strings {
         const char name_value_separator[] = {':', ' ', '\0'};
         const char crlf[] = {'\r', '\n', '\0'};
     }  // namespace misc_strings
-
-    namespace content_type {
-        constexpr const char* JSON = "application/json";
-        constexpr const char* XML = "application/xml";
-        constexpr const char* BINARY_STREAM = "application/octet-stream";  // Generic binary data/files
-        constexpr const char* WEBASSEMBLY = "application/wasm";            // WebAssembly modules
-        constexpr const char* HTML = "text/html";
-        constexpr const char* CSS = "text/css";
-        constexpr const char* JavaScript = "application/javascript";  // Modern standard for JS
-        constexpr const char* PLAIN_TEXT = "text/plain; charset=utf-8";
-        constexpr const char* PNG = "image/png";
-        constexpr const char* JPEG = "image/jpeg";
-        constexpr const char* GIF = "image/gif";
-        constexpr const char* SVG = "image/svg+xml";
-        constexpr const char* PDF = "application/pdf";
-        constexpr const char* TXT = "text/plain";  // General plain text files
-        constexpr const char* MP3 = "audio/mpeg";
-        constexpr const char* MP4 = "video/mp4";
-        constexpr const char* WEBM = "video/webm";
-        constexpr const char* WOFF2 = "font/woff2";
-        constexpr const char* TTF = "font/ttf";
-        constexpr const char* EOT = "font/ttf";  // Embedded OpenType
-    }  // namespace content_type
 
     namespace status_strings {
         const std::string ok = "HTTP/1.0 200 OK\r\n";
