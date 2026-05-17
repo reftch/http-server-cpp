@@ -56,6 +56,7 @@ namespace http {
             pos = end + 2;
         }
     }
+
     bool Request::is_keep_alive() {
         // HTTP/1.1 default is keep-alive
         // Only close if explicitly requested

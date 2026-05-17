@@ -90,6 +90,38 @@ TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
     EXPECT_EQ("123", req.params().at("id"));
 }
 
+TEST_F(ServerTestFixture, RegisterHandlerWithMultiplePathParameter) {
+    // Arrange
+    http::Router r;
+    std::string path = "/api/v1/users/:par1/age/:par2/step/:par3";
+    std::string method = "GET";
+
+    auto handler = [](const http::Request& req, http::Response& res) {
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+    };
+
+    r.RegisterHandler(method, path, handler);
+
+    // Create a request
+    http::Request req;
+    req.set_method(method);
+    req.set_path("/api/v1/users/123/age/33/step/100");
+
+    http::Response res;
+
+    // Act
+    http::request_handler out_handler;
+    bool matched = r.Match(&req, &out_handler);
+
+    // Assert
+    ASSERT_TRUE(matched);
+    out_handler(req, res);
+    EXPECT_EQ("Test /api/v1/users/123/age/33/step/100", res.content());
+    EXPECT_EQ("123", req.params().at("par1"));
+    EXPECT_EQ("33", req.params().at("par2"));
+    EXPECT_EQ("100", req.params().at("par3"));
+}
+
 TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
     // Arrange
     http::Router r;

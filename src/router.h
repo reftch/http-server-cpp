@@ -38,7 +38,7 @@ namespace http {
             std::unordered_map<std::string, request_handler> handlers;
         };
 
-        Node root;
+        Node root_;
 
         /**
          * @brief Splits a URL path into its component segments

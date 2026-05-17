@@ -6,7 +6,7 @@ namespace http {
 
     int Router::RegisterHandler(const std::string& method, const std::string& path, request_handler handler) {
         auto parts = SplitPath(path);
-        Node* node = &root;
+        Node* node = &root_;
 
         for (const auto& part : parts) {
             if (!part.empty() && part[0] == ':') {
@@ -47,7 +47,7 @@ namespace http {
         }
 
         auto parts = SplitPath(path_without_query);
-        const Node* node = &root;
+        const Node* node = &root_;
 
         for (const auto& part : parts) {
             auto it = node->static_children.find(part);
@@ -68,6 +68,7 @@ namespace http {
 
         *out_handler = it->second;
 
+        // Parse query parameters
         ParseQueryString(query_string, req);
 
         return true;
