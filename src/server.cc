@@ -176,7 +176,7 @@ namespace http {
     std::string Server::HandleRoute(http::Request& req) {
         Response res(req.is_keep_alive());
 
-        if (req.mime_type() == ContentType::UNKNOWN) {
+        if (req.mime_type() == "") {
             http::request_handler handler;
 
             if (router_.Match(&req, &handler)) {

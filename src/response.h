@@ -59,25 +59,19 @@ namespace http {
 
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
         void SetContent(const std::string& content) {
-            set_header("Content-Type", std::string(ContentTypeToString(T)));
+            set_header("Content-Type", ContentTypeToString(T));
             set_header("Content-Length", std::to_string(content.size()));
             content_ = content;
             status_ = S;
         }
 
         template <Status S = Status::ok>
-        void SetContentByType(const std::string& content, ContentType type) {
-            set_header("Content-Type", std::string(ContentTypeToString(type)));
+        void SetContentByType(const std::string& content, std::string type) {
+            set_header("Content-Type", type);
             set_header("Content-Length", std::to_string(content.size()));
             content_ = content;
             status_ = S;
         }
-
-        // void SetContent(const std::string& s, const std::string& content_type);
-        // void SetContent(const Status& status, const std::string& content, const std::string& content_type);
-
-        // void SetHtml(const std::string& s);
-        // void SetJson(const std::string& s);
 
         std::string Build();
 
@@ -90,7 +84,7 @@ namespace http {
 
         std::string StatusToString();
 
-        constexpr std::string_view ContentTypeToString(ContentType type) {
+        constexpr std::string ContentTypeToString(ContentType type) {
             switch (type) {
                 case ContentType::JSON:
                     return "application/json";
@@ -138,29 +132,6 @@ namespace http {
         const char name_value_separator[] = {':', ' ', '\0'};
         const char crlf[] = {'\r', '\n', '\0'};
     }  // namespace misc_strings
-
-    namespace content_type {
-        constexpr const char* JSON = "application/json";
-        constexpr const char* XML = "application/xml";
-        constexpr const char* BINARY_STREAM = "application/octet-stream";  // Generic binary data/files
-        constexpr const char* WEBASSEMBLY = "application/wasm";            // WebAssembly modules
-        constexpr const char* HTML = "text/html";
-        constexpr const char* CSS = "text/css";
-        constexpr const char* JavaScript = "application/javascript";  // Modern standard for JS
-        constexpr const char* PLAIN_TEXT = "text/plain; charset=utf-8";
-        constexpr const char* PNG = "image/png";
-        constexpr const char* JPEG = "image/jpeg";
-        constexpr const char* GIF = "image/gif";
-        constexpr const char* SVG = "image/svg+xml";
-        constexpr const char* PDF = "application/pdf";
-        constexpr const char* TXT = "text/plain";  // General plain text files
-        constexpr const char* MP3 = "audio/mpeg";
-        constexpr const char* MP4 = "video/mp4";
-        constexpr const char* WEBM = "video/webm";
-        constexpr const char* WOFF2 = "font/woff2";
-        constexpr const char* TTF = "font/ttf";
-        constexpr const char* EOT = "font/ttf";  // Embedded OpenType
-    }  // namespace content_type
 
     namespace status_strings {
         const std::string ok = "HTTP/1.0 200 OK\r\n";

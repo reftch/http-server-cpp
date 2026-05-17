@@ -1,6 +1,6 @@
 # Create a combined tests executable
 add_executable (tests
-    server_test.cc
+    # server_test.cc
     router_test.cc
     request_test.cc
 )

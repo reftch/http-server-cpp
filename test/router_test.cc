@@ -9,10 +9,10 @@ TEST_F(ServerTestFixture, RegisterHandlerSucceeds) {
     std::string method = "GET";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.set_content("Test " + req.path(), http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.register_handler(method, path, handler);
+    r.RegisterHandler(method, path, handler);
 
     // Create a request
     http::Request req;
@@ -23,7 +23,7 @@ TEST_F(ServerTestFixture, RegisterHandlerSucceeds) {
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -38,10 +38,10 @@ TEST_F(ServerTestFixture, RegisterPostHandlerSucceeds) {
     std::string method = "POST";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.set_content("Test " + req.path(), http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.register_handler(method, path, handler);
+    r.RegisterHandler(method, path, handler);
 
     // Create a request
     http::Request req;
@@ -52,7 +52,7 @@ TEST_F(ServerTestFixture, RegisterPostHandlerSucceeds) {
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -67,10 +67,10 @@ TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
     std::string method = "GET";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.set_content("Test " + req.path(), http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.register_handler(method, path, handler);
+    r.RegisterHandler(method, path, handler);
 
     // Create a request
     http::Request req;
@@ -81,7 +81,7 @@ TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -94,9 +94,10 @@ TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/search", handler);
+
+    r.RegisterHandler("GET", "/search", handler);
 
     // Act
     http::Request req;
@@ -105,7 +106,7 @@ TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -119,9 +120,10 @@ TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/users", handler);
+
+    r.RegisterHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
@@ -130,7 +132,7 @@ TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -143,9 +145,9 @@ TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/users", handler);
+    r.RegisterHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
@@ -154,7 +156,7 @@ TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -169,9 +171,9 @@ TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/users/:id", handler);
+    r.RegisterHandler("GET", "/users/:id", handler);
 
     // Act
     http::Request req;
@@ -180,7 +182,7 @@ TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -196,9 +198,9 @@ TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/users", handler);
+    r.RegisterHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
@@ -207,7 +209,7 @@ TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -219,9 +221,9 @@ TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/users", handler);
+    r.RegisterHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
@@ -230,7 +232,7 @@ TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -242,9 +244,9 @@ TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/search", handler);
+    r.RegisterHandler("GET", "/search", handler);
 
     // Act
     http::Request req;
@@ -253,7 +255,7 @@ TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -267,9 +269,9 @@ TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/users", handler);
+    r.RegisterHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
@@ -278,7 +280,7 @@ TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -291,9 +293,9 @@ TEST_F(ServerTestFixture, MatchWithNoQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.set_content("Test", http::content_type::PLAIN_TEXT);
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.register_handler("GET", "/users/:id", handler);
+    r.RegisterHandler("GET", "/users/:id", handler);
 
     // Act
     http::Request req;
@@ -302,7 +304,7 @@ TEST_F(ServerTestFixture, MatchWithNoQueryParameters) {
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
+    bool matched = r.Match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);

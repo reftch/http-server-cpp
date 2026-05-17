@@ -23,19 +23,24 @@ namespace http {
         const std::unordered_map<std::string, std::string>& params() const { return params_; }
         const std::unordered_map<std::string, std::string>& query() const { return query_; }
 
+        void set_method(const std::string& method) { method_ = method; }
+        void set_path(const std::string& path) { path_ = path; }
+        void set_version(const std::string& version) { version_ = version; }
+        void set_mime_type(const std::string& mime_type) { mime_type_ = mime_type; }
+
         void set_param(const std::string& key, const std::string& value) { params_[key] = value; }
         void set_query(const std::string& key, const std::string& value) { query_[key] = value; }
 
         bool is_keep_alive();
-        ContentType mime_type() const { return mime_type_; }
+        std::string mime_type() const { return mime_type_; }
 
-        ContentType GetMimeType(const std::string& path);
+        std::string GetMimeType(const std::string& path);
 
        private:
         std::string method_;
         std::string path_;
         std::string version_;
-        ContentType mime_type_;
+        std::string mime_type_;
 
         std::unordered_map<std::string, std::string> headers_;
         std::unordered_map<std::string, std::string> params_;
