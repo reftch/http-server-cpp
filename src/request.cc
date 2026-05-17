@@ -9,15 +9,53 @@
 namespace http {
 
     Request::Request(const std::string& raw_request) {
-        std::stringstream ss(raw_request);
-        std::string line;
+        size_t line_end = raw_request.find("\r\n");
+        if (line_end == std::string::npos) return;
 
-        if (std::getline(ss, line)) {
-            ParseRequestLine(line);
-            ParseHeaders(ss);
-        }
+        ParseRequestLine(std::string_view(raw_request).substr(0, line_end));
+
+        size_t pos = line_end + 2;
+        ParseHeaders(std::string_view(raw_request), pos);
     }
 
+    void Request::ParseRequestLine(std::string_view line) {
+        size_t m1 = line.find(' ');
+        size_t m2 = line.find(' ', m1 + 1);
+        if (m1 == std::string_view::npos || m2 == std::string_view::npos) return;
+
+        method_ = std::string(line.substr(0, m1));
+        path_ = std::string(line.substr(m1 + 1, m2 - m1 - 1));
+        version_ = std::string(line.substr(m2 + 1));
+        mime_type_ = GetMimeType(path_);
+        params_.clear();
+        query_.clear();
+    }
+
+    void Request::ParseHeaders(std::string_view raw_request, size_t& pos) {
+        while (pos < raw_request.size()) {
+            size_t end = raw_request.find("\r\n", pos);
+            if (end == std::string_view::npos) break;
+            if (end == pos) {
+                pos = end + 2;
+                break;
+            }
+
+            size_t colon = raw_request.find(':', pos);
+            if (colon != std::string_view::npos && colon < end) {
+                std::string_view name = raw_request.substr(pos, colon - pos);
+
+                size_t value_start = colon + 1;
+                if (value_start < end && raw_request[value_start] == ' ') {
+                    ++value_start;
+                }
+
+                std::string_view value = raw_request.substr(value_start, end - value_start);
+                headers_[name] = value;
+            }
+
+            pos = end + 2;
+        }
+    }
     bool Request::is_keep_alive() {
         // HTTP/1.1 default is keep-alive
         // Only close if explicitly requested
@@ -29,36 +67,6 @@ namespace http {
 
         // Check if explicitly closed
         return it->second != "close";
-    }
-
-    void Request::ParseRequestLine(const std::string& line) {
-        std::stringstream line_ss(line);
-        std::string method, path, version;
-
-        if (line_ss >> method >> path >> version) {
-            this->method_ = method;
-            this->path_ = path;
-            this->version_ = version;
-            this->mime_type_ = GetMimeType(path);
-            this->params_ = {};
-            this->query_ = {};
-        }
-    }
-
-    void Request::ParseHeaders(std::istream& ss) {
-        std::string line;
-        while (std::getline(ss, line)) {
-            if (line.empty()) {
-                break;
-            }
-
-            size_t colon_pos = line.find(':');
-            if (colon_pos != std::string::npos) {
-                std::string header_name = line.substr(0, colon_pos);
-                std::string header_value = line.substr(colon_pos + 1);
-                headers_[header_name] = header_name;
-            }
-        }
     }
 
     std::string Request::GetMimeType(const std::string& path) {

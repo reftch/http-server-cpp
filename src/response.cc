@@ -14,21 +14,6 @@ namespace http {
         }
     }
 
-    // void Response::SetContent(const Status& status, const std::string& content, const std::string& content_type) {
-    //     set_header("Content-Type", content_type);
-    //     set_header("Content-Length", std::to_string(content.size()));
-    //     content_ = content;
-    //     status_ = status;
-    // }
-
-    // void Response::SetContent(const std::string& content, const std::string& content_type) {
-    //     SetContent(Status::ok, content, content_type);
-    // }
-
-    // void Response::SetHtml(const std::string& content) { SetContent(Status::ok, content, content_type::HTML); }
-
-    // void Response::SetJson(const std::string& content) { SetContent(Status::ok, content, content_type::JSON); }
-
     std::string Response::StatusToString() {
         switch (status_) {
             case Status::ok:

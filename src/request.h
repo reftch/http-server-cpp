@@ -18,7 +18,7 @@ namespace http {
         const std::string& method() const { return method_; }
         const std::string& path() const { return path_; }
         const std::string& version() const { return version_; }
-        const std::unordered_map<std::string, std::string>& headers() const { return headers_; }
+        const std::unordered_map<std::string_view, std::string_view>& headers() const { return headers_; }
 
         const std::unordered_map<std::string, std::string>& params() const { return params_; }
         const std::unordered_map<std::string, std::string>& query() const { return query_; }
@@ -42,12 +42,12 @@ namespace http {
         std::string version_;
         std::string mime_type_;
 
-        std::unordered_map<std::string, std::string> headers_;
+        std::unordered_map<std::string_view, std::string_view> headers_;
         std::unordered_map<std::string, std::string> params_;
         std::unordered_map<std::string, std::string> query_;
 
-        void ParseRequestLine(const std::string& line);
-        void ParseHeaders(std::istream& ss);
+        void ParseRequestLine(std::string_view line);
+        void ParseHeaders(std::string_view raw_request, size_t& pos);
     };
 
 }  // namespace http
