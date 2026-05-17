@@ -16,11 +16,11 @@ int main() {
     });
 
     s.SetRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
-        res.set_html(read_file("./assets/index.html"));
+        res.SetContent<http::ContentType::HTML>(read_file("./assets/index.html"));
     });
 
     s.SetRoute<http::HttpMethod::GET>("/home", [](const http::Request&, http::Response& res) {
-        res.set_html(read_file("./assets/home.html"));
+        res.SetContent<http::ContentType::HTML>(read_file("./assets/home.html"));
     });
 
     s.SetRoute<http::HttpMethod::GET>("/api/v1/time", [](const http::Request&, http::Response& res) {
@@ -28,7 +28,8 @@ int main() {
         auto time_t = std::chrono::system_clock::to_time_t(now);
         std::stringstream ss;
         ss << std::put_time(std::localtime(&time_t), "%H:%M:%S");
-        res.SetContent("{\"time\":\"" + ss.str() + "\"}", http::content_type::JSON);
+        res.SetContent<http::ContentType::JSON>("{\"time\":\"" + ss.str() + "\"}");
+        // res.SetContent("{\"time\":\"" + ss.str() + "\"}", http::content_type::JSON);
     });
 
     s.Start();

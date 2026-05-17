@@ -101,7 +101,7 @@ namespace http {
                 pollfds.push_back(pfd);
             }
 
-            // std::cout << "Client size: " << client_list.size() << '\n';
+            // std::cout << "Client size: " << client_list_.size() << '\n';
 
             // Using poll for listening to multiple clients with timeout
             int activity = poll(pollfds.data(), pollfds.size(), 3000);
@@ -137,6 +137,7 @@ namespace http {
                     ssize_t nread = read(sd, &buffer, sizeof(buffer) - 1);
                     if (nread > 0) {
                         // perform request
+
                         PerformRequest(sd, buffer, nread);
                         // Launch asynchronously
                         // auto future = std::async(std::launch::async, [&]() { perform_request(sd, buffer, nread); });
@@ -175,23 +176,23 @@ namespace http {
     std::string Server::HandleRoute(http::Request& req) {
         Response res(req.is_keep_alive());
 
-        if (req.mime_type() == "") {
+        if (req.mime_type() == ContentType::UNKNOWN) {
             http::request_handler handler;
 
             if (router_.Match(&req, &handler)) {
                 // Call handler
                 handler(req, res);
             } else {
-                res.SetContent(Status::not_found, "Not Found", content_type::PLAIN_TEXT);
+                res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
             }
         } else {
             auto content = read_file("./assets" + req.path());
             if (content != "") {
-                res.SetContent(content, req.mime_type().c_str());
+                res.SetContentByType(content, req.mime_type());
             }
         }
 
-        return res.build();
+        return res.Build();
     }
 
 }  // namespace http

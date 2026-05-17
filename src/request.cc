@@ -39,7 +39,7 @@ namespace http {
             this->method_ = method;
             this->path_ = path;
             this->version_ = version;
-            this->mime_type_ = get_mime_type(path);
+            this->mime_type_ = GetMimeType(path);
             this->params_ = {};
             this->query_ = {};
         }
@@ -61,7 +61,28 @@ namespace http {
         }
     }
 
-    std::string Request::get_mime_type(const std::string& path) {
+    // std::string Request::get_mime_type(const std::string& path) {
+    //     // Extract just the filename part (before any query parameters)
+    //     std::string clean_path = path;
+    //     size_t query_pos = path.find('?');
+    //     if (query_pos != std::string::npos) {
+    //         clean_path = path.substr(0, query_pos);
+    //     }
+
+    //     static const std::map<std::string, const char*> mimeTypes = {
+    //         {"html", content_type::HTML}, {"css", content_type::CSS},        {"js", content_type::JavaScript},
+    //         {"jpg", content_type::JPEG},  {"png", content_type::PNG},        {"xml", content_type::XML},
+    //         {"json", content_type::JSON}, {"txt", content_type::PLAIN_TEXT}, {"gif", content_type::GIF},
+    //         {"svg", content_type::SVG},   {"pdf", content_type::PDF},        {"mp3", content_type::MP3},
+    //         {"mp4", content_type::MP4},   {"webm", content_type::WEBM},      {"woff2", content_type::WOFF2},
+    //         {"ttf", content_type::TTF},   {"eot", content_type::EOT}};
+
+    //     std::string fileExtension = clean_path.substr(clean_path.find_last_of(".") + 1);
+    //     auto it = mimeTypes.find(fileExtension);
+    //     return (it != mimeTypes.end()) ? it->second : "";
+    // }
+
+    ContentType Request::GetMimeType(const std::string& path) {
         // Extract just the filename part (before any query parameters)
         std::string clean_path = path;
         size_t query_pos = path.find('?');
@@ -69,17 +90,33 @@ namespace http {
             clean_path = path.substr(0, query_pos);
         }
 
-        static const std::map<std::string, const char*> mimeTypes = {
-            {"html", content_type::HTML}, {"css", content_type::CSS},        {"js", content_type::JavaScript},
-            {"jpg", content_type::JPEG},  {"png", content_type::PNG},        {"xml", content_type::XML},
-            {"json", content_type::JSON}, {"txt", content_type::PLAIN_TEXT}, {"gif", content_type::GIF},
-            {"svg", content_type::SVG},   {"pdf", content_type::PDF},        {"mp3", content_type::MP3},
-            {"mp4", content_type::MP4},   {"webm", content_type::WEBM},      {"woff2", content_type::WOFF2},
-            {"ttf", content_type::TTF},   {"eot", content_type::EOT}};
+        // Map file extensions to ContentType enum
+        static const std::map<std::string, ContentType> mimeTypes = {
+            {"html", ContentType::HTML},      {"htm", ContentType::HTML},    {"css", ContentType::CSS},
+            {"js", ContentType::JAVASCRIPT},  {"jpg", ContentType::JPEG},    {"jpeg", ContentType::JPEG},
+            {"png", ContentType::PNG},        {"xml", ContentType::XML},     {"json", ContentType::JSON},
+            {"txt", ContentType::PLAIN_TEXT}, {"gif", ContentType::GIF},     {"svg", ContentType::SVG},
+            {"pdf", ContentType::PDF},        {"mp3", ContentType::MP3},     {"mp4", ContentType::MP4},
+            {"webm", ContentType::WEBM},      {"woff2", ContentType::WOFF2}, {"ttf", ContentType::TTF},
+            {"eot", ContentType::EOT}};
 
-        std::string fileExtension = clean_path.substr(clean_path.find_last_of(".") + 1);
+        // Extract file extension
+        size_t dot_pos = clean_path.find_last_of(".");
+        if (dot_pos == std::string::npos) {
+            return ContentType::UNKNOWN;  // Default fallback
+        }
+
+        std::string fileExtension = clean_path.substr(dot_pos + 1);
+
+        // Convert to lowercase for case-insensitive matching
+        std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
+
         auto it = mimeTypes.find(fileExtension);
-        return (it != mimeTypes.end()) ? it->second : "";
+        if (it != mimeTypes.end()) {
+            return it->second;
+        }
+
+        return ContentType::UNKNOWN;  // Default fallback
     }
 
 }  // namespace http

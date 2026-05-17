@@ -14,22 +14,22 @@ namespace http {
         }
     }
 
-    void Response::SetContent(const Status& status, const std::string& content, const std::string& content_type) {
-        set_header("Content-Type", content_type);
-        set_header("Content-Length", std::to_string(content.size()));
-        content_ = content;
-        status_ = status;
-    }
+    // void Response::SetContent(const Status& status, const std::string& content, const std::string& content_type) {
+    //     set_header("Content-Type", content_type);
+    //     set_header("Content-Length", std::to_string(content.size()));
+    //     content_ = content;
+    //     status_ = status;
+    // }
 
-    void Response::SetContent(const std::string& content, const std::string& content_type) {
-        SetContent(Status::ok, content, content_type);
-    }
+    // void Response::SetContent(const std::string& content, const std::string& content_type) {
+    //     SetContent(Status::ok, content, content_type);
+    // }
 
-    void Response::set_html(const std::string& content) { SetContent(Status::ok, content, content_type::HTML); }
+    // void Response::SetHtml(const std::string& content) { SetContent(Status::ok, content, content_type::HTML); }
 
-    void Response::set_json(const std::string& content) { SetContent(Status::ok, content, content_type::JSON); }
+    // void Response::SetJson(const std::string& content) { SetContent(Status::ok, content, content_type::JSON); }
 
-    std::string Response::status() {
+    std::string Response::StatusToString() {
         switch (status_) {
             case Status::ok:
                 return status_strings::ok;
@@ -68,8 +68,8 @@ namespace http {
         }
     }
 
-    std::string Response::build() {
-        std::string body = status();
+    std::string Response::Build() {
+        std::string body = StatusToString();
 
         // Add all headers (order not guaranteed, but acceptable for HTTP)
         for (const auto& header : headers_) {
