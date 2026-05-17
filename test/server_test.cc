@@ -16,19 +16,19 @@ using namespace http;
 // Test Suite for checking initial state and configuration
 TEST_F(ServerTestFixture, ConstructorSetsState) {
     // Assert that the server object was initialized correctly
-    EXPECT_EQ(test_host, server_->get_host());
-    EXPECT_EQ(test_port, server_->get_port());
+    EXPECT_EQ(test_host, server_->host());
+    EXPECT_EQ(test_port, server_->port());
     EXPECT_FALSE(server_->is_running());
 }
 
 void stop_server_thread(std::unique_ptr<Server>& server_ptr) {
-    std::cout << "thread reading server host: " << server_ptr->get_host() << std::endl;
+    std::cout << "thread reading server host: " << server_ptr->host() << std::endl;
     // Pause the execution of this specific thread for the 1 second
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     // check running state
     EXPECT_TRUE(server_ptr->is_running());
-    server_ptr->stop();
+    server_ptr->Stop();
 }
 
 // Test Suite for testing server control flow
@@ -36,7 +36,7 @@ TEST_F(ServerTestFixture, StartAndStopControlsState) {
     std::thread t(stop_server_thread, std::ref(server_));
 
     // start the server
-    int start_result = server_->start();
+    int start_result = server_->Start();
     EXPECT_EQ(0, start_result);  // expect success
 
     // The main thread will pause here until the worker_thread completes its execution
