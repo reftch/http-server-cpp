@@ -94,6 +94,7 @@ namespace http {
         std::string static_directory_ = "./assets";
 
         // Time when server started
+        // std::chrono::high_resolution_clock::time_point end_time_;
         std::chrono::high_resolution_clock::time_point start_time_;
 
         // Maximum number of connections allowed.
