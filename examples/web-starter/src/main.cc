@@ -31,6 +31,12 @@ int main() {
         res.SetContent<http::ContentType::JSON>("{\"time\":\"" + ss.str() + "\"}");
     });
 
+    s.SetRoute<http::HttpMethod::GET>("/api/v1/users/:id/:age", [](const http::Request& req, http::Response& res) {
+        auto id = req.params().at("id");
+        auto age = req.params().at("age");
+        res.SetContent<http::ContentType::JSON>("{\"id\":\"" + id + ",\" + \"age\":\"" + age + "\"}");
+    });
+
     s.Start();
 
     return 0;
