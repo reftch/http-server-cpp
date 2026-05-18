@@ -1,8 +1,9 @@
 // server.cpp
 #include "server.h"
 
+// #include <fstream>
 #include <future>
-#include <thread>
+// #include <thread>
 
 namespace http {
 
@@ -174,7 +175,7 @@ namespace http {
     }
 
     std::string Server::HandleRoute(http::Request& req) {
-        Response res(req.is_keep_alive());
+        Response res(req.is_keep_alive(), static_directory_);
 
         if (req.mime_type() == "") {
             http::request_handler handler;
@@ -186,7 +187,7 @@ namespace http {
                 res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
             }
         } else {
-            auto content = ReadFile("./assets" + req.path());
+            auto content = ReadFile(static_directory_ + req.path());
             if (content != "") {
                 res.SetContentByType(content, req.mime_type());
             }

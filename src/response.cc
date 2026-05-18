@@ -8,7 +8,7 @@
 
 namespace http {
 
-    Response::Response(bool is_keep_alive) {
+    Response::Response(bool is_keep_alive, const std::string& static_directory) : static_directory_(static_directory) {
         if (is_keep_alive) {
             set_header("Connection", "keep-alive");
         }
