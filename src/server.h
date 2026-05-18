@@ -77,6 +77,8 @@ namespace http {
             router_.RegisterHandler(std::string(ToString(Method)), path, handler);
         }
 
+        void SetAssetDirectory(const std::string& directory) { static_directory_ = directory; }
+
        private:
         const int port_;                // Port number to listen on
         const std::string host_;        // Hostname or IP address to bind to
@@ -88,6 +90,8 @@ namespace http {
 
         // Is server running flag
         bool running_ = false;
+
+        std::string static_directory_ = "./assets";
 
         // Time when server started
         std::chrono::high_resolution_clock::time_point start_time_;

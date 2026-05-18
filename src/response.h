@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "utils.h"
+
 namespace http {
 
     enum class ContentType {
@@ -51,7 +53,7 @@ namespace http {
     class Response {
        public:
         Response() = default;
-        Response(bool is_keep_alive);
+        Response(bool is_keep_alive, const std::string& static_directory);
 
         void set_header(const std::string& key, const std::string& val) { headers_[key] = val; }
 
@@ -60,8 +62,17 @@ namespace http {
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
         void SetContent(const std::string& content) {
             set_header("Content-Type", ContentTypeToString(T));
-            set_header("Content-Length", std::to_string(content.size()));
-            content_ = content;
+
+            // Set content based on content type
+            if (T == ContentType::HTML) {
+                content_ = ReadFile(static_directory_ + '/' + content);
+            } else {
+                content_ = content;
+            }
+
+            // Set Content-Length header using the actual content size
+            set_header("Content-Length", std::to_string(content_.size()));
+
             status_ = S;
         }
 
@@ -80,6 +91,7 @@ namespace http {
         std::string version_;
         std::string content_;
         std::string content_type_;
+        std::string static_directory_;
         std::unordered_map<std::string, std::string> headers_;
 
         std::string StatusToString();

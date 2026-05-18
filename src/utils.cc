@@ -88,20 +88,19 @@ std::string MapToJson(const std::unordered_map<std::string, std::string>& params
 }
 
 std::string ReadFile(const std::string& path) {
-    std::ifstream file(path);  // ifstream used for reading file if exists.
-    int flag = 0;
+    // Binary mode for faster reading
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file) {
-        flag = 1;
-        std::cerr << "File not found [" << path << "]\n";
+        return {};
     }
 
-    if (flag == 0) {
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        return buffer.str();
-    }
+    // Get file size and read efficiently
+    size_t size = file.tellg();
+    file.seekg(0, std::ios::beg);
 
-    return "";
+    std::string content(size, '\0');
+    file.read(content.data(), size);
+    return content;
 }
 
 std::string UrlDecode(const std::string& encoded) {

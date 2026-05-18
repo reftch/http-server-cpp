@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
+#define STATIC_DIRECTORY "assets2"
 #include "server.h"
 
 int main() {
@@ -16,25 +17,16 @@ int main() {
     });
 
     s.SetRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::HTML>(ReadFile("./assets/index.html"));
+        res.SetContent<http::ContentType::HTML>("index.html");
     });
 
     s.SetRoute<http::HttpMethod::GET>("/home", [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::HTML>(ReadFile("./assets/home.html"));
+        res.SetContent<http::ContentType::HTML>("home.html");
     });
 
-    s.SetRoute<http::HttpMethod::GET>("/api/v1/time", [](const http::Request&, http::Response& res) {
-        auto now = std::chrono::system_clock::now();
-        auto time_t = std::chrono::system_clock::to_time_t(now);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&time_t), "%H:%M:%S");
-        res.SetContent<http::ContentType::JSON>("{\"time\":\"" + ss.str() + "\"}");
-    });
-
-    s.SetRoute<http::HttpMethod::GET>("/api/v1/users/:id/:age", [](const http::Request& req, http::Response& res) {
-        auto id = req.params().at("id");
-        auto age = req.params().at("age");
-        res.SetContent<http::ContentType::JSON>("{\"id\":\"" + id + ",\" + \"age\":\"" + age + "\"}");
+    s.SetRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [](const http::Request& req, http::Response& res) {
+        std::string value = req.params().at("v");
+        res.SetContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 
     s.Start();
