@@ -4,7 +4,6 @@
 #include <iomanip>
 #include <sstream>
 
-#define STATIC_DIRECTORY "assets2"
 #include "server.h"
 
 int main() {

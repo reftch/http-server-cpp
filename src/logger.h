@@ -22,6 +22,8 @@ namespace http {
         std::string log_file_path_;
         mutable std::mutex log_mutex_;
 
+        friend class LoggerTest;
+
        public:
         static Logger& getInstance() {
             static Logger instance;
