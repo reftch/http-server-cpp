@@ -12,51 +12,51 @@ namespace http {
        public:
         enum class Level { TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL };
 
-        class LogStream {
-           public:
-            LogStream(Logger& logger, Level level) : logger_(logger), level_(level) {}
-
-            template <typename... Args>
-            void operator()(std::string_view format, Args&&... args) {
-                logger_.log(level_, format, std::forward<Args>(args)...);
-            }
-
-           private:
-            Logger& logger_;
-            Level level_;
-        };
-
         static Logger& getInstance() {
             static Logger instance;
             return instance;
         }
 
-        LogStream trace() { return LogStream(*this, Level::TRACE); }
-        LogStream debug() { return LogStream(*this, Level::DEBUG); }
-        LogStream info() { return LogStream(*this, Level::INFO); }
-        LogStream warning() { return LogStream(*this, Level::WARNING); }
-        LogStream error() { return LogStream(*this, Level::ERROR); }
-        LogStream critical() { return LogStream(*this, Level::CRITICAL); }
+        template <typename... Args>
+        void Trace(std::string_view format, Args&&... args) {
+            Log(Level::TRACE, format, std::forward<Args>(args)...);
+        }
+
+        template <typename... Args>
+        void Debug(std::string_view format, Args&&... args) {
+            Log(Level::DEBUG, format, std::forward<Args>(args)...);
+        }
+
+        template <typename... Args>
+        void Info(std::string_view format, Args&&... args) {
+            Log(Level::INFO, format, std::forward<Args>(args)...);
+        }
+
+        template <typename... Args>
+        void Warning(std::string_view format, Args&&... args) {
+            Log(Level::WARNING, format, std::forward<Args>(args)...);
+        }
+
+        template <typename... Args>
+        void Error(std::string_view format, Args&&... args) {
+            Log(Level::ERROR, format, std::forward<Args>(args)...);
+        }
+
+        template <typename... Args>
+        void Critical(std::string_view format, Args&&... args) {
+            Log(Level::CRITICAL, format, std::forward<Args>(args)...);
+        }
 
        private:
         Logger() = default;
 
-        std::string format_time_with_strftime_manual(const struct tm* time_info) {
+        std::string FormatTime(const struct tm* time_info) {
             char timestamp_buffer[20];
-
-            // Format string
             std::string format = "%Y-%m-%d %H:%M:%S";
-
-            // Use strftime to format the time into the buffer
             if (std::strftime(timestamp_buffer, sizeof(timestamp_buffer), format.c_str(), time_info) == 0) {
                 return "";
             }
-
-            std::string result;
-            size_t length = std::strlen(timestamp_buffer);
-            result.assign(timestamp_buffer, length);
-
-            return result;
+            return std::string(timestamp_buffer);
         }
 
         template <typename... Args>
@@ -80,7 +80,7 @@ namespace http {
         }
 
         template <typename... Args>
-        void log(Level level, std::string_view format, Args&&... args) {
+        void Log(Level level, std::string_view format, Args&&... args) {
             std::string level_str;
             switch (level) {
                 case Level::TRACE:
@@ -105,7 +105,7 @@ namespace http {
 
             time_t now = time(0);
             struct tm* time_info = localtime(&now);
-            std::string timestamp = format_time_with_strftime_manual(time_info);
+            std::string timestamp = FormatTime(time_info);
 
             std::string format_string(format.data(), format.size());
             std::string message = Format(format_string, std::forward<Args>(args)...);
