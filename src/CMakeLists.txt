@@ -24,7 +24,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
       FILE_SET public_headers
       TYPE HEADERS
       FILES 
-
+        logger.h
         request.h
         response.h
         router.h
