@@ -79,6 +79,9 @@ namespace http {
         }
 
         void SetAssetDirectory(const std::string& directory) { static_directory_ = directory; }
+        void EnableFileLogging() { log.EnableFileLogging("./http-server.log"); }
+        void EnableFileLogging(const std::string& filepath) { log.EnableFileLogging(filepath); }
+        void DisableFileLogging() { log.DisableFileLogging(); }
 
        private:
         const int port_;                // Port number to listen on
@@ -90,7 +93,6 @@ namespace http {
         http::Router router_;
 
         // logger
-        // Logger& log = Logger::getInstance();
         Logger& log = Logger::getInstance();
 
         // Is server running flag

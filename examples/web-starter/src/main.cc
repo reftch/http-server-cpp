@@ -9,6 +9,7 @@
 
 int main() {
     http::Server s("0.0.0.0", 8080);
+    s.EnableFileLogging("./http-server.log");
 
     // Register signal handler with capture
     static auto s_ptr = &s;
