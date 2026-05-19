@@ -22,8 +22,6 @@ namespace http {
         std::string log_file_path_;
         mutable std::mutex log_mutex_;
 
-        friend class LoggerTest;
-
        public:
         static Logger& getInstance() {
             static Logger instance;
@@ -95,7 +93,7 @@ namespace http {
             Log(Level::CRITICAL, format, std::forward<Args>(args)...);
         }
 
-       private:
+       protected:
         Logger() = default;
 
         std::string FormatTime(const struct tm* time_info) {
