@@ -66,8 +66,7 @@ namespace http {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
 
-        std::cout << "serving static file from: [" << static_directory_ << "]\n";
-        std::cout << "server started on http://" << host_ << ":" << port_ << " in " << duration << '\n';
+        log.info()("Server started on http://{}:{} in {} ", host_, port_, duration);
 
         HandleRequests();
 

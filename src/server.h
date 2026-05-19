@@ -23,6 +23,7 @@
 #include <thread>
 #include <vector>
 
+#include "logger.h"
 #include "request.h"
 #include "response.h"
 #include "router.h"
@@ -87,6 +88,10 @@ namespace http {
 
         // router
         http::Router router_;
+
+        // logger
+        // Logger& log = Logger::getInstance();
+        Logger& log = Logger::getInstance();
 
         // Is server running flag
         bool running_ = false;
