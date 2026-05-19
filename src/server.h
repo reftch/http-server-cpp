@@ -79,9 +79,6 @@ namespace http {
         }
 
         void SetAssetDirectory(const std::string& directory) { static_directory_ = directory; }
-        void EnableFileLogging() { log.EnableFileLogging("./http-server.log"); }
-        void EnableFileLogging(const std::string& filepath) { log.EnableFileLogging(filepath); }
-        void DisableFileLogging() { log.DisableFileLogging(); }
 
        private:
         const int port_;                // Port number to listen on

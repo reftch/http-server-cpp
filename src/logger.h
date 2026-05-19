@@ -41,7 +41,7 @@ namespace http {
         }
 
         // Enable file logging with default path (current directory)
-        // void EnableFileLogging() { EnableFileLogging("http-server.log"); }
+        void EnableFileLogging() { EnableFileLogging("./http-server.log"); }
 
         void DisableFileLogging() {
             std::lock_guard<std::mutex> lock(log_mutex_);
@@ -130,19 +130,19 @@ namespace http {
             std::string level_str;
             switch (level) {
                 case Level::TRACE:
-                    level_str = "[TRACE]";
+                    level_str = "[TRACE] ";
                     break;
                 case Level::DEBUG:
-                    level_str = "[DEBUG]";
+                    level_str = "[DEBUG] ";
                     break;
                 case Level::INFO:
-                    level_str = "[INFO]";
+                    level_str = "[INFO] ";
                     break;
                 case Level::WARNING:
-                    level_str = "[WARNING]";
+                    level_str = "[WARNING] ";
                     break;
                 case Level::ERROR:
-                    level_str = "[ERROR]";
+                    level_str = "[ERROR] ";
                     break;
                 case Level::CRITICAL:
                     level_str = "[CRITICAL]";

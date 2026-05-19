@@ -8,8 +8,9 @@
 #include "server.h"
 
 int main() {
+    static auto& log = http::Logger::getInstance();
     http::Server s("0.0.0.0", 8080);
-    s.EnableFileLogging("./http-server.log");
+    log.EnableFileLogging();
 
     // Register signal handler with capture
     static auto s_ptr = &s;
@@ -21,7 +22,8 @@ int main() {
         res.SetContent<http::ContentType::HTML>("index.html");
     });
 
-    s.SetRoute<http::HttpMethod::GET>("/home", [](const http::Request&, http::Response& res) {
+    s.SetRoute<http::HttpMethod::GET>("/home", [](const http::Request& req, http::Response& res) {
+        log.Info("Request path: {}", req.path());
         res.SetContent<http::ContentType::HTML>("home.html");
     });
 
