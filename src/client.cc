@@ -215,81 +215,75 @@ namespace http {
             status_start = raw_response.find("HTTP/1.0 ");
         }
 
-        if (status_start != std::string::npos) {
-            size_t status_end = raw_response.find(' ', status_start + 9);
-            if (status_end != std::string::npos) {
-                std::string status_str = raw_response.substr(status_start + 9, status_end - (status_start + 9));
-                int status_code = std::stoi(status_str);
-
-                // Set appropriate status
-                switch (status_code) {
-                    case 200:
-                        response.SetContentByType<http::Status::ok>(std::string(), "text/plain");
-                        break;
-                    case 201:
-                        response.SetContentByType<http::Status::created>(std::string(), "text/plain");
-                        break;
-                    case 202:
-                        response.SetContentByType<http::Status::accepted>(std::string(), "text/plain");
-                        break;
-                    case 204:
-                        response.SetContentByType<http::Status::no_content>(std::string(), "text/plain");
-                        break;
-                    case 300:
-                        response.SetContentByType<http::Status::multiple_choices>(std::string(), "text/plain");
-                        break;
-                    case 301:
-                        response.SetContentByType<http::Status::moved_permanently>(std::string(), "text/plain");
-                        break;
-                    case 302:
-                        response.SetContentByType<http::Status::moved_temporarily>(std::string(), "text/plain");
-                        break;
-                    case 304:
-                        response.SetContentByType<http::Status::not_modified>(std::string(), "text/plain");
-                        break;
-                    case 400:
-                        response.SetContentByType<http::Status::bad_request>(std::string(), "text/plain");
-                        break;
-                    case 401:
-                        response.SetContentByType<http::Status::unauthorized>(std::string(), "text/plain");
-                        break;
-                    case 403:
-                        response.SetContentByType<http::Status::forbidden>(std::string(), "text/plain");
-                        break;
-                    case 404:
-                        response.SetContentByType<http::Status::not_found>(std::string(), "text/plain");
-                        break;
-                    case 500:
-                        response.SetContentByType<http::Status::internal_server_error>(std::string(), "text/plain");
-                        break;
-                    case 501:
-                        response.SetContentByType<http::Status::not_implemented>(std::string(), "text/plain");
-                        break;
-                    case 502:
-                        response.SetContentByType<http::Status::bad_gateway>(std::string(), "text/plain");
-                        break;
-                    case 503:
-                        response.SetContentByType<http::Status::service_unavailable>(std::string(), "text/plain");
-                        break;
-                    default:
-                        response.SetContentByType<http::Status::ok>(std::string(), "text/plain");
-                        break;
-                }
-            }
-        }
+        // Parse status
+        http::Status status = parse_status(raw_response);
 
         // Extract body (everything after headers)
         size_t header_end = raw_response.find("\r\n\r\n");
         if (header_end != std::string::npos) {
             std::string body = raw_response.substr(header_end + 4);
             // Set the body content
-            response.SetContentByType(body, "text/plain");
+            response.SetContentByType(body, "text/plain", status);
         } else {
             // If no headers found, the whole response is the body
-            response.SetContentByType(raw_response, "text/plain");
+            response.SetContentByType(raw_response, "text/plain", status);
         }
 
         return response;
+    }
+
+    http::Status Client::parse_status(const std::string& raw_response) {
+        size_t status_start = raw_response.find("HTTP/1.1 ");
+        if (status_start == std::string::npos) {
+            status_start = raw_response.find("HTTP/1.0 ");
+        }
+
+        if (status_start != std::string::npos) {
+            size_t status_end = raw_response.find(' ', status_start + 9);
+            if (status_end != std::string::npos) {
+                std::string status_str = raw_response.substr(status_start + 9, status_end - (status_start + 9));
+                int status_code = std::stoi(status_str);
+
+                switch (status_code) {
+                    case 200:
+                        return http::Status::ok;
+                    case 201:
+                        return http::Status::created;
+                    case 202:
+                        return http::Status::accepted;
+                    case 204:
+                        return http::Status::no_content;
+                    case 300:
+                        return http::Status::multiple_choices;
+                    case 301:
+                        return http::Status::moved_permanently;
+                    case 302:
+                        return http::Status::moved_temporarily;
+                    case 304:
+                        return http::Status::not_modified;
+                    case 400:
+                        return http::Status::bad_request;
+                    case 401:
+                        return http::Status::unauthorized;
+                    case 403:
+                        return http::Status::forbidden;
+                    case 404:
+                        return http::Status::not_found;
+                    case 500:
+                        return http::Status::internal_server_error;
+                    case 501:
+                        return http::Status::not_implemented;
+                    case 502:
+                        return http::Status::bad_gateway;
+                    case 503:
+                        return http::Status::service_unavailable;
+                    default:
+                        return http::Status::ok;
+                }
+            }
+        }
+
+        return http::Status::ok;
     }
 
 }  // namespace http

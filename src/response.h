@@ -85,6 +85,13 @@ namespace http {
             status_ = S;
         }
 
+        void SetContentByType(const std::string& content, std::string type, Status s = Status::ok) {
+            set_header("Content-Type", type);
+            set_header("Content-Length", std::to_string(content.size()));
+            content_ = content;
+            status_ = s;
+        }
+
         std::string Build();
 
        private:
@@ -136,6 +143,7 @@ namespace http {
                 case ContentType::UNKNOWN:
                     return "application/octet-stream";
             }
+
             // This should never be reached due to exhaustive switch
             return "application/octet-stream";
         }
