@@ -16,7 +16,7 @@ namespace http {
         }
     }
 
-    std::optional<HttpResponse> Client::Get(const std::string& path) {
+    std::optional<Response> Client::Get(const std::string& path) {
         try {
             std::string response = send_request("GET", path);
             return parse_response(response);
@@ -26,7 +26,7 @@ namespace http {
         }
     }
 
-    std::optional<HttpResponse> Client::Post(const std::string& path, const std::string& body = "") {
+    std::optional<Response> Client::Post(const std::string& path, const std::string& body = "") {
         try {
             std::ostringstream request;
             request << "POST " << path << " HTTP/1.1\r\n";
@@ -45,7 +45,7 @@ namespace http {
         }
     }
 
-    std::optional<HttpResponse> Client::Put(const std::string& path, const std::string& body) {
+    std::optional<Response> Client::Put(const std::string& path, const std::string& body) {
         try {
             std::ostringstream request;
             request << "PUT " << path << " HTTP/1.1\r\n";
@@ -64,7 +64,7 @@ namespace http {
         }
     }
 
-    std::optional<HttpResponse> Client::Delete(const std::string& path) {
+    std::optional<Response> Client::Delete(const std::string& path) {
         try {
             std::string response = send_request("DELETE", path);
             return parse_response(response);
@@ -206,35 +206,87 @@ namespace http {
         return response;
     }
 
-    HttpResponse Client::parse_response(const std::string& raw_response) {
-        HttpResponse response;
+    http::Response Client::parse_response(const std::string& raw_response) {
+        http::Response response;
 
-        // Debug: print raw response
-        // std::cout << "Raw response: " << raw_response << std::endl;
+        // Find status code manually without regex
+        size_t status_start = raw_response.find("HTTP/1.1 ");
+        if (status_start == std::string::npos) {
+            status_start = raw_response.find("HTTP/1.0 ");
+        }
 
-        // Parse status line - more robust pattern
-        std::regex status_regex("HTTP/1\\.1\\s+(\\d+)\\s+(.*)");
-        std::smatch match;
-        if (std::regex_search(raw_response, match, status_regex)) {
-            response.status = std::stoi(match[1].str());
-            response.status_text = match[2].str();
-        } else {
-            // Try alternative patterns
-            std::regex status_regex2("HTTP/1\\.0\\s+(\\d+)\\s+(.*)");
-            if (std::regex_search(raw_response, match, status_regex2)) {
-                response.status = std::stoi(match[1].str());
-                response.status_text = match[2].str();
+        if (status_start != std::string::npos) {
+            size_t status_end = raw_response.find(' ', status_start + 9);
+            if (status_end != std::string::npos) {
+                std::string status_str = raw_response.substr(status_start + 9, status_end - (status_start + 9));
+                int status_code = std::stoi(status_str);
+
+                // Set appropriate status
+                switch (status_code) {
+                    case 200:
+                        response.SetContentByType<http::Status::ok>(std::string(), "text/plain");
+                        break;
+                    case 201:
+                        response.SetContentByType<http::Status::created>(std::string(), "text/plain");
+                        break;
+                    case 202:
+                        response.SetContentByType<http::Status::accepted>(std::string(), "text/plain");
+                        break;
+                    case 204:
+                        response.SetContentByType<http::Status::no_content>(std::string(), "text/plain");
+                        break;
+                    case 300:
+                        response.SetContentByType<http::Status::multiple_choices>(std::string(), "text/plain");
+                        break;
+                    case 301:
+                        response.SetContentByType<http::Status::moved_permanently>(std::string(), "text/plain");
+                        break;
+                    case 302:
+                        response.SetContentByType<http::Status::moved_temporarily>(std::string(), "text/plain");
+                        break;
+                    case 304:
+                        response.SetContentByType<http::Status::not_modified>(std::string(), "text/plain");
+                        break;
+                    case 400:
+                        response.SetContentByType<http::Status::bad_request>(std::string(), "text/plain");
+                        break;
+                    case 401:
+                        response.SetContentByType<http::Status::unauthorized>(std::string(), "text/plain");
+                        break;
+                    case 403:
+                        response.SetContentByType<http::Status::forbidden>(std::string(), "text/plain");
+                        break;
+                    case 404:
+                        response.SetContentByType<http::Status::not_found>(std::string(), "text/plain");
+                        break;
+                    case 500:
+                        response.SetContentByType<http::Status::internal_server_error>(std::string(), "text/plain");
+                        break;
+                    case 501:
+                        response.SetContentByType<http::Status::not_implemented>(std::string(), "text/plain");
+                        break;
+                    case 502:
+                        response.SetContentByType<http::Status::bad_gateway>(std::string(), "text/plain");
+                        break;
+                    case 503:
+                        response.SetContentByType<http::Status::service_unavailable>(std::string(), "text/plain");
+                        break;
+                    default:
+                        response.SetContentByType<http::Status::ok>(std::string(), "text/plain");
+                        break;
+                }
             }
         }
 
-        // Find headers and body
+        // Extract body (everything after headers)
         size_t header_end = raw_response.find("\r\n\r\n");
         if (header_end != std::string::npos) {
-            response.headers = raw_response.substr(0, header_end);
-            response.body = raw_response.substr(header_end + 4);
+            std::string body = raw_response.substr(header_end + 4);
+            // Set the body content
+            response.SetContentByType(body, "text/plain");
         } else {
             // If no headers found, the whole response is the body
-            response.body = raw_response;
+            response.SetContentByType(raw_response, "text/plain");
         }
 
         return response;

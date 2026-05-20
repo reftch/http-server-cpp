@@ -25,19 +25,9 @@
 #include <unistd.h>
 #endif
 
+#include "response.h"
+
 namespace http {
-
-    class HttpResponse {
-       public:
-        int status = 0;
-        std::string body;
-        std::string status_text;
-        std::string version;
-        std::string headers;
-
-        HttpResponse() = default;
-        HttpResponse(int status_code, const std::string& body_text) : status(status_code), body(body_text) {}
-    };
 
     class Client {
        private:
@@ -50,15 +40,15 @@ namespace http {
 
         std::string send_request(const std::string& method, const std::string& path);
 
-        HttpResponse parse_response(const std::string& raw_response);
+        Response parse_response(const std::string& raw_response);
 
        public:
         Client(const std::string& url);
 
-        std::optional<HttpResponse> Get(const std::string& path);
-        std::optional<HttpResponse> Post(const std::string& path, const std::string& body);
-        std::optional<HttpResponse> Put(const std::string& path, const std::string& body);
-        std::optional<HttpResponse> Delete(const std::string& path);
+        std::optional<Response> Get(const std::string& path);
+        std::optional<Response> Post(const std::string& path, const std::string& body);
+        std::optional<Response> Put(const std::string& path, const std::string& body);
+        std::optional<Response> Delete(const std::string& path);
     };
 
 }  // namespace http

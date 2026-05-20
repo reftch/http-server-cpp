@@ -6,8 +6,8 @@ int main() {
     http::Client cli("http://localhost:8080");
 
     auto res = cli.Get("/api/v1/inc/2");
-    if (res) {
-        log.Info("Response status: {}, body: {}", res->status, res->body);
+    if (res && res->status() == http::Status::ok) {
+        log.Info("Response body: {}", res->content());
     } else {
         log.Error("Request failed");
     }

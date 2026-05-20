@@ -58,6 +58,7 @@ namespace http {
         void set_header(const std::string& key, const std::string& val) { headers_[key] = val; }
 
         std::string content() { return content_; }
+        http::Status status() { return status_; }
 
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
         void SetContent(const std::string& content) {
