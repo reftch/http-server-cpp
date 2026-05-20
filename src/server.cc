@@ -97,10 +97,8 @@ namespace http {
                 pollfds.push_back(pfd);
             }
 
-            // std::cout << "Client size: " << client_list_.size() << '\n';
-
             // Using poll for listening to multiple clients with timeout
-            int activity = poll(pollfds.data(), pollfds.size(), 3000);
+            int activity = poll(pollfds.data(), pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
             if (activity < 0) {
                 log.Warning("Stop poll for listening");
                 continue;
@@ -118,9 +116,8 @@ namespace http {
                 int flags = fcntl(clientfd, F_GETFL, 0);
                 fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
 
-                // adding client to list
+                // adding new client to list
                 client_list_.push_back(clientfd);
-                // std::cout << "new client connected, fd: " << client->clientfd << std::endl;
             }
 
             // check for activity on client sockets, process each client socket
@@ -129,11 +126,10 @@ namespace http {
 
                 if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
                     int sd = client_list_[i];
-                    char buffer[4096];
+                    char buffer[READ_BUFFER_SIZE];
                     ssize_t nread = read(sd, &buffer, sizeof(buffer) - 1);
                     if (nread > 0) {
                         // perform request
-
                         PerformRequest(sd, buffer, nread);
                         // Launch asynchronously
                         // auto future = std::async(std::launch::async, [&]() { perform_request(sd, buffer, nread); });

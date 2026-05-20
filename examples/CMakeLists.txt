@@ -1,1 +1,2 @@
-add_subdirectory(web-starter)
+add_subdirectory(server)
+add_subdirectory(client)

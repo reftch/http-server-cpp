@@ -1,6 +1,18 @@
 #ifndef HTTP_SERVER_H_
 #define HTTP_SERVER_H_
 
+#ifndef KEEPALIVE_MAX_COUNT
+#define KEEPALIVE_MAX_COUNT 100
+#endif
+
+#ifndef CONNECTION_TIMEOUT_SECOND
+#define CONNECTION_TIMEOUT_SECOND 300
+#endif
+
+#ifndef READ_BUFFER_SIZE
+#define READ_BUFFER_SIZE 4096
+#endif
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -102,7 +114,8 @@ namespace http {
         std::chrono::high_resolution_clock::time_point start_time_;
 
         // Maximum number of connections allowed.
-        static constexpr int kMAX_CONNS = 96;
+        static constexpr int kMAX_CONNS = KEEPALIVE_MAX_COUNT;
+        static constexpr int kCONNECTION_TIMEOUT_SECOND = CONNECTION_TIMEOUT_SECOND;
 
         /**
          * Performs an asynchronous HTTP request handling operation
