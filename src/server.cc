@@ -126,7 +126,7 @@ namespace http {
 
                 if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
                     int sd = client_list_[i];
-                    char buffer[4096];
+                    char buffer[READ_BUFFER_SIZE];
                     ssize_t nread = read(sd, &buffer, sizeof(buffer) - 1);
                     if (nread > 0) {
                         // perform request

@@ -9,6 +9,10 @@
 #define CONNECTION_TIMEOUT_SECOND 300
 #endif
 
+#ifndef READ_BUFFER_SIZE
+#define READ_BUFFER_SIZE 4096
+#endif
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
