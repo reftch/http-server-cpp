@@ -32,7 +32,13 @@ namespace http {
         void set_query(const std::string& key, const std::string& value) { query_[key] = value; }
 
         bool is_keep_alive();
-        std::string mime_type() const { return mime_type_; }
+
+        std::optional<std::string> mime_type() const {
+            if (mime_type_.empty()) {
+                return std::nullopt;
+            }
+            return mime_type_;
+        }
 
         std::string GetMimeType(const std::string& path);
 

@@ -17,61 +17,55 @@ namespace http {
     }
 
     std::optional<Response> Client::Get(const std::string& path) {
-        try {
-            std::string response = send_request("GET", path);
-            return parse_response(response);
-        } catch (const std::exception& e) {
-            std::cerr << "Error in GET request: " << e.what() << std::endl;
+        // Remove try/catch - let underlying functions handle errors
+        auto response = send_request("GET", path);
+        if (response.empty()) {
             return std::nullopt;
         }
+        return parse_response(response);
     }
 
-    std::optional<Response> Client::Post(const std::string& path, const std::string& body = "") {
-        try {
-            std::ostringstream request;
-            request << "POST " << path << " HTTP/1.1\r\n";
-            request << "Host: " << host << "\r\n";
-            request << "Content-Type: application/json\r\n";
-            request << "Content-Length: " << body.length() << "\r\n";
-            request << "Connection: close\r\n";
-            request << "\r\n";
-            request << body;
+    std::optional<Response> Client::Post(const std::string& path, const std::string& body) {
+        // Build request manually without exceptions
+        std::ostringstream request;
+        request << "POST " << path << " HTTP/1.1\r\n";
+        request << "Host: " << host << "\r\n";
+        request << "Content-Type: application/json\r\n";
+        request << "Content-Length: " << body.length() << "\r\n";
+        request << "Connection: close\r\n";
+        request << "\r\n";
+        request << body;
 
-            std::string response = send_request("POST", path);
-            return parse_response(response);
-        } catch (const std::exception& e) {
-            std::cerr << "Error in POST request: " << e.what() << std::endl;
+        auto response = send_request("POST", path);
+        if (response.empty()) {
             return std::nullopt;
         }
+        return parse_response(response);
     }
 
     std::optional<Response> Client::Put(const std::string& path, const std::string& body) {
-        try {
-            std::ostringstream request;
-            request << "PUT " << path << " HTTP/1.1\r\n";
-            request << "Host: " << host << "\r\n";
-            request << "Content-Type: application/json\r\n";
-            request << "Content-Length: " << body.length() << "\r\n";
-            request << "Connection: close\r\n";
-            request << "\r\n";
-            request << body;
+        std::ostringstream request;
+        request << "PUT " << path << " HTTP/1.1\r\n";
+        request << "Host: " << host << "\r\n";
+        request << "Content-Type: application/json\r\n";
+        request << "Content-Length: " << body.length() << "\r\n";
+        request << "Connection: close\r\n";
+        request << "\r\n";
+        request << body;
 
-            std::string response = send_request("PUT", path);
-            return parse_response(response);
-        } catch (const std::exception& e) {
-            std::cerr << "Error in PUT request: " << e.what() << std::endl;
+        auto response = send_request("PUT", path);
+        if (response.empty()) {
             return std::nullopt;
         }
+        return parse_response(response);
     }
 
     std::optional<Response> Client::Delete(const std::string& path) {
-        try {
-            std::string response = send_request("DELETE", path);
-            return parse_response(response);
-        } catch (const std::exception& e) {
-            std::cerr << "Error in DELETE request: " << e.what() << std::endl;
+        auto response = send_request("DELETE", path);
+        if (response.empty()) {
             return std::nullopt;
         }
+        return parse_response(response);
     }
 
     int Client::create_socket() {
