@@ -168,19 +168,19 @@ namespace http {
     std::string Server::HandleRoute(http::Request& req) {
         Response res(req.is_keep_alive(), static_directory_);
 
-        if (req.mime_type() == "") {
+        // check on static resource
+        if (req.mime_type().has_value()) {
+            auto content = ReadFile(static_directory_ + req.path());
+            if (content != "") {
+                res.SetContentByType(content, req.mime_type().value());
+            }
+        } else {
+            // Call handler if it exists
             http::request_handler handler;
-
             if (router_.Match(&req, &handler)) {
-                // Call handler
                 handler(req, res);
             } else {
                 res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
-            }
-        } else {
-            auto content = ReadFile(static_directory_ + req.path());
-            if (content != "") {
-                res.SetContentByType(content, req.mime_type());
             }
         }
 

@@ -1,4 +1,6 @@
 add_library(http-server STATIC
+  client.h
+  client.cc
   logger.h
   request.cc
   request.h
@@ -24,6 +26,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
       FILE_SET public_headers
       TYPE HEADERS
       FILES 
+        client.h
         logger.h
         request.h
         response.h
