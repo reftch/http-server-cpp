@@ -30,9 +30,8 @@ int main() {
         res.SetContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 
-    s.SetRoute<http::HttpMethod::POST>("/api/v1/users/:id", [](const http::Request& req, http::Response& res) {
+    s.SetRoute<http::HttpMethod::POST>("/api/v1/users/:id", [](const http::Request& req, http::Response&) {
         std::string value = req.params().at("id");
-        // const {id = null} = req.params() || {};
         log.Info("Request body: {}", req.body());
     });
 

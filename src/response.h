@@ -59,6 +59,7 @@ namespace http {
 
         std::string content() { return content_; }
         http::Status status() { return status_; }
+        std::unordered_map<std::string, std::string> headers() { return headers_; }
 
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
         void SetContent(const std::string& content) {
@@ -85,12 +86,14 @@ namespace http {
             status_ = S;
         }
 
-        void SetContentByType(const std::string& content, std::string type, Status s = Status::ok) {
-            set_header("Content-Type", type);
+        void SetContentByType(const std::string& content, Status s = Status::ok) {
+            // set_header("Content-Type", type);
             set_header("Content-Length", std::to_string(content.size()));
             content_ = content;
             status_ = s;
         }
+
+        // void SetContent(const std::string& content) { content_ = content; }
 
         std::string Build();
 

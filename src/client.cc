@@ -8,26 +8,18 @@ namespace http {
         std::smatch match;
 
         if (std::regex_search(url, match, url_regex)) {
-            is_https = (match[1].str() == "https");
-            host = match[2].str();
-            port = match[4].str().empty() ? (is_https ? 443 : 80) : std::stoi(match[4].str());
+            is_https_ = (match[1].str() == "https");
+            host_ = match[2].str();
+            port_ = match[4].str().empty() ? (is_https_ ? 443 : 80) : std::stoi(match[4].str());
         } else {
             throw std::runtime_error("Invalid URL format: " + url);
         }
     }
 
-    int Client::create_socket() {
-        int sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock < 0) {
-            throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
-        }
-        return sock;
-    }
-
     std::optional<Response> Client::Get(const std::string& path) {
         try {
-            std::string response = send_request("GET", path);
-            return parse_response(response);
+            std::string response = SendRequest("GET", path);
+            return ParseResponse(response);
         } catch (const std::exception& e) {
             std::cerr << "Error in GET request: " << e.what() << std::endl;
             return std::nullopt;
@@ -38,15 +30,15 @@ namespace http {
         try {
             std::ostringstream request;
             request << "POST " << path << " HTTP/1.1\r\n";
-            request << "Host: " << host << "\r\n";
+            request << "Host: " << host_ << "\r\n";
             request << "Content-Type: application/json\r\n";
             request << "Content-Length: " << body.length() << "\r\n";
             request << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
             request << "\r\n";
             request << body;
 
-            std::string response = send_request("POST", path);
-            return parse_response(response);
+            std::string response = SendRequest("POST", path);
+            return ParseResponse(response);
         } catch (const std::exception& e) {
             std::cerr << "Error in POST request: " << e.what() << std::endl;
             return std::nullopt;
@@ -57,15 +49,15 @@ namespace http {
         try {
             std::ostringstream request;
             request << "PUT " << path << " HTTP/1.1\r\n";
-            request << "Host: " << host << "\r\n";
+            request << "Host: " << host_ << "\r\n";
             request << "Content-Type: application/json\r\n";
             request << "Content-Length: " << body.length() << "\r\n";
             request << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
             request << "\r\n";
             request << body;
 
-            std::string response = send_request("PUT", path);
-            return parse_response(response);
+            std::string response = SendRequest("PUT", path);
+            return ParseResponse(response);
         } catch (const std::exception& e) {
             std::cerr << "Error in PUT request: " << e.what() << std::endl;
             return std::nullopt;
@@ -74,35 +66,43 @@ namespace http {
 
     std::optional<Response> Client::Delete(const std::string& path) {
         try {
-            std::string response = send_request("DELETE", path);
-            return parse_response(response);
+            std::string response = SendRequest("DELETE", path);
+            return ParseResponse(response);
         } catch (const std::exception& e) {
             std::cerr << "Error in DELETE request: " << e.what() << std::endl;
             return std::nullopt;
         }
     }
 
-    std::string Client::send_request(const std::string& method, const std::string& path) {
-        int sock = create_socket();
+    int Client::CreateSocket() {
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) {
+            throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
+        }
+        return sock;
+    }
+
+    std::string Client::SendRequest(const std::string& method, const std::string& path) {
+        int sock = CreateSocket();
         if (sock < 0) {
             throw std::runtime_error("Failed to create socket");
         }
 
         struct sockaddr_in server_addr{};
         server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(port);
+        server_addr.sin_port = htons(port_);
 
-        struct hostent* server = gethostbyname(host.c_str());
+        struct hostent* server = gethostbyname(host_.c_str());
         if (!server) {
             close(sock);
-            throw std::runtime_error("Host not found: " + host);
+            throw std::runtime_error("Host not found: " + host_);
         }
 
         memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
         // Set timeout
         struct timeval tv{};
-        tv.tv_sec = timeout_seconds;
+        tv.tv_sec = kTIMEOUT_SECONDS;
         tv.tv_usec = 0;
 
         if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 ||
@@ -113,13 +113,13 @@ namespace http {
 
         if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
             close(sock);
-            throw std::runtime_error("Connection failed to " + host + ":" + std::to_string(port));
+            throw std::runtime_error("Connection failed to " + host_ + ":" + std::to_string(port_));
         }
 
         // Prepare request
         std::ostringstream oss;
         oss << method << " " << path << " HTTP/1.1\r\n";
-        oss << "Host: " << host << "\r\n";
+        oss << "Host: " << host_ << "\r\n";
         oss << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
         oss << "\r\n";
 
@@ -143,7 +143,7 @@ namespace http {
         pfd.fd = sock;
         pfd.events = POLLIN;
 
-        int timeout_ms = timeout_seconds * 1000;
+        int timeout_ms = kTIMEOUT_SECONDS * 1000;
         int elapsed_ms = 0;
         int poll_interval = 1;
 
@@ -177,28 +177,68 @@ namespace http {
         return response;
     }
 
-    Response Client::parse_response(const std::string& raw_response) {
+    static std::string Trim(const std::string& str) {
+        size_t start = str.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) {
+            return "";
+        }
+
+        size_t end = str.find_last_not_of(" \t\r\n");
+        return str.substr(start, end - start + 1);
+    }
+
+    // Add this parsing method
+    Response Client::ParseResponse(const std::string& raw_response) {
+        // static Response Parse(const std::string& response_string) {
         Response response;
 
-        size_t status_start = raw_response.find("HTTP/1.1 ");
-        if (status_start == std::string::npos) {
-            status_start = raw_response.find("HTTP/1.0 ");
+        // Split the response into lines
+        std::vector<std::string> lines;
+        std::istringstream iss(raw_response);
+        std::string line;
+
+        while (std::getline(iss, line)) {
+            lines.push_back(line);
         }
 
-        Status status = parse_status(raw_response);
+        if (lines.empty()) {
+            return response;
+        }
 
+        Status status = ParseStatus(raw_response);
+
+        // Parse headers (skip the first line and any empty lines)
+        for (size_t i = 1; i < lines.size(); ++i) {
+            if (lines[i].empty()) {
+                // Empty line indicates end of headers
+                break;
+            }
+
+            size_t colon_pos = lines[i].find(':');
+            if (colon_pos != std::string::npos) {
+                std::string key = lines[i].substr(0, colon_pos);
+                std::string value = lines[i].substr(colon_pos + 1);
+
+                // Trim whitespace from key and value
+                key = Trim(key);
+                value = Trim(value);
+
+                response.set_header(key, value);
+            }
+        }
+
+        // get response body
+        std::string body = "";
         size_t header_end = raw_response.find("\r\n\r\n");
         if (header_end != std::string::npos) {
-            std::string body = raw_response.substr(header_end + 4);
-            response.SetContentByType(body, "text/plain", status);
-        } else {
-            response.SetContentByType(raw_response, "text/plain", status);
+            body = raw_response.substr(header_end + 4);
         }
 
+        response.SetContentByType(body, status);
         return response;
     }
 
-    Status Client::parse_status(const std::string& raw_response) {
+    Status Client::ParseStatus(const std::string& raw_response) {
         size_t status_start = raw_response.find("HTTP/1.1 ");
         if (status_start == std::string::npos) {
             status_start = raw_response.find("HTTP/1.0 ");

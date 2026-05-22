@@ -20,6 +20,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 add_compile_definitions(KEEPALIVE_MAX_COUNT=96)
 add_compile_definitions(CONNECTION_TIMEOUT_SECOND=300)
 add_compile_definitions(READ_BUFFER_SIZE=4096)
+add_compile_definitions(CLIENT_TIMEOUT_SECONDS=10)
 
 # Enable clang-tidy performance checks
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
