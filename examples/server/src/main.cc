@@ -32,6 +32,7 @@ int main() {
 
     s.SetRoute<http::HttpMethod::POST>("/api/v1/users/:id", [](const http::Request& req, http::Response& res) {
         std::string value = req.params().at("id");
+        // const {id = null} = req.params() || {};
         log.Info("Request body: {}", req.body());
     });
 
