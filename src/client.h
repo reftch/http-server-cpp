@@ -1,21 +1,7 @@
 #ifndef HTTP_CLIENT_H_
 #define HTTP_CLIENT_H_
 
-#include <chrono>
-#include <cstring>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <regex>
-#include <sstream>
-#include <string>
-#include <thread>
-
-#ifdef _WIN32
-#include <windows.h>
-#include <winsock2.h>
-#pragma comment(lib, "ws2_32.lib")
-#else
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -23,8 +9,19 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#endif
 
+#include <chrono>
+#include <cstring>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <regex>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <thread>
+
+#include "logger.h"
 #include "response.h"
 
 namespace http {
@@ -46,7 +43,11 @@ namespace http {
         std::string host;
         int port;
         bool is_https = false;
+        bool keep_alive_ = true;
         int timeout_seconds = 10;
+
+        // logger
+        Logger& log = Logger::getInstance();
 
         int create_socket();
 
@@ -57,6 +58,7 @@ namespace http {
 
        public:
         Client(const std::string& url);
+        // Client(const std::string& url, bool keep_alive = true);
 
         std::optional<Response> Get(const std::string& path);
         std::optional<Response> Post(const std::string& path, const std::string& body);

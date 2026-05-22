@@ -5,7 +5,7 @@ int main() {
     static auto& log = http::Logger::getInstance();
     http::Client cli("http://localhost:8080");
 
-    for (size_t i = 0; i < 10; ++i) {
+    for (size_t i = 0; i < 100; ++i) {
         auto res = cli.Get("/api/v1/inc/2");
         if (res && res->status() == http::Status::ok) {
             log.Info("Response body: {}", res->content());
