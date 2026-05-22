@@ -9,6 +9,10 @@
 #define CONNECTION_TIMEOUT_SECOND 300
 #endif
 
+#ifndef CLIENT_TIMEOUT_SECONDS
+#define CLIENT_TIMEOUT_SECONDS 10
+#endif
+
 #ifndef READ_BUFFER_SIZE
 #define READ_BUFFER_SIZE 4096
 #endif
@@ -35,7 +39,7 @@
 #include <thread>
 #include <vector>
 
-#include "client.h"
+// #include "client.h"
 #include "logger.h"
 #include "request.h"
 #include "response.h"

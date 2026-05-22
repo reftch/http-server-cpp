@@ -16,6 +16,12 @@ namespace http {
 
         size_t pos = line_end + 2;
         ParseHeaders(std::string_view(raw_request), pos);
+
+        // get request body
+        size_t header_end = raw_request.find("\r\n\r\n");
+        if (header_end != std::string::npos) {
+            body_ = raw_request.substr(header_end + 4);
+        }
     }
 
     void Request::ParseRequestLine(std::string_view line) {

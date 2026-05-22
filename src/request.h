@@ -18,6 +18,7 @@ namespace http {
         const std::string& method() const { return method_; }
         const std::string& path() const { return path_; }
         const std::string& version() const { return version_; }
+        const std::string& body() const { return body_; }
         const std::unordered_map<std::string_view, std::string_view>& headers() const { return headers_; }
 
         const std::unordered_map<std::string, std::string>& params() const { return params_; }
@@ -47,6 +48,7 @@ namespace http {
         std::string path_;
         std::string version_;
         std::string mime_type_;
+        std::string body_;
 
         std::unordered_map<std::string_view, std::string_view> headers_;
         std::unordered_map<std::string, std::string> params_;
