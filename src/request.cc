@@ -19,6 +19,8 @@ namespace http {
     }
 
     void Request::ParseRequestLine(std::string_view line) {
+        std::cout << "Request: " << line << '\n';
+
         size_t m1 = line.find(' ');
         size_t m2 = line.find(' ', m1 + 1);
         if (m1 == std::string_view::npos || m2 == std::string_view::npos) return;

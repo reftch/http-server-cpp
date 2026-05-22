@@ -16,14 +16,6 @@ namespace http {
         }
     }
 
-    int Client::create_socket() {
-        int sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock < 0) {
-            throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
-        }
-        return sock;
-    }
-
     std::optional<Response> Client::Get(const std::string& path) {
         try {
             std::string response = send_request("GET", path);
@@ -80,6 +72,14 @@ namespace http {
             std::cerr << "Error in DELETE request: " << e.what() << std::endl;
             return std::nullopt;
         }
+    }
+
+    int Client::create_socket() {
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) {
+            throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
+        }
+        return sock;
     }
 
     std::string Client::send_request(const std::string& method, const std::string& path) {

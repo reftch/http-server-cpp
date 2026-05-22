@@ -47,6 +47,7 @@ namespace http {
         std::string path_;
         std::string version_;
         std::string mime_type_;
+        std::string body_;
 
         std::unordered_map<std::string_view, std::string_view> headers_;
         std::unordered_map<std::string, std::string> params_;

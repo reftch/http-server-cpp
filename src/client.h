@@ -21,8 +21,7 @@
 #include <string>
 #include <thread>
 
-#include "logger.h"
-#include "response.h"
+#include "server.h"
 
 namespace http {
 
@@ -56,9 +55,10 @@ namespace http {
         Response parse_response(const std::string& raw_response);
         http::Status parse_status(const std::string& raw_response);
 
+        std::unique_ptr<Server> s_;
+
        public:
         Client(const std::string& url);
-        // Client(const std::string& url, bool keep_alive = true);
 
         std::optional<Response> Get(const std::string& path);
         std::optional<Response> Post(const std::string& path, const std::string& body);
