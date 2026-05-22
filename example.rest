@@ -1,2 +1,7 @@
 
-GET http://localhost:8080/api/v1/time
+POST http://localhost:8080/api/v1/users/1
+
+{
+    "name": "sample",
+    "time": "Wed, 21 Oct 2015 18:27:50 GMT"
+}
