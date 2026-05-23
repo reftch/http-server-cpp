@@ -4,15 +4,53 @@ namespace http {
 
     Client::Client(const std::string& url) {
         // Parse URL
-        std::regex url_regex("^(https?)://([^:/]+)(:(\\d+))?(/.*)?$");
-        std::smatch match;
+        std::string protocol;
+        std::string host;
+        std::string port_str;
+        std::string path;
 
-        if (std::regex_search(url, match, url_regex)) {
-            is_https_ = (match[1].str() == "https");
-            host_ = match[2].str();
-            port_ = match[4].str().empty() ? (is_https_ ? 443 : 80) : std::stoi(match[4].str());
-        } else {
+        // Find protocol (http:// or https://)
+        size_t protocol_end = url.find("://");
+        if (protocol_end == std::string::npos) {
             throw std::runtime_error("Invalid URL format: " + url);
+        }
+
+        protocol = url.substr(0, protocol_end);
+        is_https_ = (protocol == "https");
+
+        // Get the part after ://
+        std::string remaining = url.substr(protocol_end + 3);
+
+        // Find host (everything up to first : or /)
+        size_t host_end = remaining.find_first_of(":/");
+        if (host_end == std::string::npos) {
+            host = remaining;
+        } else {
+            host = remaining.substr(0, host_end);
+
+            // Check if there's a port
+            if (remaining[host_end] == ':') {
+                size_t port_start = host_end + 1;
+                size_t port_end = remaining.find('/', port_start);
+                if (port_end == std::string::npos) {
+                    port_str = remaining.substr(port_start);
+                } else {
+                    port_str = remaining.substr(port_start, port_end - port_start);
+                }
+            }
+        }
+
+        host_ = host;
+
+        // Parse port
+        if (port_str.empty()) {
+            port_ = is_https_ ? 443 : 80;
+        } else {
+            try {
+                port_ = std::stoi(port_str);
+            } catch (const std::exception&) {
+                throw std::runtime_error("Invalid port in URL: " + url);
+            }
         }
     }
 
