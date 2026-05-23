@@ -1,3 +1,5 @@
+find_package(OpenSSL REQUIRED)
+
 add_library(http-server STATIC
   client.h
   client.cc
@@ -10,33 +12,20 @@ add_library(http-server STATIC
   router.cc
   server.cc
   server.h
+  sslserver.cc
+  sslserver.h
   utils.cc
   utils.h
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  target_include_directories(http-server
-    PUBLIC
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
+target_link_libraries(http-server
+  PRIVATE
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
 
-  target_sources(http-server
-    PUBLIC
-      FILE_SET public_headers
-      TYPE HEADERS
-      FILES 
-        client.h
-        logger.h
-        request.h
-        response.h
-        router.h
-        server.h
-        utils.h
-  )
-
-  install(TARGETS http-server
-    ARCHIVE DESTINATION lib/http-server
-    FILE_SET public_headers DESTINATION include/http-server
-  )
-endif()
+target_include_directories(http-server
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
