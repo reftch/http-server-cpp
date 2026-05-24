@@ -126,7 +126,6 @@ namespace http {
             }
 
             int activity = poll(&pollfds[0], pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
-
             if (activity < 0) {
                 if (errno == EINTR) {
                     continue;
