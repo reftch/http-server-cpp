@@ -68,6 +68,8 @@ namespace http {
             start_time_ = std::chrono::high_resolution_clock::now();
         }
 
+        virtual ~Server() = default;
+
         // Getters
         std::string host() const { return host_; }
         int port() const { return port_; }
@@ -88,7 +90,7 @@ namespace http {
         /**
          * Signals the server to shut down, stops the polling loop, and closes all sockets.
          */
-        void Stop();
+        virtual void Stop();
 
         template <HttpMethod Method>
         void SetRoute(const std::string& path, request_handler handler) {
@@ -131,22 +133,21 @@ namespace http {
          */
         virtual std::string HandleRoute(http::Request& ctx);
 
-       private:
-        const int port_;                // Port number to listen on
-        const std::string host_;        // Hostname or IP address to bind to
-        int32_t sockfd_;                // server file descriptor
-        std::vector<int> client_list_;  // client list
-
         // Is server running flag
         bool running_ = false;
-
-        // Time when server started
-        // std::chrono::high_resolution_clock::time_point end_time_;
-        std::chrono::high_resolution_clock::time_point start_time_;
+        std::vector<int> client_list_;  // client list
+        int32_t sockfd_;                // server file descriptor
+        const int port_;                // Port number to listen on
+        const std::string host_;        // Hostname or IP address to bind to
 
         // Maximum number of connections allowed.
         static constexpr int kMAX_CONNS = KEEPALIVE_MAX_COUNT;
         static constexpr int kCONNECTION_TIMEOUT_SECOND = CONNECTION_TIMEOUT_SECOND;
+
+        //    privat:
+        // Time when server started
+        // std::chrono::high_resolution_clock::time_point end_time_;
+        std::chrono::high_resolution_clock::time_point start_time_;
 
         /**
          * Main event loop for handling incoming HTTP requests
@@ -155,7 +156,7 @@ namespace http {
          *          It continuously monitors multiple file descriptors and processes events as they occur.
          * @note This function runs in an infinite loop until the server's running_ flag is set to false
          */
-        void HandleRequests();
+        virtual void HandleRequests();
 
         constexpr std::string_view ToString(HttpMethod method) {
             switch (method) {
