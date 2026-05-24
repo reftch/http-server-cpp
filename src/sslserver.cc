@@ -90,7 +90,12 @@ namespace http {
         }
 
         running_ = true;
-        log.Info("HTTPS server started on {}:{}", host_, port_);
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
+
+        log.Info("Server started on https://{}:{} in {} ", host_, port_, duration);
+
         HandleRequests();
 
         return 0;
@@ -155,7 +160,7 @@ namespace http {
                     client.handshake_completed = false;
 
                     ssl_clients_[clientfd] = client;
-                    log.Info("Client connected FD={}", clientfd);
+                    // log.Info("Client connected FD={}", clientfd);
                 }
             }
 
@@ -185,7 +190,7 @@ namespace http {
 
                     if (ret == 1) {
                         client.handshake_completed = true;
-                        log.Info("TLS handshake completed FD={}", fd);
+                        // log.Info("TLS handshake completed FD={}", fd);
                     } else {
                         int err = SSL_get_error(client.ssl, ret);
                         if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
