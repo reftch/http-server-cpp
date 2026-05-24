@@ -66,7 +66,7 @@ namespace http {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
 
-        log.Info("Server started on http://{}:{} in {} ", host_, port_, duration);
+        log.Info("Server started on https://{}:{} in {} ", host_, port_, duration);
 
         HandleRequests();
 

@@ -68,6 +68,8 @@ namespace http {
             start_time_ = std::chrono::high_resolution_clock::now();
         }
 
+        virtual ~Server() = default;
+
         // Getters
         std::string host() const { return host_; }
         int port() const { return port_; }
@@ -83,12 +85,12 @@ namespace http {
          * @return 3 on connection binding error
          * @return 4 on connection listener error
          */
-        int Start();
+        virtual int Start();
 
         /**
          * Signals the server to shut down, stops the polling loop, and closes all sockets.
          */
-        void Stop();
+        virtual void Stop();
 
         template <HttpMethod Method>
         void SetRoute(const std::string& path, request_handler handler) {
@@ -97,30 +99,12 @@ namespace http {
 
         void SetAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
-       private:
-        const int port_;                // Port number to listen on
-        const std::string host_;        // Hostname or IP address to bind to
-        int32_t sockfd_;                // server file descriptor
-        std::vector<int> client_list_;  // client list
-
-        // router
-        http::Router router_;
-
+       protected:
         // logger
         Logger& log = Logger::getInstance();
-
-        // Is server running flag
-        bool running_ = false;
-
         std::string static_directory_ = "./assets";
-
-        // Time when server started
-        // std::chrono::high_resolution_clock::time_point end_time_;
-        std::chrono::high_resolution_clock::time_point start_time_;
-
-        // Maximum number of connections allowed.
-        static constexpr int kMAX_CONNS = KEEPALIVE_MAX_COUNT;
-        static constexpr int kCONNECTION_TIMEOUT_SECOND = CONNECTION_TIMEOUT_SECOND;
+        // router
+        http::Router router_;
 
         /**
          * Performs an asynchronous HTTP request handling operation
@@ -134,16 +118,7 @@ namespace http {
          *          4. Writing the response back to the client socket
          * @note This function is typically called asynchronously to handle multiple concurrent connections
          */
-        void PerformRequest(const int sd, const char* buffer, const ssize_t nread);
-
-        /**
-         * Main event loop for handling incoming HTTP requests
-         * @details This function implements a non-blocking I/O event loop using poll() to monitor
-         *          both the server socket for new connections and client sockets for incoming data.
-         *          It continuously monitors multiple file descriptors and processes events as they occur.
-         * @note This function runs in an infinite loop until the server's running_ flag is set to false
-         */
-        void HandleRequests();
+        virtual void PerformRequest(const int sd, const char* buffer, const ssize_t nread);
 
         /**
          * Handles HTTP route matching and request processing
@@ -156,7 +131,32 @@ namespace http {
          *          4. Returning appropriate HTTP response based on the processing outcome
          * @note This function is typically called from perform_request() to generate responses for client requests
          */
-        std::string HandleRoute(http::Request& ctx);
+        virtual std::string HandleRoute(http::Request& ctx);
+
+        // Is server running flag
+        bool running_ = false;
+        std::vector<int> client_list_;  // client list
+        int32_t sockfd_;                // server file descriptor
+        const int port_;                // Port number to listen on
+        const std::string host_;        // Hostname or IP address to bind to
+
+        // Maximum number of connections allowed.
+        static constexpr int kMAX_CONNS = KEEPALIVE_MAX_COUNT;
+        static constexpr int kCONNECTION_TIMEOUT_SECOND = CONNECTION_TIMEOUT_SECOND;
+
+        //    privat:
+        // Time when server started
+        // std::chrono::high_resolution_clock::time_point end_time_;
+        std::chrono::high_resolution_clock::time_point start_time_;
+
+        /**
+         * Main event loop for handling incoming HTTP requests
+         * @details This function implements a non-blocking I/O event loop using poll() to monitor
+         *          both the server socket for new connections and client sockets for incoming data.
+         *          It continuously monitors multiple file descriptors and processes events as they occur.
+         * @note This function runs in an infinite loop until the server's running_ flag is set to false
+         */
+        virtual void HandleRequests();
 
         constexpr std::string_view ToString(HttpMethod method) {
             switch (method) {
