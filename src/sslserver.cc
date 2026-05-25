@@ -159,7 +159,6 @@ namespace http {
                     client.handshake_completed = false;
 
                     ssl_clients_[clientfd] = client;
-                    // log.Info("Client connected FD={}", clientfd);
                 }
             }
 

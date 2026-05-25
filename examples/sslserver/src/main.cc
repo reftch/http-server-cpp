@@ -17,8 +17,14 @@ int main() {
     });
 
     s.SetRoute<http::HttpMethod::GET>("/", [](const http::Request& req, http::Response& res) {
+        res.SetContent<http::ContentType::HTML>("index.html");
+        // log.Info("Request path: {}", req.path());
+        // res.SetContent<http::ContentType::PLAIN_TEXT>("Hello, HTTPS!");
+    });
+
+    s.SetRoute<http::HttpMethod::GET>("/home", [](const http::Request& req, http::Response& res) {
         log.Info("Request path: {}", req.path());
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Hello, HTTPS!");
+        res.SetContent<http::ContentType::HTML>("home.html");
     });
 
     s.SetRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [](const http::Request& req, http::Response& res) {
