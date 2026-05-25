@@ -20,6 +20,10 @@
 #include <string>
 #include <thread>
 
+// SSL include
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
 #include "response.h"
 
 namespace http {
@@ -41,12 +45,21 @@ namespace http {
 
         int kTIMEOUT_SECONDS = CLIENT_TIMEOUT_SECONDS;
 
+        // SSL context for HTTPS
+        SSL_CTX* ssl_ctx_;
+        SSL* ssl_;
+
         int CreateSocket();
 
         std::string SendRequest(const std::string& method, const std::string& path);
+        std::string ReadResponse(int sock);
 
         Response ParseResponse(const std::string& raw_response);
         http::Status ParseStatus(const std::string& raw_response);
+
+        // SSL helper functions
+        bool InitializeSSL();
+        void CleanupSSL();
     };
 
 }  // namespace http

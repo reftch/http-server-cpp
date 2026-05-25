@@ -23,6 +23,7 @@ int main() {
 
     s.SetRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [](const http::Request& req, http::Response& res) {
         std::string value = req.params().at("v");
+        log.Info("Request path: {}, path parameter: {}", req.path(), value);
         res.SetContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 

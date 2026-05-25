@@ -52,11 +52,24 @@ namespace http {
                 throw std::runtime_error("Invalid port in URL: " + url);
             }
         }
+
+        // Initialize SSL context for HTTPS
+        if (is_https_) {
+            if (!InitializeSSL()) {
+                throw std::runtime_error("Failed to initialize SSL context");
+            }
+        }
     }
 
     std::optional<Response> Client::Get(const std::string& path) {
         try {
             std::string response = SendRequest("GET", path);
+            // std::string response;
+            // if (is_https_) {
+            //     response = SendHTTPSRequest("GET", path);
+            // } else {
+            //     response = SendRequest("GET", path);
+            // }
             return ParseResponse(response);
         } catch (const std::exception& e) {
             std::cerr << "Error in GET request: " << e.what() << std::endl;
@@ -154,6 +167,27 @@ namespace http {
             throw std::runtime_error("Connection failed to " + host_ + ":" + std::to_string(port_));
         }
 
+        if (is_https_) {
+            // Create SSL connection
+            ssl_ = SSL_new(ssl_ctx_);
+            if (!ssl_) {
+                close(sock);
+                throw std::runtime_error("Failed to create SSL connection");
+            }
+
+            SSL_set_fd(ssl_, sock);
+
+            // Perform SSL handshake
+            int ret = SSL_connect(ssl_);
+            if (ret <= 0) {
+                // int err = SSL_get_error(ssl_, ret);
+                ERR_print_errors_fp(stderr);
+                SSL_free(ssl_);
+                close(sock);
+                throw std::runtime_error("SSL handshake failed");
+            }
+        }
+
         // Prepare request
         std::ostringstream oss;
         oss << method << " " << path << " HTTP/1.1\r\n";
@@ -163,19 +197,34 @@ namespace http {
 
         const std::string& request_str = oss.str();
 
-        if (send(sock, request_str.data(), request_str.size(), 0) < 0) {
-            close(sock);
-            throw std::runtime_error("Failed to send request");
+        if (is_https_) {
+            if (SSL_write(ssl_, request_str.data(), request_str.size()) <= 0) {
+                SSL_free(ssl_);
+                close(sock);
+                throw std::runtime_error("Failed to send request");
+            }
+        } else {
+            if (send(sock, request_str.data(), request_str.size(), 0) < 0) {
+                close(sock);
+                throw std::runtime_error("Failed to send request");
+            }
         }
 
+        // Read response
+        return ReadResponse(sock);
+    }
+
+    std::string Client::ReadResponse(int sock) {
         // Read response with minimal overhead
         std::string response;
         char buffer[4096];
         ssize_t bytes_read;
 
         // Make socket non-blocking
-        int flags = fcntl(sock, F_GETFL, 0);
-        fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+        if (!is_https_) {
+            int flags = fcntl(sock, F_GETFL, 0);
+            fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+        }
 
         struct pollfd pfd{};
         pfd.fd = sock;
@@ -188,6 +237,9 @@ namespace http {
         while (elapsed_ms < timeout_ms) {
             int poll_result = poll(&pfd, 1, poll_interval);
             if (poll_result < 0) {
+                if (is_https_) {
+                    SSL_free(ssl_);
+                }
                 close(sock);
                 throw std::runtime_error("Poll failed");
             } else if (poll_result == 0) {
@@ -195,8 +247,15 @@ namespace http {
             }
 
             if (pfd.revents & POLLIN) {
-                bytes_read = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                if (is_https_) {
+                    bytes_read = SSL_read(ssl_, buffer, sizeof(buffer) - 1);
+                } else {
+                    bytes_read = recv(sock, buffer, sizeof(buffer) - 1, 0);
+                }
                 if (bytes_read < 0) {
+                    if (is_https_) {
+                        SSL_free(ssl_);
+                    }
                     close(sock);
                     throw std::runtime_error("Receive failed");
                 } else if (bytes_read == 0) {
@@ -205,10 +264,15 @@ namespace http {
                     buffer[bytes_read] = '\0';
                     response += buffer;
                     elapsed_ms = 0;
+                    // break;
                 }
             } else {
                 break;
             }
+        }
+
+        if (is_https_) {
+            SSL_free(ssl_);
         }
 
         close(sock);
@@ -328,6 +392,48 @@ namespace http {
         }
 
         return Status::ok;
+    }
+
+    bool Client::InitializeSSL() {
+        // Initialize OpenSSL
+        SSL_library_init();
+        SSL_load_error_strings();
+        OpenSSL_add_ssl_algorithms();
+
+        // Create SSL context
+        const SSL_METHOD* method = TLS_client_method();
+        ssl_ctx_ = SSL_CTX_new(method);
+        if (!ssl_ctx_) {
+            return false;
+        }
+
+        // Set minimum protocol version
+        SSL_CTX_set_min_proto_version(ssl_ctx_, TLS1_2_VERSION);
+
+        // Disable SSLv2 and SSLv3
+        SSL_CTX_set_options(ssl_ctx_, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+
+        // Set default verify paths for certificate validation
+        if (SSL_CTX_set_default_verify_paths(ssl_ctx_) != 1) {
+            // Not critical, but might affect certificate validation
+        }
+
+        return true;
+    }
+
+    void Client::CleanupSSL() {
+        if (ssl_) {
+            SSL_shutdown(ssl_);
+            SSL_free(ssl_);
+            ssl_ = nullptr;
+        }
+
+        if (ssl_ctx_) {
+            SSL_CTX_free(ssl_ctx_);
+            ssl_ctx_ = nullptr;
+        }
+
+        EVP_cleanup();
     }
 
 }  // namespace http
