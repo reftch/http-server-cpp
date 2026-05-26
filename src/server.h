@@ -55,12 +55,6 @@ namespace http {
 
     class Server {
        public:
-        struct ClientConnection {
-            int fd = -1;
-            SSL* ssl = nullptr;
-            bool handshake_completed = false;
-        };
-
         /**
          * HTTP Constructor
          */
@@ -74,6 +68,17 @@ namespace http {
         Server(const std::string& host, const int& port, const std::string& cert_file, const std::string& key_file)
             : host_(host), port_(port), cert_file_(cert_file), key_file_(key_file), ssl_ctx_(nullptr), is_https_(true) {
             start_time_ = std::chrono::high_resolution_clock::now();
+
+            // Check if certificate file exists
+            if (!std::filesystem::exists(cert_file_)) {
+                throw std::runtime_error("Certificate file not found: " + cert_file_);
+            }
+
+            // Check if private key file exists
+            if (!std::filesystem::exists(key_file_)) {
+                throw std::runtime_error("Private key file not found: " + key_file_);
+            }
+
             SSL_library_init();
             SSL_load_error_strings();
             OpenSSL_add_ssl_algorithms();
@@ -114,8 +119,13 @@ namespace http {
 
         void SetAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
-       protected:
        private:
+        struct ClientConnection {
+            int fd = -1;
+            SSL* ssl = nullptr;
+            bool handshake_completed = false;
+        };
+
         const std::string host_;  // Hostname or IP address to bind to
         const int port_;          // Port number to listen on
 
@@ -171,19 +181,15 @@ namespace http {
          */
         void CloseClient(int fd);
 
-        // std::string HandleRoute(http::Request& req);
-
         /**
-         * Perform HTTPS request
+         * Perform requests
          */
-        // void PerformHttpsRequest(const int sd, const char* buffer, const ssize_t nread);
-
         void PerformRequest(const int sd, const char* buffer, const ssize_t nread);
 
         /**
-         * SSL read wrapper
+         * Read clients
          */
-        ssize_t SSLRead(ClientConnection& client, char* buffer, size_t len);
+        ssize_t ReadRequest(ClientConnection& client, char* buffer, size_t len);
 
         /**
          * SSL write wrapper

@@ -207,12 +207,7 @@ namespace http {
                 // READ REQUEST
                 //
                 char buffer[READ_BUFFER_SIZE];
-                ssize_t nread = 0;
-                if (is_https_) {
-                    nread = SSLRead(client, buffer, sizeof(buffer));
-                } else {
-                    nread = read(client.fd, &buffer, sizeof(buffer) - 1);
-                }
+                ssize_t nread = ReadRequest(client, buffer, sizeof(buffer));
                 if (nread > 0) {
                     PerformRequest(fd, buffer, nread);
                 } else if (nread < 0) {
@@ -229,25 +224,38 @@ namespace http {
         }
     }
 
-    ssize_t Server::SSLRead(ClientConnection& client, char* buffer, size_t len) {
-        int ret = SSL_read(client.ssl, buffer, len - 1);
-        if (ret > 0) {
-            buffer[ret] = '\0';
-            return ret;
-        }
+    ssize_t Server::ReadRequest(ClientConnection& client, char* buffer, size_t buffer_size) {
+        if (is_https_) {
+            ssize_t ret = SSL_read(client.ssl, buffer, buffer_size - 1);
+            if (ret > 0) {
+                buffer[ret] = '\0';
+                return ret;
+            }
 
-        int err = SSL_get_error(client.ssl, ret);
-        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-            return 0;
-        }
+            int err = SSL_get_error(client.ssl, ret);
+            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+                return 0;
+            }
 
-        return -1;
+            return -1;
+        } else {
+            ssize_t nread = read(client.fd, buffer, buffer_size - 1);
+            if (nread > 0) {
+                buffer[nread] = '\0';  // Null terminate for safety
+            }
+            return nread;
+        }
     }
 
     ssize_t Server::SSLWrite(ClientConnection& client, const char* buffer, size_t len) {
         int ret = SSL_write(client.ssl, buffer, len);
         if (ret > 0) {
             return ret;
+        }
+
+        int err = SSL_get_error(client.ssl, ret);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+            return 0;
         }
 
         return -1;
