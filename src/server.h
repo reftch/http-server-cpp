@@ -6,7 +6,7 @@
 #endif
 
 #ifndef CONNECTION_TIMEOUT_SECOND
-#define CONNECTION_TIMEOUT_SECOND 300
+#define CONNECTION_TIMEOUT_SECOND 3
 #endif
 
 #ifndef CLIENT_TIMEOUT_SECONDS
@@ -21,6 +21,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <poll.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
@@ -37,9 +39,9 @@
 #include <map>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
-// #include "client.h"
 #include "logger.h"
 #include "request.h"
 #include "response.h"
@@ -51,46 +53,64 @@ namespace http {
     // HTTP Method enum
     enum class HttpMethod { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS };
 
-    /**
-     * Represents an HTTP server instance.
-     * Provides functionality to create, configure, and run an HTTP server.
-     */
     class Server {
        public:
         /**
-         * Constructor for the server.
-         * Initializes server configuration but does not start listening.
-         *
-         * @param host The hostname or IP address to bind to.
-         * @param port The port number to listen on.
+         * HTTP Constructor
          */
-        Server(const std::string& host, const int& port) : port_(port), host_(host) {
+        Server(const std::string& host, const int& port) : host_(host), port_(port) {
             start_time_ = std::chrono::high_resolution_clock::now();
         }
 
-        virtual ~Server() = default;
+        /**
+         * HTTPS Constructor
+         */
+        Server(const std::string& host, const int& port, const std::string& cert_file, const std::string& key_file)
+            : host_(host), port_(port), cert_file_(cert_file), key_file_(key_file), ssl_ctx_(nullptr), is_https_(true) {
+            start_time_ = std::chrono::high_resolution_clock::now();
+
+            // Check if certificate file exists
+            if (!std::filesystem::exists(cert_file_)) {
+                throw std::runtime_error("Certificate file not found: " + cert_file_);
+            }
+
+            // Check if private key file exists
+            if (!std::filesystem::exists(key_file_)) {
+                throw std::runtime_error("Private key file not found: " + key_file_);
+            }
+
+            SSL_library_init();
+            SSL_load_error_strings();
+            OpenSSL_add_ssl_algorithms();
+        }
+
+        /**
+         * Destructor
+         */
+        ~Server() {
+            Stop();
+            if (ssl_ctx_) {
+                SSL_CTX_free(ssl_ctx_);
+                ssl_ctx_ = nullptr;
+            }
+
+            EVP_cleanup();
+        }
+
+        /**
+         * Start HTTPS server
+         */
+        int Start();
+
+        /**
+         * Stop HTTPS server
+         */
+        void Stop();
 
         // Getters
         std::string host() const { return host_; }
         int port() const { return port_; }
         bool is_running() { return running_; }
-
-        /**
-         * Starts the server and begins listening for incoming connections.
-         * This method runs in an infinite loop until interrupted.
-         *
-         * @return 0 on successful start, non-zero on error
-         * @return 1 on socket creation error
-         * @return 2 on error of multiple connections
-         * @return 3 on connection binding error
-         * @return 4 on connection listener error
-         */
-        virtual int Start();
-
-        /**
-         * Signals the server to shut down, stops the polling loop, and closes all sockets.
-         */
-        virtual void Stop();
 
         template <HttpMethod Method>
         void SetRoute(const std::string& path, request_handler handler) {
@@ -99,64 +119,82 @@ namespace http {
 
         void SetAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
-       protected:
-        // logger
-        Logger& log = Logger::getInstance();
-        std::string static_directory_ = "./assets";
-        // router
-        http::Router router_;
+       private:
+        struct ClientConnection {
+            int fd = -1;
+            SSL* ssl = nullptr;
+            bool handshake_completed = false;
+        };
 
-        /**
-         * Performs an asynchronous HTTP request handling operation
-         * @param sd The socket descriptor for the client connection
-         * @param buffer The raw request data received from the client
-         * @param nread The number of bytes read from the socket
-         * @details This function processes an incoming HTTP request by:
-         *          1. Converting the raw buffer data to a string
-         *          2. Parsing the HTTP request to extract method and path
-         *          3. Routing the request to the appropriate handler
-         *          4. Writing the response back to the client socket
-         * @note This function is typically called asynchronously to handle multiple concurrent connections
-         */
-        virtual void PerformRequest(const int sd, const char* buffer, const ssize_t nread);
+        const std::string host_;  // Hostname or IP address to bind to
+        const int port_;          // Port number to listen on
 
-        /**
-         * Handles HTTP route matching and request processing
-         * @param ctx Reference to the HTTP request context containing method, path, and other request data
-         * @return String containing the HTTP response body
-         * @details This function processes the HTTP request by:
-         *          1. Checking if the request has a specific MIME type
-         *          2. If no MIME type is specified, using the global router to match the request
-         *          3. If MIME type is specified, treating it as a file request and reading from assets directory
-         *          4. Returning appropriate HTTP response based on the processing outcome
-         * @note This function is typically called from perform_request() to generate responses for client requests
-         */
-        virtual std::string HandleRoute(http::Request& ctx);
+        //
+        // SSL CONFIG
+        //
+        std::string cert_file_;
+        std::string key_file_;
 
-        // Is server running flag
-        bool running_ = false;
-        std::vector<int> client_list_;  // client list
-        int32_t sockfd_;                // server file descriptor
-        const int port_;                // Port number to listen on
-        const std::string host_;        // Hostname or IP address to bind to
+        SSL_CTX* ssl_ctx_;
+        bool is_https_ = false;
+
+        int32_t sockfd_;  // server file descriptor
+
+        //
+        // SSL CLIENT STORAGE
+        //
+        std::unordered_map<int, ClientConnection> ssl_clients_;
+
+        // Time when server started
+        std::chrono::high_resolution_clock::time_point start_time_;
 
         // Maximum number of connections allowed.
         static constexpr int kMAX_CONNS = KEEPALIVE_MAX_COUNT;
         static constexpr int kCONNECTION_TIMEOUT_SECOND = CONNECTION_TIMEOUT_SECOND;
 
-        //    privat:
-        // Time when server started
-        // std::chrono::high_resolution_clock::time_point end_time_;
-        std::chrono::high_resolution_clock::time_point start_time_;
+        // logger
+        Logger& log = Logger::getInstance();
+
+        bool running_ = false;
+        std::string static_directory_ = "./assets";
+
+        // router
+        http::Router router_;
 
         /**
-         * Main event loop for handling incoming HTTP requests
-         * @details This function implements a non-blocking I/O event loop using poll() to monitor
-         *          both the server socket for new connections and client sockets for incoming data.
-         *          It continuously monitors multiple file descriptors and processes events as they occur.
-         * @note This function runs in an infinite loop until the server's running_ flag is set to false
+         * HTTPS request handling loop
          */
-        virtual void HandleRequests();
+        void HandleRequests();
+
+        /**
+         * Route handling
+         */
+        std::string HandleRoute(http::Request& req);
+
+        /**
+         * Initialize SSL context
+         */
+        bool InitializeSSL();
+
+        /**
+         * Close + cleanup client
+         */
+        void CloseClient(int fd);
+
+        /**
+         * Perform requests
+         */
+        void PerformRequest(const int sd, const char* buffer, const ssize_t nread);
+
+        /**
+         * Read clients
+         */
+        ssize_t ReadRequest(ClientConnection& client, char* buffer, size_t len);
+
+        /**
+         * SSL write wrapper
+         */
+        ssize_t SSLWrite(ClientConnection& client, const char* buffer, size_t len);
 
         constexpr std::string_view ToString(HttpMethod method) {
             switch (method) {
@@ -181,4 +219,4 @@ namespace http {
 
 }  // namespace http
 
-#endif  // SERVER_HPP
+#endif  // SSL_SERVER_H_

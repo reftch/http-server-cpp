@@ -8,7 +8,8 @@
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    http::Server s("0.0.0.0", 8080);
+    // http::Server s("0.0.0.0", 8080);
+    http::Server s("0.0.0.0", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
     static auto s_ptr = &s;
