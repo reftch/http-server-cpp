@@ -1,11 +1,6 @@
 #ifndef HTTP_SERVER_H_
 #define HTTP_SERVER_H_
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-
-#include <unordered_map>
-
 #ifndef KEEPALIVE_MAX_COUNT
 #define KEEPALIVE_MAX_COUNT 100
 #endif
@@ -44,6 +39,7 @@
 #include <map>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "logger.h"
