@@ -4,11 +4,12 @@
 #include <iomanip>
 #include <sstream>
 
-#include "sslserver.h"
+#include "server.h"
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
+    http::Server s("0.0.0.0", 8443, "cert.pem", "key.pem");
+    // http::Server s("0.0.0.0", 8080);
 
     // Register signal handler with capture
     static auto s_ptr = &s;
@@ -16,7 +17,7 @@ int main() {
         s_ptr->Stop();
     });
 
-    s.SetRoute<http::HttpMethod::GET>("/", [](const http::Request& req, http::Response& res) {
+    s.SetRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
         res.SetContent<http::ContentType::HTML>("index.html");
         // log.Info("Request path: {}", req.path());
         // res.SetContent<http::ContentType::PLAIN_TEXT>("Hello, HTTPS!");
@@ -29,7 +30,7 @@ int main() {
 
     s.SetRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [](const http::Request& req, http::Response& res) {
         std::string value = req.params().at("v");
-        log.Info("Request path: {}, path parameter: {}", req.path(), value);
+        // log.Info("Request path: {}, path parameter: {}", req.path(), value);
         res.SetContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 

@@ -1,3 +1,5 @@
+find_package(OpenSSL REQUIRED)
+
 # Create a combined tests executable
 add_executable (tests
     logger_test.cc
@@ -25,4 +27,6 @@ target_link_libraries(tests PRIVATE
     http-server
     GTest::gtest
     GTest::gtest_main
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )

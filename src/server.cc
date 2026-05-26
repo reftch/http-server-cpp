@@ -2,71 +2,99 @@
 
 namespace http {
 
-    void Server::Stop() {
-        std::cout << "\n";
+    bool Server::InitializeSSL() {
+        const SSL_METHOD* method = TLS_server_method();
 
-        // set the running flag to false to break the while loop in start()
-        running_ = false;
-
-        // close all active client connections
-        for (size_t i = 0; i < client_list_.size(); ++i) {
-            int sd = client_list_[i];
-            if (sd != -1) {
-                log.Info("closing client connection FD: {}", sd);
-                close(sd);
-            }
+        ssl_ctx_ = SSL_CTX_new(method);
+        if (!ssl_ctx_) {
+            log.Error("Failed to create SSL context");
+            ERR_print_errors_fp(stderr);
+            return false;
         }
 
-        // close the listening socket (the main server socket)
-        if (sockfd_ != -1) {
-            log.Info("Closing listening socket FD: {}", sockfd_);
-            close(sockfd_);
+        SSL_CTX_set_min_proto_version(ssl_ctx_, TLS1_2_VERSION);
+        if (SSL_CTX_use_certificate_file(ssl_ctx_, cert_file_.c_str(), SSL_FILETYPE_PEM) <= 0) {
+            log.Error("Failed to load certificate file");
+            ERR_print_errors_fp(stderr);
+            return false;
         }
 
-        log.Info("Server stopped successfully");
+        if (SSL_CTX_use_PrivateKey_file(ssl_ctx_, key_file_.c_str(), SSL_FILETYPE_PEM) <= 0) {
+            log.Error("Failed to load private key file");
+            ERR_print_errors_fp(stderr);
+            return false;
+        }
+
+        if (!SSL_CTX_check_private_key(ssl_ctx_)) {
+            log.Error("Private key mismatch");
+            return false;
+        }
+
+        return true;
+    }
+
+    void Server::CloseClient(int fd) {
+        std::unordered_map<int, ClientConnection>::iterator it = ssl_clients_.find(fd);
+        if (it == ssl_clients_.end()) {
+            return;
+        }
+
+        ClientConnection& client = it->second;
+        if (client.ssl) {
+            SSL_shutdown(client.ssl);
+            SSL_free(client.ssl);
+            client.ssl = NULL;
+        }
+
+        if (client.fd != -1) {
+            close(client.fd);
+            client.fd = -1;
+        }
+
+        ssl_clients_.erase(it);
     }
 
     int Server::Start() {
-        // open socket
-        sockfd_ = socket(AF_INET, SOCK_STREAM, 0);  // for tcp connection
-        // error handling
-        if (sockfd_ <= 0) {
+        if (is_https_ && !InitializeSSL()) {
+            return 1;
+        }
+
+        sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd_ < 0) {
             log.Error("Socket creation failed");
-            exit(1);
+            return 2;
         }
 
-        // setting serverFd to allow multiple connection
         int opt = 1;
-        if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof opt) < 0) {
-            log.Error("Setting to allow multiple connection failed");
-            exit(2);
+        if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+            log.Error("setsockopt failed");
+            return 3;
         }
 
-        // setting the server address
-        struct sockaddr_in serverAddr;
-        serverAddr.sin_family = AF_INET;
-        serverAddr.sin_port = htons(port_);
-        inet_pton(AF_INET, host_.data(), &serverAddr.sin_addr);
+        int flags = fcntl(sockfd_, F_GETFL, 0);
+        fcntl(sockfd_, F_SETFL, flags | O_NONBLOCK);
+        sockaddr_in server_addr;
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(port_);
+        inet_pton(AF_INET, host_.c_str(), &server_addr.sin_addr);
 
-        // binding the server address
-        if (bind(sockfd_, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-            log.Error("Bind the server address failed");
-            exit(3);
+        if (bind(sockfd_, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+            log.Error("Bind failed");
+            return 4;
         }
 
-        // listening to the port
         if (listen(sockfd_, kMAX_CONNS) < 0) {
-            log.Error("Listening the server port failed");
-            exit(4);
+            log.Error("Listen failed");
+            return 5;
         }
 
-        // initialize the running flag
         running_ = true;
 
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
 
-        log.Info("Server started on https://{}:{} in {} ", host_, port_, duration);
+        log.Info("Server started on http{}://{}:{} in {} ", (is_https_ ? "s" : ""), host_, port_, duration);
 
         HandleRequests();
 
@@ -74,83 +102,155 @@ namespace http {
     }
 
     void Server::HandleRequests() {
-        // Vector to hold pollfd structures
-        std::vector<struct pollfd> pollfds;
-
         while (running_) {
-            // Clear and rebuild pollfds vector
-            pollfds.clear();
+            std::vector<pollfd> pollfds;
 
-            // Add server socket
-            struct pollfd server_pollfd;
+            pollfd server_pollfd;
+
             server_pollfd.fd = sockfd_;
             server_pollfd.events = POLLIN;
             server_pollfd.revents = 0;
+
             pollfds.push_back(server_pollfd);
 
-            // Add all client sockets
-            for (auto sd : client_list_) {
-                struct pollfd pfd;
-                pfd.fd = sd;
+            std::unordered_map<int, ClientConnection>::iterator it;
+
+            for (it = ssl_clients_.begin(); it != ssl_clients_.end(); ++it) {
+                pollfd pfd;
+
+                pfd.fd = it->first;
                 pfd.events = POLLIN;
                 pfd.revents = 0;
+
                 pollfds.push_back(pfd);
             }
 
-            // Using poll for listening to multiple clients with timeout
-            int activity = poll(pollfds.data(), pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
+            int activity = poll(&pollfds[0], pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
             if (activity < 0) {
-                log.Warning("Stop poll for listening");
+                if (errno == EINTR) {
+                    continue;
+                }
+                log.Warning("poll failed");
                 continue;
             }
 
-            // Check for new connection on server socket
+            //
+            // ACCEPT NEW CLIENT
+            //
             if (pollfds[0].revents & POLLIN) {
-                // client file descriptor
-                auto clientfd = accept(sockfd_, (struct sockaddr*)NULL, NULL);
-                if (clientfd < 0) {
-                    log.Warning("Accepted error");
+                int clientfd = accept(sockfd_, NULL, NULL);
+
+                if (clientfd >= 0) {
+                    int client_flags = fcntl(clientfd, F_GETFL, 0);
+                    fcntl(clientfd, F_SETFL, client_flags | O_NONBLOCK);
+
+                    ClientConnection client;
+
+                    client.fd = clientfd;
+                    client.handshake_completed = false;
+
+                    if (is_https_) {
+                        SSL* ssl = SSL_new(ssl_ctx_);
+                        if (!ssl) {
+                            close(clientfd);
+                            continue;
+                        }
+
+                        SSL_set_fd(ssl, clientfd);
+                        client.ssl = ssl;
+                    }
+
+                    ssl_clients_[clientfd] = client;
+                }
+            }
+
+            //
+            // HANDLE CLIENTS
+            //
+            size_t i;
+
+            std::vector<int> dead_clients;
+            for (i = 1; i < pollfds.size(); ++i) {
+                if (!(pollfds[i].revents & POLLIN)) {
                     continue;
                 }
-                // Set non-blocking mode for client socket
-                int flags = fcntl(clientfd, F_GETFL, 0);
-                fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
 
-                // adding new client to list
-                client_list_.push_back(clientfd);
-            }
+                int fd = pollfds[i].fd;
+                if (ssl_clients_.find(fd) == ssl_clients_.end()) {
+                    continue;
+                }
 
-            // check for activity on client sockets, process each client socket
-            for (size_t i = 0; i < client_list_.size();) {
-                size_t pollfd_index = i + 1;  // +1 because server socket is at index 0
+                ClientConnection& client = ssl_clients_[fd];
 
-                if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
-                    int sd = client_list_[i];
-                    char buffer[READ_BUFFER_SIZE];
-                    ssize_t nread = read(sd, &buffer, sizeof(buffer) - 1);
-                    if (nread > 0) {
-                        // perform request
-                        PerformRequest(sd, buffer, nread);
-                        // Launch asynchronously
-                        // auto future = std::async(std::launch::async, [&]() { perform_request(sd, buffer, nread); });
-                    } else if (nread == 0) {
-                        // Client disconnected
-                        close(sd);
-                        // Remove from client list
-                        client_list_.erase(client_list_.begin() + i);
-                        continue;  // Don't increment i since we removed an element
+                //
+                // HANDSHAKE
+                //
+                if (is_https_ && !client.handshake_completed) {
+                    int ret = SSL_accept(client.ssl);
+
+                    if (ret == 1) {
+                        client.handshake_completed = true;
+                        // log.Info("TLS handshake completed FD={}", fd);
                     } else {
-                        // Error or would block (non-blocking socket)
-                        // if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                        // std::cerr << "read error: " << strerror(errno) << '\n';
-                        // }
-                        i++;
+                        int err = SSL_get_error(client.ssl, ret);
+                        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+                            continue;
+                        }
+
+                        // log.Warning("TLS handshake failed FD={}", fd);
+                        dead_clients.push_back(fd);
+                        continue;
                     }
+                }
+
+                //
+                // READ REQUEST
+                //
+                char buffer[READ_BUFFER_SIZE];
+                ssize_t nread = 0;
+                if (is_https_) {
+                    nread = SSLRead(client, buffer, sizeof(buffer));
                 } else {
-                    i++;  // Increment if no activity
+                    nread = read(client.fd, &buffer, sizeof(buffer) - 1);
+                }
+                if (nread > 0) {
+                    PerformRequest(fd, buffer, nread);
+                } else if (nread < 0) {
+                    dead_clients.push_back(fd);
                 }
             }
+
+            //
+            // CLEANUP
+            //
+            for (i = 0; i < dead_clients.size(); ++i) {
+                CloseClient(dead_clients[i]);
+            }
         }
+    }
+
+    ssize_t Server::SSLRead(ClientConnection& client, char* buffer, size_t len) {
+        int ret = SSL_read(client.ssl, buffer, len - 1);
+        if (ret > 0) {
+            buffer[ret] = '\0';
+            return ret;
+        }
+
+        int err = SSL_get_error(client.ssl, ret);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+            return 0;
+        }
+
+        return -1;
+    }
+
+    ssize_t Server::SSLWrite(ClientConnection& client, const char* buffer, size_t len) {
+        int ret = SSL_write(client.ssl, buffer, len);
+        if (ret > 0) {
+            return ret;
+        }
+
+        return -1;
     }
 
     void Server::PerformRequest(const int sd, const char* buffer, const ssize_t nread) {
@@ -158,25 +258,47 @@ namespace http {
         // Parse the request line to find method and path
         http::Request req(raw_request);
         // Handle route
-        std::string body = HandleRoute(req);
+        std::string response = HandleRoute(req);
+
         // write response
-        if (write(sd, body.c_str(), body.size()) == -1) {
-            log.Warning("Error writing response body");
+        if (is_https_) {
+            if (ssl_clients_.find(sd) == ssl_clients_.end()) {
+                return;
+            }
+            ClientConnection& client = ssl_clients_[sd];
+            SSLWrite(client, response.c_str(), response.size());
+        } else {
+            if (write(sd, response.c_str(), response.size()) == -1) {
+                log.Warning("Error writing response response");
+            }
         }
     }
+
+    // void SSLServer::PerformHttpsRequest(const int sd, const char* buffer, const ssize_t nread) {
+    //     std::string raw_request(buffer, nread);
+    //     Request req(raw_request);
+    //     std::string response = HandleRoute(req);
+
+    //     if (ssl_clients_.find(sd) == ssl_clients_.end()) {
+    //         return;
+    //     }
+    //     ClientConnection& client = ssl_clients_[sd];
+    //     SSLWrite(client, response.c_str(), response.size());
+    // }
 
     std::string Server::HandleRoute(http::Request& req) {
         Response res(req.is_keep_alive(), static_directory_);
 
-        // check on static resource
         if (req.mime_type().has_value()) {
-            auto content = ReadFile(static_directory_ + req.path());
-            if (content != "") {
+            std::string content = ReadFile(static_directory_ + req.path());
+
+            if (!content.empty()) {
                 res.SetContentByType(content, req.mime_type().value());
+            } else {
+                res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
             }
         } else {
-            // Call handler if it exists
-            http::request_handler handler;
+            request_handler handler;
             if (router_.Match(&req, &handler)) {
                 handler(req, res);
             } else {
@@ -185,6 +307,28 @@ namespace http {
         }
 
         return res.Build();
+    }
+
+    void Server::Stop() {
+        running_ = false;
+
+        std::vector<int> clients;
+        std::unordered_map<int, ClientConnection>::iterator it;
+        for (it = ssl_clients_.begin(); it != ssl_clients_.end(); ++it) {
+            clients.push_back(it->first);
+        }
+
+        size_t i;
+        for (i = 0; i < clients.size(); ++i) {
+            CloseClient(clients[i]);
+        }
+
+        if (sockfd_ != -1) {
+            close(sockfd_);
+            sockfd_ = -1;
+        }
+
+        log.Info("HTTPS server stopped");
     }
 
 }  // namespace http

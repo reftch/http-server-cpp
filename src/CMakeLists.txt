@@ -12,8 +12,6 @@ add_library(http-server STATIC
   router.cc
   server.cc
   server.h
-  sslserver.cc
-  sslserver.h
   utils.cc
   utils.h
 )
