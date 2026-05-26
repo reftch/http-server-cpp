@@ -274,18 +274,6 @@ namespace http {
         }
     }
 
-    // void SSLServer::PerformHttpsRequest(const int sd, const char* buffer, const ssize_t nread) {
-    //     std::string raw_request(buffer, nread);
-    //     Request req(raw_request);
-    //     std::string response = HandleRoute(req);
-
-    //     if (ssl_clients_.find(sd) == ssl_clients_.end()) {
-    //         return;
-    //     }
-    //     ClientConnection& client = ssl_clients_[sd];
-    //     SSLWrite(client, response.c_str(), response.size());
-    // }
-
     std::string Server::HandleRoute(http::Request& req) {
         Response res(req.is_keep_alive(), static_directory_);
 
