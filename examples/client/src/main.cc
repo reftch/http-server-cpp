@@ -4,6 +4,7 @@
 int main() {
     static auto& log = http::Logger::getInstance();
     http::Client cli("https://0.0.0.0:8443");
+    cli.SetCert("cert.pem");
 
     for (size_t i = 0; i < 10; ++i) {
         auto res = cli.Get("/api/v1/inc/" + std::to_string(i));

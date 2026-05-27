@@ -64,12 +64,6 @@ namespace http {
     std::optional<Response> Client::Get(const std::string& path) {
         try {
             std::string response = SendRequest("GET", path);
-            // std::string response;
-            // if (is_https_) {
-            //     response = SendHTTPSRequest("GET", path);
-            // } else {
-            //     response = SendRequest("GET", path);
-            // }
             return ParseResponse(response);
         } catch (const std::exception& e) {
             std::cerr << "Error in GET request: " << e.what() << std::endl;
@@ -180,11 +174,11 @@ namespace http {
             // Perform SSL handshake
             int ret = SSL_connect(ssl_);
             if (ret <= 0) {
-                // int err = SSL_get_error(ssl_, ret);
+                int err = SSL_get_error(ssl_, ret);
                 ERR_print_errors_fp(stderr);
                 SSL_free(ssl_);
                 close(sock);
-                throw std::runtime_error("SSL handshake failed");
+                throw std::runtime_error("SSL handshake failed with error code: " + std::to_string(err));
             }
         }
 
@@ -434,6 +428,34 @@ namespace http {
         }
 
         EVP_cleanup();
+    }
+
+    void Client::SetCert(const std::string& cert_file) {
+        ca_cert_file_ = cert_file;
+        use_custom_ca_ = true;
+
+        // Check if SSL context exists
+        if (ssl_ctx_ == nullptr) {
+            // If no SSL context exists yet, we can't load the certificate
+            // The SSL context will be initialized on first request
+            return;
+        }
+
+        // If SSL context already exists, load the custom CA certificate
+        if (SSL_CTX_load_verify_locations(ssl_ctx_, ca_cert_file_.c_str(), nullptr) != 1) {
+            // Get detailed error information
+            ERR_print_errors_fp(stderr);
+
+            // Get the specific OpenSSL error
+            unsigned long err = ERR_get_error();
+            char err_buf[256];
+            ERR_error_string_n(err, err_buf, sizeof(err_buf));
+
+            throw std::runtime_error("Failed to load CA certificate from '" + cert_file + "': " + std::string(err_buf));
+        }
+
+        // Set verification mode to verify peer
+        SSL_CTX_set_verify(ssl_ctx_, SSL_VERIFY_PEER, nullptr);
     }
 
 }  // namespace http

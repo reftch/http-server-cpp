@@ -31,6 +31,7 @@ namespace http {
     class Client {
        public:
         Client(const std::string& url);
+        void SetCert(const std::string& cert_file);
 
         std::optional<Response> Get(const std::string& path);
         std::optional<Response> Post(const std::string& path, const std::string& body);
@@ -42,6 +43,9 @@ namespace http {
         int port_;
         bool is_https_ = false;
         bool keep_alive_ = true;
+        // certificate
+        std::string ca_cert_file_;
+        bool use_custom_ca_ = false;
 
         int kTIMEOUT_SECONDS = CLIENT_TIMEOUT_SECONDS;
 
