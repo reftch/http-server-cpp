@@ -66,7 +66,7 @@ namespace http {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
 
-        log.Info("Server started on https://{}:{} in {} ", host_, port_, duration);
+        log.Info("Server started on http://{}:{} in {} ", host_, port_, duration);
 
         HandleRequests();
 
@@ -104,7 +104,9 @@ namespace http {
                 continue;
             }
 
-            // Check for new connection on server socket
+            //
+            // ACCEPT NEW CLIENT
+            //
             if (pollfds[0].revents & POLLIN) {
                 // client file descriptor
                 auto clientfd = accept(sockfd_, (struct sockaddr*)NULL, NULL);
@@ -120,34 +122,26 @@ namespace http {
                 client_list_.push_back(clientfd);
             }
 
-            // check for activity on client sockets, process each client socket
-            for (size_t i = 0; i < client_list_.size();) {
+            //
+            // HANDLE CLIENTS
+            //
+            for (size_t i = 0; i < client_list_.size(); ++i) {
                 size_t pollfd_index = i + 1;  // +1 because server socket is at index 0
 
                 if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
+                    //
+                    // READ REQUEST
+                    //
                     int sd = client_list_[i];
                     char buffer[READ_BUFFER_SIZE];
                     ssize_t nread = read(sd, &buffer, sizeof(buffer) - 1);
                     if (nread > 0) {
-                        // perform request
                         PerformRequest(sd, buffer, nread);
-                        // Launch asynchronously
-                        // auto future = std::async(std::launch::async, [&]() { perform_request(sd, buffer, nread); });
                     } else if (nread == 0) {
-                        // Client disconnected
+                        // CLEANUP
                         close(sd);
-                        // Remove from client list
                         client_list_.erase(client_list_.begin() + i);
-                        continue;  // Don't increment i since we removed an element
-                    } else {
-                        // Error or would block (non-blocking socket)
-                        // if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                        // std::cerr << "read error: " << strerror(errno) << '\n';
-                        // }
-                        i++;
                     }
-                } else {
-                    i++;  // Increment if no activity
                 }
             }
         }

@@ -41,7 +41,7 @@ namespace http {
 
         ClientConnection& client = it->second;
         if (client.ssl) {
-            SSL_shutdown(client.ssl);
+            // SSL_shutdown(client.ssl);
             SSL_free(client.ssl);
             client.ssl = NULL;
         }
@@ -102,15 +102,16 @@ namespace http {
     }
 
     void SSLServer::HandleRequests() {
+        std::vector<struct pollfd> pollfds;
         while (running_) {
-            std::vector<pollfd> pollfds;
+            // Clear and rebuild pollfds vector
+            pollfds.clear();
 
-            pollfd server_pollfd;
-
+            // Add server socket
+            struct pollfd server_pollfd;
             server_pollfd.fd = sockfd_;
             server_pollfd.events = POLLIN;
             server_pollfd.revents = 0;
-
             pollfds.push_back(server_pollfd);
 
             std::unordered_map<int, ClientConnection>::iterator it;
@@ -127,9 +128,9 @@ namespace http {
 
             int activity = poll(&pollfds[0], pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
             if (activity < 0) {
-                if (errno == EINTR) {
-                    continue;
-                }
+                // if (errno == EINTR) {
+                //     continue;
+                // }
                 log.Warning("poll failed");
                 continue;
             }
@@ -138,28 +139,30 @@ namespace http {
             // ACCEPT NEW CLIENT
             //
             if (pollfds[0].revents & POLLIN) {
-                int clientfd = accept(sockfd_, NULL, NULL);
-
-                if (clientfd >= 0) {
-                    int client_flags = fcntl(clientfd, F_GETFL, 0);
-                    fcntl(clientfd, F_SETFL, client_flags | O_NONBLOCK);
-
-                    SSL* ssl = SSL_new(ssl_ctx_);
-                    if (!ssl) {
-                        close(clientfd);
-                        continue;
-                    }
-
-                    SSL_set_fd(ssl, clientfd);
-
-                    ClientConnection client;
-
-                    client.fd = clientfd;
-                    client.ssl = ssl;
-                    client.handshake_completed = false;
-
-                    ssl_clients_[clientfd] = client;
+                int clientfd = accept(sockfd_, (struct sockaddr*)NULL, NULL);
+                if (clientfd < 0) {
+                    log.Warning("Accepted error");
+                    continue;
                 }
+                // Set non-blocking mode for client socket
+                int flags = fcntl(clientfd, F_GETFL, 0);
+                fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
+
+                SSL* ssl = SSL_new(ssl_ctx_);
+                if (!ssl) {
+                    close(clientfd);
+                    continue;
+                }
+
+                SSL_set_fd(ssl, clientfd);
+
+                ClientConnection client;
+
+                client.fd = clientfd;
+                client.ssl = ssl;
+                client.handshake_completed = false;
+
+                ssl_clients_[clientfd] = client;
             }
 
             //
@@ -168,7 +171,7 @@ namespace http {
             size_t i;
 
             std::vector<int> dead_clients;
-            for (i = 1; i < pollfds.size(); ++i) {
+            for (i = 0; i < pollfds.size(); ++i) {
                 if (!(pollfds[i].revents & POLLIN)) {
                     continue;
                 }
@@ -185,7 +188,6 @@ namespace http {
                 //
                 if (!client.handshake_completed) {
                     int ret = SSL_accept(client.ssl);
-
                     if (ret == 1) {
                         client.handshake_completed = true;
                         // log.Info("TLS handshake completed FD={}", fd);
