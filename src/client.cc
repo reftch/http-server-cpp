@@ -412,6 +412,18 @@ namespace http {
             // Not critical, but might affect certificate validation
         }
 
+        // If a custom CA certificate is provided, load it
+        if (use_custom_ca_ && !ca_cert_file_.empty()) {
+            if (SSL_CTX_load_verify_locations(ssl_ctx_, ca_cert_file_.c_str(), nullptr) != 1) {
+                SSL_CTX_free(ssl_ctx_);
+                ssl_ctx_ = nullptr;
+                return false;
+            }
+
+            // Set verification mode to verify peer
+            SSL_CTX_set_verify(ssl_ctx_, SSL_VERIFY_PEER, nullptr);
+        }
+
         return true;
     }
 

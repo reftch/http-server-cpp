@@ -45,7 +45,7 @@ namespace http {
         bool keep_alive_ = true;
         // certificate
         std::string ca_cert_file_;
-        bool use_custom_ca_ = false;
+        bool use_custom_ca_ = true;
 
         int kTIMEOUT_SECONDS = CLIENT_TIMEOUT_SECONDS;
 
