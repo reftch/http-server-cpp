@@ -47,7 +47,7 @@ namespace http {
         std::string ca_cert_file_;
         bool use_custom_ca_ = true;
 
-        int kTIMEOUT_SECONDS = CLIENT_TIMEOUT_SECONDS;
+        const int kTIMEOUT_SECONDS = CLIENT_TIMEOUT_SECONDS;
 
         // SSL context for HTTPS
         SSL_CTX* ssl_ctx_;

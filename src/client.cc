@@ -208,71 +208,6 @@ namespace http {
         return ReadResponse(sock);
     }
 
-    std::string Client::ReadResponse(int sock) {
-        // Read response with minimal overhead
-        std::string response;
-        char buffer[4096];
-        ssize_t bytes_read;
-
-        // Make socket non-blocking
-        if (!is_https_) {
-            int flags = fcntl(sock, F_GETFL, 0);
-            fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-        }
-
-        struct pollfd pfd{};
-        pfd.fd = sock;
-        pfd.events = POLLIN;
-
-        int timeout_ms = kTIMEOUT_SECONDS * 1000;
-        int elapsed_ms = 0;
-        int poll_interval = 1;
-
-        while (elapsed_ms < timeout_ms) {
-            int poll_result = poll(&pfd, 1, poll_interval);
-            if (poll_result < 0) {
-                if (is_https_) {
-                    SSL_free(ssl_);
-                }
-                close(sock);
-                throw std::runtime_error("Poll failed");
-            } else if (poll_result == 0) {
-                break;
-            }
-
-            if (pfd.revents & POLLIN) {
-                if (is_https_) {
-                    bytes_read = SSL_read(ssl_, buffer, sizeof(buffer) - 1);
-                } else {
-                    bytes_read = recv(sock, buffer, sizeof(buffer) - 1, 0);
-                }
-                if (bytes_read < 0) {
-                    if (is_https_) {
-                        SSL_free(ssl_);
-                    }
-                    close(sock);
-                    throw std::runtime_error("Receive failed");
-                } else if (bytes_read == 0) {
-                    break;
-                } else {
-                    buffer[bytes_read] = '\0';
-                    response += buffer;
-                    elapsed_ms = 0;
-                    // break;
-                }
-            } else {
-                break;
-            }
-        }
-
-        if (is_https_) {
-            SSL_free(ssl_);
-        }
-
-        close(sock);
-        return response;
-    }
-
     static std::string Trim(const std::string& str) {
         size_t start = str.find_first_not_of(" \t\r\n");
         if (start == std::string::npos) {
@@ -281,6 +216,36 @@ namespace http {
 
         size_t end = str.find_last_not_of(" \t\r\n");
         return str.substr(start, end - start + 1);
+    }
+
+    std::string Client::ReadResponse(int sock) {
+        std::string response;
+        std::array<char, READ_BUFFER_SIZE> buffer{};
+
+        while (true) {
+            int bytes_read = 0;
+            if (ssl_) {
+                bytes_read = SSL_read(ssl_, buffer.data(), static_cast<int>(buffer.size()));
+                if (bytes_read <= 0) {
+                    int err = SSL_get_error(ssl_, bytes_read);
+                    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) continue;
+                    break;
+                }
+            } else {
+                bytes_read = ::recv(sock, buffer.data(), buffer.size(), 0);
+                if (bytes_read < 0) {
+                    if (errno == EINTR) continue;
+                    break;
+                }
+                if (bytes_read == 0) break;
+            }
+
+            response.append(buffer.data(), static_cast<std::size_t>(bytes_read));
+            // have all the bytes been read yet?
+            if (bytes_read < READ_BUFFER_SIZE) break;
+        }
+
+        return Trim(response);
     }
 
     // Add this parsing method
@@ -413,16 +378,16 @@ namespace http {
         }
 
         // If a custom CA certificate is provided, load it
-        if (use_custom_ca_ && !ca_cert_file_.empty()) {
-            if (SSL_CTX_load_verify_locations(ssl_ctx_, ca_cert_file_.c_str(), nullptr) != 1) {
-                SSL_CTX_free(ssl_ctx_);
-                ssl_ctx_ = nullptr;
-                return false;
-            }
+        // if (use_custom_ca_ && !ca_cert_file_.empty()) {
+        //     if (SSL_CTX_load_verify_locations(ssl_ctx_, ca_cert_file_.c_str(), nullptr) != 1) {
+        //         SSL_CTX_free(ssl_ctx_);
+        //         ssl_ctx_ = nullptr;
+        //         return false;
+        //     }
 
-            // Set verification mode to verify peer
-            SSL_CTX_set_verify(ssl_ctx_, SSL_VERIFY_PEER, nullptr);
-        }
+        //     // Set verification mode to verify peer
+        //     SSL_CTX_set_verify(ssl_ctx_, SSL_VERIFY_PEER, nullptr);
+        // }
 
         return true;
     }
