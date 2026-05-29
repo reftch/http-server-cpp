@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include "client.h"
 #include "sslserver.h"
 
 int main() {
@@ -29,6 +30,13 @@ int main() {
     s.SetRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [](const http::Request& req, http::Response& res) {
         std::string value = req.params().at("v");
         res.SetContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
+    });
+
+    s.SetRoute<http::HttpMethod::GET>("/api/v1/temperature", [](const http::Request&, http::Response& res) {
+        http::Client cli("https://api.open-meteo.com");
+        auto client_res =
+            cli.Get("/v1/forecast?latitude=52.51786001257598&longitude=13.403031762020568&current=temperature_2m");
+        res.SetContent<http::ContentType::JSON>(client_res->content());
     });
 
     s.SetRoute<http::HttpMethod::POST>("/api/v1/users/:id", [](const http::Request& req, http::Response&) {

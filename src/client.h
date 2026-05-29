@@ -59,6 +59,7 @@ namespace http {
         std::string ReadResponse(int sock);
 
         Response ParseResponse(const std::string& raw_response);
+        std::string ParseChunkedBody(const std::string& chunked_body);
         http::Status ParseStatus(const std::string& raw_response);
 
         // SSL helper functions

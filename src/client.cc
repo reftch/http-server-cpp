@@ -249,38 +249,83 @@ namespace http {
     }
 
     // Add this parsing method
+    // Response Client::ParseResponse(const std::string& raw_response) {
+    //     // static Response Parse(const std::string& response_string) {
+    //     Response response;
+
+    //     // Split the response into lines
+    //     std::vector<std::string> lines;
+    //     std::istringstream iss(raw_response);
+    //     std::string line;
+
+    //     while (std::getline(iss, line)) {
+    //         lines.push_back(line);
+    //     }
+
+    //     if (lines.empty()) {
+    //         return response;
+    //     }
+
+    //     Status status = ParseStatus(raw_response);
+
+    //     // Parse headers (skip the first line and any empty lines)
+    //     for (size_t i = 1; i < lines.size(); ++i) {
+    //         if (lines[i].empty()) {
+    //             // Empty line indicates end of headers
+    //             break;
+    //         }
+
+    //         size_t colon_pos = lines[i].find(':');
+    //         if (colon_pos != std::string::npos) {
+    //             std::string key = lines[i].substr(0, colon_pos);
+    //             std::string value = lines[i].substr(colon_pos + 1);
+
+    //             // Trim whitespace from key and value
+    //             key = Trim(key);
+    //             value = Trim(value);
+
+    //             response.set_header(key, value);
+    //         }
+    //     }
+
+    //     // get response body
+    //     std::string body = "";
+    //     size_t header_end = raw_response.find("\r\n\r\n");
+    //     std::cout << raw_response << '\n';
+    //     if (header_end != std::string::npos) {
+    //         body = raw_response.substr(header_end + 8);
+    //     }
+
+    //     response.SetContentByType(body, status);
+    //     return response;
+    // }
+
     Response Client::ParseResponse(const std::string& raw_response) {
-        // static Response Parse(const std::string& response_string) {
         Response response;
 
-        // Split the response into lines
-        std::vector<std::string> lines;
-        std::istringstream iss(raw_response);
-        std::string line;
-
-        while (std::getline(iss, line)) {
-            lines.push_back(line);
-        }
-
-        if (lines.empty()) {
+        // Find the end of headers (after \r\n\r\n)
+        size_t header_end = raw_response.find("\r\n\r\n");
+        if (header_end == std::string::npos) {
             return response;
         }
 
+        // Parse status line (first line)
         Status status = ParseStatus(raw_response);
 
-        // Parse headers (skip the first line and any empty lines)
-        for (size_t i = 1; i < lines.size(); ++i) {
-            if (lines[i].empty()) {
-                // Empty line indicates end of headers
-                break;
-            }
+        // Parse headers
+        std::string header_section = raw_response.substr(0, header_end);
+        std::istringstream iss(header_section);
+        std::string line;
 
-            size_t colon_pos = lines[i].find(':');
+        while (std::getline(iss, line)) {
+            if (line.empty()) break;  // End of headers
+
+            size_t colon_pos = line.find(':');
             if (colon_pos != std::string::npos) {
-                std::string key = lines[i].substr(0, colon_pos);
-                std::string value = lines[i].substr(colon_pos + 1);
+                std::string key = line.substr(0, colon_pos);
+                std::string value = line.substr(colon_pos + 1);
 
-                // Trim whitespace from key and value
+                // Trim whitespace
                 key = Trim(key);
                 value = Trim(value);
 
@@ -288,15 +333,48 @@ namespace http {
             }
         }
 
-        // get response body
-        std::string body = "";
-        size_t header_end = raw_response.find("\r\n\r\n");
-        if (header_end != std::string::npos) {
-            body = raw_response.substr(header_end + 4);
+        // Extract body (after headers)
+        std::string body = raw_response.substr(header_end + 4);  // +4 for \r\n\r\n
+
+        // Check if it's chunked encoding
+        std::string transfer_encoding = response.headers().at("Transfer-Encoding");
+        if (transfer_encoding == "chunked") {
+            body = ParseChunkedBody(body);
         }
 
         response.SetContentByType(body, status);
         return response;
+    }
+
+    // Helper function to parse chunked body
+    std::string Client::ParseChunkedBody(const std::string& chunked_body) {
+        std::string result;
+        size_t pos = 0;
+
+        while (pos < chunked_body.length()) {
+            // Read chunk size (hexadecimal)
+            size_t chunk_size_end = chunked_body.find('\r', pos);
+            if (chunk_size_end == std::string::npos) break;
+
+            std::string chunk_size_str = chunked_body.substr(pos, chunk_size_end - pos);
+            size_t chunk_size = std::stoi(chunk_size_str, nullptr, 16);
+
+            pos = chunk_size_end + 2;  // Skip \r\n
+
+            if (chunk_size == 0) {
+                break;  // End of chunks
+            }
+
+            // Extract chunk data
+            if (pos + chunk_size <= chunked_body.length()) {
+                result += chunked_body.substr(pos, chunk_size);
+                pos += chunk_size + 2;  // Skip \r\n after chunk
+            } else {
+                break;
+            }
+        }
+
+        return result;
     }
 
     Status Client::ParseStatus(const std::string& raw_response) {
