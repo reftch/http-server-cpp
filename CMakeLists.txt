@@ -6,7 +6,7 @@ project(http-server
     LANGUAGES CXX)
 
 # User-configurable options
-option(BUILD_EXAMPLES "Build example applications" OFF)
+option(BUILD_EXAMPLES "Build example applications" ON)
 option(BUILD_TESTS "Build example applications" OFF)
 
 set(CMAKE_CXX_STANDARD 23)

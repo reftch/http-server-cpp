@@ -334,12 +334,17 @@ namespace http {
         }
 
         // Extract body (after headers)
-        std::string body = raw_response.substr(header_end + 4);  // +4 for \r\n\r\n
+        std::string body;
 
         // Check if it's chunked encoding
-        std::string transfer_encoding = response.headers().at("Transfer-Encoding");
-        if (transfer_encoding == "chunked") {
-            body = ParseChunkedBody(body);
+        std::string transfer_encoding = response.headers()["Transfer-Encoding"];
+        if (!transfer_encoding.empty()) {
+            std::string transfer_encoding = response.headers().at("Transfer-Encoding");
+            if (transfer_encoding == "chunked") {
+                body = ParseChunkedBody(body);
+            }
+        } else {
+            body = raw_response.substr(header_end + 4);  // +4 for \r\n\r\n
         }
 
         response.SetContentByType(body, status);
