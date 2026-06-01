@@ -248,58 +248,6 @@ namespace http {
         return Trim(response);
     }
 
-    // Add this parsing method
-    // Response Client::ParseResponse(const std::string& raw_response) {
-    //     // static Response Parse(const std::string& response_string) {
-    //     Response response;
-
-    //     // Split the response into lines
-    //     std::vector<std::string> lines;
-    //     std::istringstream iss(raw_response);
-    //     std::string line;
-
-    //     while (std::getline(iss, line)) {
-    //         lines.push_back(line);
-    //     }
-
-    //     if (lines.empty()) {
-    //         return response;
-    //     }
-
-    //     Status status = ParseStatus(raw_response);
-
-    //     // Parse headers (skip the first line and any empty lines)
-    //     for (size_t i = 1; i < lines.size(); ++i) {
-    //         if (lines[i].empty()) {
-    //             // Empty line indicates end of headers
-    //             break;
-    //         }
-
-    //         size_t colon_pos = lines[i].find(':');
-    //         if (colon_pos != std::string::npos) {
-    //             std::string key = lines[i].substr(0, colon_pos);
-    //             std::string value = lines[i].substr(colon_pos + 1);
-
-    //             // Trim whitespace from key and value
-    //             key = Trim(key);
-    //             value = Trim(value);
-
-    //             response.set_header(key, value);
-    //         }
-    //     }
-
-    //     // get response body
-    //     std::string body = "";
-    //     size_t header_end = raw_response.find("\r\n\r\n");
-    //     std::cout << raw_response << '\n';
-    //     if (header_end != std::string::npos) {
-    //         body = raw_response.substr(header_end + 8);
-    //     }
-
-    //     response.SetContentByType(body, status);
-    //     return response;
-    // }
-
     Response Client::ParseResponse(const std::string& raw_response) {
         Response response;
 
