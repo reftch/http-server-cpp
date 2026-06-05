@@ -51,4 +51,6 @@ std::string ReadFile(const std::string& path);
 
 std::string UrlDecode(const std::string& encoded);
 
+std::optional<std::string> GetEnv(const std::string& key);
+
 #endif  // UTILS_HPP

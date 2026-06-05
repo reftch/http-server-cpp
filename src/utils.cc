@@ -120,3 +120,13 @@ std::string UrlDecode(const std::string& encoded) {
     }
     return decoded;
 }
+
+std::optional<std::string> GetEnv(const std::string& key) {
+    const char* value = std::getenv(key.c_str());
+
+    if (!value) {
+        return std::nullopt;
+    }
+
+    return std::string(value);
+}
