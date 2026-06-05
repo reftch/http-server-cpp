@@ -166,7 +166,6 @@ namespace http {
         if (req.mime_type().has_value()) {
             auto content = ReadFile(static_directory_ + req.path());
             if (content != "") {
-                res.set_header("Transfer-Encoding", "chunked");
                 res.SetContentByType(content, req.mime_type().value());
             }
         } else {

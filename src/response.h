@@ -76,6 +76,9 @@ namespace http {
 
             // Set Content-Length header using the actual content size
             set_header("Content-Length", std::to_string(content_.size()));
+            // Stream file in chunks instead of loading all at once
+            // Set appropriate HTTP headers
+            set_header("Transfer-Encoding", "chunked");
 
             status_ = S;
         }
@@ -83,6 +86,7 @@ namespace http {
         template <Status S = Status::ok>
         void SetContentByType(const std::string& content, std::string type) {
             set_header("Content-Type", type);
+            set_header("Transfer-Encoding", "chunked");
             set_header("Content-Length", std::to_string(content.size()));
             content_ = content;
             status_ = S;
