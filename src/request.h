@@ -2,6 +2,7 @@
 #define HTTP_REQUEST_H_
 
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <unordered_map>
