@@ -1,11 +1,5 @@
 #include "response.h"
 
-#include <unistd.h>
-
-#include <iostream>
-#include <string>
-#include <vector>
-
 namespace http {
 
     Response::Response(bool is_keep_alive, const std::string& static_directory) : static_directory_(static_directory) {

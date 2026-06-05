@@ -37,7 +37,7 @@ namespace http {
 
         // setting serverFd to allow multiple connection
         int opt = 1;
-        if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof opt) < 0) {
+        if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR | SO_KEEPALIVE, (char*)&opt, sizeof opt) < 0) {
             log.Error("Setting to allow multiple connection failed");
             exit(2);
         }
@@ -166,6 +166,7 @@ namespace http {
         if (req.mime_type().has_value()) {
             auto content = ReadFile(static_directory_ + req.path());
             if (content != "") {
+                res.set_header("Transfer-Encoding", "chunked");
                 res.SetContentByType(content, req.mime_type().value());
             }
         } else {

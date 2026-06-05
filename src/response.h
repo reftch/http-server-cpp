@@ -1,6 +1,8 @@
 #ifndef HTTP_RESPONSE_H_
 #define HTTP_RESPONSE_H_
 
+#include <unistd.h>
+
 #include <iostream>
 #include <string>
 #include <unordered_map>
