@@ -1,9 +1,16 @@
 #ifndef HTTP_UTILS_H_
 #define HTTP_UTILS_H_
 
+#include <ctime>  // For time functions
+#include <fstream>
+#include <iomanip>  // For stream manipulation (like std::put_time)
+#include <iostream>
 #include <map>
+#include <optional>
+#include <sstream>  // Must include this for stringstream
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /**
  * @file utils.hpp

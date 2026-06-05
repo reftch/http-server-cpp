@@ -1,13 +1,5 @@
 #include "utils.h"
 
-#include <ctime>  // For time functions
-#include <fstream>
-#include <iomanip>  // For stream manipulation (like std::put_time)
-#include <iostream>
-#include <map>
-#include <sstream>  // Must include this for stringstream
-#include <vector>
-
 std::string get_build_date() {
     // Get current time
     std::time_t now = std::time(nullptr);
