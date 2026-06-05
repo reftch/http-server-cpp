@@ -78,7 +78,7 @@ namespace http {
             set_header("Content-Length", std::to_string(content_.size()));
             // Stream file in chunks instead of loading all at once
             // Set appropriate HTTP headers
-            set_header("Transfer-Encoding", "chunked");
+            // set_header("Transfer-Encoding", "chunked");
 
             status_ = S;
         }

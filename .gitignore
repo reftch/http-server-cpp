@@ -43,3 +43,5 @@
 # target
 build
 .vscode
+
+AGENTS.md
