@@ -140,13 +140,11 @@ namespace http {
         const int port_;                // Port number to listen on
         const std::string host_;        // Hostname or IP address to bind to
 
-        // Maximum number of connections allowed.
+        // Maximum number of connections allowed
         static constexpr int kMAX_CONNS = KEEPALIVE_MAX_COUNT;
         static constexpr int kCONNECTION_TIMEOUT_SECOND = CONNECTION_TIMEOUT_SECOND;
 
-        //    privat:
         // Time when server started
-        // std::chrono::high_resolution_clock::time_point end_time_;
         std::chrono::high_resolution_clock::time_point start_time_;
 
         /**

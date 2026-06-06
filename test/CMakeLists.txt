@@ -6,6 +6,7 @@ add_executable (tests
     server_test.cc
     router_test.cc
     request_test.cc
+    getenv_test.cc
 )
 
 # Add compile definitions to distinguish between test types

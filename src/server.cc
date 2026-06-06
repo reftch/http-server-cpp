@@ -157,7 +157,7 @@ namespace http {
         const char* ptr = body.c_str();
         ssize_t total_written = 0;
         ssize_t size = body.size();
-        
+
         while (total_written < size) {
             ssize_t written = write(sd, ptr + total_written, size - total_written);
             if (written == -1) {

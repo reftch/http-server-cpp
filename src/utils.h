@@ -13,11 +13,6 @@
 #include <vector>
 
 /**
- * @file utils.hpp
- * @brief Utility functions for system information and help messages.
- */
-
-/**
  * @brief Gets the current system build date in YYYY-MM-DD format.
  * @return A string representing the current date.
  */
@@ -58,6 +53,40 @@ std::string ReadFile(const std::string& path);
 
 std::string UrlDecode(const std::string& encoded);
 
-std::optional<std::string> GetEnv(const std::string& key);
+template <typename T>
+T GetEnv(const std::string& key, const T& default_value) {
+    const char* value = std::getenv(key.c_str());
+
+    if (!value) {
+        return default_value;
+    }
+
+    try {
+        if constexpr (std::is_same_v<T, std::string>) {
+            return std::string(value);
+        } else if constexpr (std::is_same_v<T, bool>) {
+            std::string lower_value = std::string(value);
+            std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
+            if (lower_value == "true" || lower_value == "1" || lower_value == "yes") {
+                return true;
+            } else if (lower_value == "false" || lower_value == "0" || lower_value == "no") {
+                return false;
+            } else {
+                throw std::invalid_argument("Invalid boolean value");
+            }
+        } else if constexpr (std::is_same_v<T, float>) {
+            return std::stof(value);
+        } else if constexpr (std::is_same_v<T, double>) {
+            return std::stod(value);
+        } else if constexpr (std::is_same_v<T, long double>) {
+            return std::stold(value);
+        } else {
+            // For integer types
+            return static_cast<T>(std::stoll(value));
+        }
+    } catch (const std::exception&) {
+        return default_value;
+    }
+}
 
 #endif  // UTILS_HPP
