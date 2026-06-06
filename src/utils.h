@@ -1,6 +1,7 @@
 #ifndef HTTP_UTILS_H_
 #define HTTP_UTILS_H_
 
+#include <algorithm>
 #include <ctime>  // For time functions
 #include <fstream>
 #include <iomanip>  // For stream manipulation (like std::put_time)
