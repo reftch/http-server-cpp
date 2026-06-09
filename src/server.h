@@ -39,7 +39,6 @@
 #include <thread>
 #include <vector>
 
-// #include "client.h"
 #include "logger.h"
 #include "request.h"
 #include "response.h"

@@ -1,3 +1,4 @@
+// #define HTTP_OPENSSL_SUPPORT
 #include <signal.h>
 
 #include <chrono>
@@ -5,7 +6,8 @@
 #include <sstream>
 
 #include "client.h"
-#include "sslserver.h"
+#include "server.h"
+// #include "sslserver.h"
 
 int main() {
     static auto& log = http::Logger::getInstance();
