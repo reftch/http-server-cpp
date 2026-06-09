@@ -138,6 +138,7 @@ namespace http {
             set_header("Content-Type", type);
             set_header("Transfer-Encoding", "chunked");
             set_header("Content-Length", std::to_string(content.size()));
+            set_header("Cache-Control", "public, max-age=3600");
             content_ = content;
             status_ = S;
         }
