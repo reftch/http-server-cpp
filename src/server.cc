@@ -98,7 +98,7 @@ namespace http {
             }
 
             // Using poll for listening to multiple clients with timeout
-            int activity = poll(pollfds.data(), pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
+            int activity = poll(pollfds.data(), pollfds.size(), -1);  // kCONNECTION_TIMEOUT_SECOND * 1000
             if (activity < 0) {
                 log.Warning("Stop poll for listening");
                 continue;
