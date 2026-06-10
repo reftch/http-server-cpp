@@ -2,30 +2,6 @@
 
 namespace http {
 
-    void Server::Stop() {
-        std::cout << "\n";
-
-        // set the running flag to false to break the while loop in start()
-        running_ = false;
-
-        // close all active client connections
-        for (size_t i = 0; i < client_list_.size(); ++i) {
-            int sd = client_list_[i];
-            if (sd != -1) {
-                log.Info("closing client connection FD: {}", sd);
-                close(sd);
-            }
-        }
-
-        // close the listening socket (the main server socket)
-        if (sockfd_ != -1) {
-            log.Info("Closing listening socket FD: {}", sockfd_);
-            close(sockfd_);
-        }
-
-        log.Info("Server stopped successfully");
-    }
-
     int Server::Start() {
         // open socket
         sockfd_ = socket(AF_INET, SOCK_STREAM, 0);  // for tcp connection
@@ -73,6 +49,30 @@ namespace http {
         return 0;
     }
 
+    void Server::Stop() {
+        std::cout << "\n";
+
+        // set the running flag to false to break the while loop in start()
+        running_ = false;
+
+        // close all active client connections
+        for (size_t i = 0; i < client_list_.size(); ++i) {
+            int sd = client_list_[i];
+            if (sd != -1) {
+                log.Info("closing client connection FD: {}", sd);
+                close(sd);
+            }
+        }
+
+        // close the listening socket (the main server socket)
+        if (sockfd_ != -1) {
+            log.Info("Closing listening socket FD: {}", sockfd_);
+            close(sockfd_);
+        }
+
+        log.Info("Server stopped successfully");
+    }
+
     void Server::HandleRequests() {
         // Vector to hold pollfd structures
         std::vector<struct pollfd> pollfds;
@@ -98,7 +98,7 @@ namespace http {
             }
 
             // Using poll for listening to multiple clients with timeout
-            int activity = poll(pollfds.data(), pollfds.size(), -1);  // kCONNECTION_TIMEOUT_SECOND * 1000
+            int activity = poll(pollfds.data(), pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
             if (activity < 0) {
                 log.Warning("Stop poll for listening");
                 continue;
@@ -141,7 +141,15 @@ namespace http {
                         // CLEANUP
                         close(sd);
                         client_list_.erase(client_list_.begin() + i);
+                        continue;  // Don't increment i since we removed an element
+                    } else {
+                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                            log.Error("Read error: {}", strerror(errno));
+                        }
+                        i++;
                     }
+                } else {
+                    i++;  // Increment if no activity
                 }
             }
         }
