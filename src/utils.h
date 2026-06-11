@@ -14,29 +14,33 @@
 #include <vector>
 
 /**
- * @brief Gets the current system build date in YYYY-MM-DD format.
- * @return A string representing the current date.
+ * @brief Retrieves the current system build date in YYYY-MM-DD format.
+ *
+ * This function returns a string representing the current build date.
+ *
+ * @return A string containing the current date in YYYY-MM-DD format.
  */
 std::string get_build_date();
 
 /**
  * @brief Prints the application's usage instructions and available options.
  *
- * This function displays the help message to the user.
+ * Displays a help message to the user with information about how to use the
+ * application and what command-line options are available.
  */
 void print_help();
 
 /**
  * @brief Parses command-line arguments for host and port configuration.
  *
- * This function processes command-line arguments and returns a map containing
- * the host and port values. If no arguments are provided, default values are used:
+ * Processes command-line arguments and returns a map containing the parsed
+ * host and port values. If no arguments are provided, default values are used:
  * - Host: "0.0.0.0"
  * - Port: "8080"
  *
- * @param argc The number of command-line arguments
- * @param argv An array of command-line argument strings
- * @return A map containing the parsed arguments with keys "--host" and "--port"
+ * @param argc The number of command-line arguments.
+ * @param argv An array of command-line argument strings.
+ * @return A map containing the parsed arguments with keys "--host" and "--port".
  *
  * @example
  * parseArguments(3, {"server", "--host", "127.0.0.1"})
@@ -48,12 +52,55 @@ void print_help();
  */
 std::map<std::string, std::string> ParseArguments(int argc, char* argv[]);
 
+/**
+ * @brief Converts an unordered map to a JSON string.
+ *
+ * This function takes a map of string key-value pairs and converts it into
+ * a JSON-formatted string representation.
+ *
+ * @param params The unordered map to convert to JSON.
+ * @return A string containing the JSON representation of the input map.
+ */
 std::string MapToJson(const std::unordered_map<std::string, std::string>& params);
 
+/**
+ * @brief Reads the contents of a file into a string.
+ *
+ * Opens a file at the specified path and reads its entire content into a string.
+ *
+ * @param path The file path to read from.
+ * @return A string containing the file's contents.
+ */
 std::string ReadFile(const std::string& path);
 
+/**
+ * @brief Decodes a URL-encoded string.
+ *
+ * This function performs URL decoding on an encoded string, converting
+ * percent-encoded characters back to their original form.
+ *
+ * @param encoded The URL-encoded string to decode.
+ * @return A decoded string.
+ */
 std::string UrlDecode(const std::string& encoded);
 
+/**
+ * @brief Retrieves an environment variable value with a default fallback.
+ *
+ * This template function fetches the value of an environment variable by key,
+ * converting it to the specified type. If the environment variable is not set
+ * or conversion fails, it returns the provided default value.
+ *
+ * @tparam T The type to convert the environment variable value to.
+ * @param key The name of the environment variable to retrieve.
+ * @param default_value The fallback value if the environment variable is not set or conversion fails.
+ * @return The converted environment variable value or the default value.
+ *
+ * @example
+ * auto host = GetEnv<std::string>("HOST", "0.0.0.0");
+ * auto port = GetEnv<int>("PORT", 8080);
+ * auto debug = GetEnv<bool>("DEBUG", false);
+ */
 template <typename T>
 T GetEnv(const std::string& key, const T& default_value) {
     const char* value = std::getenv(key.c_str());
@@ -90,4 +137,4 @@ T GetEnv(const std::string& key, const T& default_value) {
     }
 }
 
-#endif  // UTILS_HPP
+#endif  // HTTP_UTILS_H_
