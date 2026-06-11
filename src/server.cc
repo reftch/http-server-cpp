@@ -125,7 +125,7 @@ namespace http {
             //
             // HANDLE CLIENTS
             //
-            for (size_t i = 0; i < client_list_.size(); ++i) {
+            for (size_t i = 0; i < client_list_.size();) {
                 size_t pollfd_index = i + 1;  // +1 because server socket is at index 0
 
                 if (pollfd_index < pollfds.size() && (pollfds[pollfd_index].revents & POLLIN)) {
@@ -137,16 +137,17 @@ namespace http {
                     ssize_t nread = read(sd, &buffer, sizeof(buffer) - 1);
                     if (nread > 0) {
                         PerformRequest(sd, buffer, nread);
+                        i++; // Only increment on successful read
                     } else if (nread == 0) {
                         // CLEANUP
                         close(sd);
                         client_list_.erase(client_list_.begin() + i);
-                        continue;  // Don't increment i since we removed an element
+                        // Don't increment i since we removed an element
                     } else {
                         if (errno != EAGAIN && errno != EWOULDBLOCK) {
                             log.Error("Read error: {}", strerror(errno));
                         }
-                        i++;
+                        i++; // Increment even on read error
                     }
                 } else {
                     i++;  // Increment if no activity
