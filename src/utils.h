@@ -2,6 +2,7 @@
 #define HTTP_UTILS_H_
 
 #include <algorithm>
+#include <chrono>
 #include <ctime>  // For time functions
 #include <fstream>
 #include <iomanip>  // For stream manipulation (like std::put_time)
