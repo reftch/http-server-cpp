@@ -5,8 +5,12 @@
 #define KEEPALIVE_MAX_COUNT 100
 #endif
 
-#ifndef CONNECTION_TIMEOUT_SECOND
-#define CONNECTION_TIMEOUT_SECOND 300
+#ifndef POLL_TIMEOUT
+#define POLL_TIMEOUT -1
+#endif
+
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 1024
 #endif
 
 #ifndef CLIENT_TIMEOUT_SECONDS
@@ -15,6 +19,11 @@
 
 #ifndef READ_BUFFER_SIZE
 #define READ_BUFFER_SIZE 4096
+#endif
+
+// Artifical limit for Poll since it is not limited to 1024 file descriptors like Select.
+#ifndef POLL_SIZE
+#define POLL_SIZE 2048
 #endif
 
 #include <arpa/inet.h>
@@ -35,6 +44,7 @@
 #include <future>
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -105,6 +115,8 @@ namespace http {
         // router
         http::Router router_;
 
+        int SetNonblockMode(int fd);
+
         /**
          * Performs an asynchronous HTTP request handling operation
          * @param sd The socket descriptor for the client connection
@@ -132,16 +144,11 @@ namespace http {
          */
         virtual std::string HandleRoute(http::Request& ctx);
 
-        // Is server running flag
-        bool running_ = false;
-        std::vector<int> client_list_;  // client list
-        int32_t sockfd_;                // server file descriptor
-        const int port_;                // Port number to listen on
-        const std::string host_;        // Hostname or IP address to bind to
-
-        // Maximum number of connections allowed
-        static constexpr int kMAX_CONNS = KEEPALIVE_MAX_COUNT;
-        static constexpr int kCONNECTION_TIMEOUT_SECOND = CONNECTION_TIMEOUT_SECOND;
+        bool running_ = false;       // Is server running flag
+        std::set<int> client_list_;  // client list for connections(slave sockets).
+        int32_t sockfd_;             // server file descriptor
+        const int port_;             // Port number to listen on
+        const std::string host_;     // Hostname or IP address to bind to
 
         // Time when server started
         std::chrono::high_resolution_clock::time_point start_time_;
