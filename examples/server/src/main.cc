@@ -20,7 +20,7 @@ int main() {
         s_ptr->Stop();
     });
 
-    s.SetRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
+    s.SetRoute<http::HttpMethod::GET>("", [](const http::Request&, http::Response& res) {
         res.SetContent<http::ContentType::HTML>("index.html");
     });
 

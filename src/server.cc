@@ -117,7 +117,6 @@ namespace http {
                     if (i > 0) {
                         // Slave socket
                         static char buf[BUFFER_SIZE];
-                        // ssize_t len = read(descriptors[i].fd, &buf, BUFFER_SIZE - 1);
                         ssize_t len = recv(descriptors[i].fd, buf, BUFFER_SIZE, MSG_NOSIGNAL);
 
                         if ((len == 0) && (errno != EAGAIN)) {
@@ -141,6 +140,7 @@ namespace http {
                                 exit(6);
                             }
                         }
+
                         // std::cout << "Client = " << inet_ntoa(client_addr.sin_addr) << std::endl;
                         SetNonblockMode(client_fd);
                         client_list_.insert(client_fd);
@@ -163,8 +163,7 @@ namespace http {
         ssize_t size = body.size();
 
         while (total_written < size) {
-            ssize_t written = write(sd, ptr + total_written, size - total_written);
-            // ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
+            ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
             if (written == -1) {
                 log.Warning("Error writing response body");
                 break;
