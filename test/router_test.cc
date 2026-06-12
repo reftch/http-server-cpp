@@ -1,4 +1,3 @@
-#define POLL_TIMEOUT 100
 
 #include "server.h"
 #include "server_test.h"
