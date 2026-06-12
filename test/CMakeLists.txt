@@ -1,5 +1,7 @@
 find_package(OpenSSL REQUIRED)
 
+add_compile_definitions(POLL_TIMEOUT=100)
+
 # Create a combined tests executable
 add_executable (tests
     logger_test.cc
@@ -7,13 +9,6 @@ add_executable (tests
     router_test.cc
     request_test.cc
     getenv_test.cc
-)
-
-# Add compile definitions to distinguish between test types
-target_compile_definitions(tests PRIVATE
-    SERVER_TEST
-    ROUTER_TEST
-    REQUEST_TEST
 )
 
 include(FetchContent)

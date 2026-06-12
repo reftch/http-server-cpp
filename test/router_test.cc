@@ -1,6 +1,36 @@
+#define POLL_TIMEOUT 100
 
 #include "server.h"
 #include "server_test.h"
+
+TEST_F(ServerTestFixture, RegisterRootHandler) {
+    // Arrange
+    http::Router r;
+    std::string path = "/";
+    std::string method = "GET";
+
+    auto handler = [](const http::Request& req, http::Response& res) {
+        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+    };
+
+    r.RegisterHandler(method, path, handler);
+
+    // Create a request
+    http::Request req;
+    req.set_method(method);
+    req.set_path(path);
+
+    http::Response res;
+
+    // Act
+    http::request_handler out_handler;
+    bool matched = r.Match(&req, &out_handler);
+
+    // Assert
+    ASSERT_TRUE(matched);
+    out_handler(req, res);
+    EXPECT_EQ("Test " + path, res.content());
+}
 
 TEST_F(ServerTestFixture, RegisterHandlerSucceeds) {
     // Arrange
