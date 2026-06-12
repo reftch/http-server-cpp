@@ -94,7 +94,7 @@ namespace http {
 
         static const std::map<std::string, const char*> mimeTypes = {
             {"html", "text/html"},        {"htm", "text/html"},
-            {"css", "text/css"},          {"js", "application/javascript"},
+            {"css", "text/css"},          {"js", "text/javascript"},
             {"jpg", "image/jpeg"},        {"jpeg", "image/jpeg"},
             {"png", "image/png"},         {"gif", "image/gif"},
             {"svg", "image/svg+xml"},     {"xml", "application/xml"},

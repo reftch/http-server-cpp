@@ -136,10 +136,11 @@ namespace http {
         template <Status S = Status::ok>
         void SetContentByType(const std::string& content, std::string type) {
             set_header("Content-Type", type);
-            set_header("Transfer-Encoding", "chunked");
+            // set_header("Transfer-Encoding", "chunked");
             set_header("Content-Length", std::to_string(content.size()));
             set_header("Cache-Control", "public, max-age=3600");
             content_ = content;
+
             status_ = S;
         }
 
@@ -175,7 +176,7 @@ namespace http {
                 case ContentType::CSS:
                     return "text/css";
                 case ContentType::JAVASCRIPT:
-                    return "application/javascript";
+                    return "text/javascript";
                 case ContentType::JPEG:
                     return "image/jpeg";
                 case ContentType::PNG:

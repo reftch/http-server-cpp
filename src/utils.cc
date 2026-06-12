@@ -112,3 +112,43 @@ std::string UrlDecode(const std::string& encoded) {
     }
     return decoded;
 }
+
+time_t GetMtime(const std::string& path) {
+    // Check if file exists
+    if (!std::filesystem::exists(path)) {
+        return -1;
+    }
+
+    // Get the file status
+    auto status = std::filesystem::status(path);
+
+    // Check if it's a regular file
+    if (!std::filesystem::is_regular_file(status)) {
+        return -1;
+    }
+
+    // Get the last modification time
+    auto mtime = std::filesystem::last_write_time(path);
+
+    // Convert to time_t using std::chrono::duration_cast
+    auto time_t_duration = std::chrono::duration_cast<std::chrono::seconds>(mtime.time_since_epoch());
+
+    return static_cast<time_t>(time_t_duration.count());
+}
+
+std::string FileMtimeToHttpDate(time_t mtime) {
+    if (mtime < 0) {
+        return std::string();
+    }
+
+    struct tm tm_buf;
+    if (gmtime_r(&mtime, &tm_buf) == nullptr) {
+        return std::string();
+    }
+    char buf[64];
+    if (strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", &tm_buf) == 0) {
+        return std::string();
+    }
+
+    return std::string(buf);
+}

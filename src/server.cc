@@ -165,8 +165,16 @@ namespace http {
         while (total_written < size) {
             ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
             if (written == -1) {
-                log.Warning("Error writing response body");
-                break;
+                // Check if it's a temporary error
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // This is expected in non-blocking mode - just continue
+                    // But we should add a timeout mechanism for large files
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    continue;
+                } else {
+                    log.Warning("Error writing response body: {}", strerror(errno));
+                    break;
+                }
             }
             total_written += written;
         }
@@ -177,8 +185,15 @@ namespace http {
 
         // check on static resource
         if (req.mime_type().has_value()) {
-            auto content = ReadFile(static_directory_ + req.path());
+            std::string path = static_directory_ + req.path();
+            auto content = ReadFile(path);
             if (content != "") {
+                auto last_modified = FileMtimeToHttpDate(GetMtime(path));
+                log.Info("MTIME: {} {}", path, last_modified);
+                if (!last_modified.empty()) {
+                    res.set_header("Last-Modified", last_modified);
+                }
+
                 res.SetContentByType(content, req.mime_type().value());
             }
         } else {

@@ -137,4 +137,7 @@ T GetEnv(const std::string& key, const T& default_value) {
     }
 }
 
+time_t GetMtime(const std::string& path);
+std::string FileMtimeToHttpDate(time_t mtime);
+
 #endif  // HTTP_UTILS_H_
