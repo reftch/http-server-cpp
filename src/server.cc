@@ -185,17 +185,7 @@ namespace http {
 
         // check on static resource
         if (req.mime_type().has_value()) {
-            std::string path = static_directory_ + req.path();
-            auto content = ReadFile(path);
-            if (content != "") {
-                auto last_modified = FileMtimeToHttpDate(GetMtime(path));
-                log.Info("MTIME: {} {}", path, last_modified);
-                if (!last_modified.empty()) {
-                    res.set_header("Last-Modified", last_modified);
-                }
-
-                res.SetContentByType(content, req.mime_type().value());
-            }
+            HandleStaticResource(req, res);
         } else {
             // Call handler if it exists
             http::request_handler handler;
@@ -207,6 +197,43 @@ namespace http {
         }
 
         return res.Build();
+    }
+
+    void Server::HandleStaticResource(http::Request& req, http::Response& res) {
+        std::string path = static_directory_ + req.path();
+        struct stat file_stat;
+
+        if (stat(path.c_str(), &file_stat) == 0) {
+            std::ifstream file(path, std::ios::binary | std::ios::ate);
+            if (file) {
+                // Get file size and read
+                size_t size = file.tellg();
+                file.seekg(0, std::ios::beg);
+
+                std::string content(size, '\0');
+                file.read(content.data(), size);
+
+                // set basic headers
+                res.set_header("Content-Type", req.mime_type().value());
+                res.set_header("Cache-Control", "public, max-age=3600");
+                res.set_header("Content-Length", std::to_string(size));
+
+                auto last_modified = FileMtimeToHttpDate(file_stat.st_mtime);
+                if (!last_modified.empty()) {
+                    res.set_header("Last-Modified", FileMtimeToHttpDate(file_stat.st_mtime));
+                }
+
+                auto etag = ComputeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
+                if (!etag.empty()) {
+                    res.set_header("ETag", etag);
+                }
+
+                // set content
+                res.SetContent(content);
+            }
+        } else {
+            res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
+        }
     }
 
 }  // namespace http

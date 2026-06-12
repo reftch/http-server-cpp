@@ -145,8 +145,12 @@ namespace http {
         }
 
         void SetContentByType(const std::string& content, Status s = Status::ok) {
-            // set_header("Content-Type", type);
             set_header("Content-Length", std::to_string(content.size()));
+            content_ = content;
+            status_ = s;
+        }
+
+        void SetContent(const std::string& content, Status s = Status::ok) {
             content_ = content;
             status_ = s;
         }

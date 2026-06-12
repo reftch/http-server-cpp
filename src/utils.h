@@ -1,6 +1,8 @@
 #ifndef HTTP_UTILS_H_
 #define HTTP_UTILS_H_
 
+#include <sys/stat.h>
+
 #include <algorithm>
 #include <chrono>
 #include <ctime>  // For time functions
@@ -141,5 +143,8 @@ T GetEnv(const std::string& key, const T& default_value) {
 
 time_t GetMtime(const std::string& path);
 std::string FileMtimeToHttpDate(time_t mtime);
+
+std::string ComputeEtag(size_t mtime_raw, size_t size);
+std::string FromIToHex(size_t n);
 
 #endif  // HTTP_UTILS_H_

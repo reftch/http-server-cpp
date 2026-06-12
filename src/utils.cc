@@ -152,3 +152,28 @@ std::string FileMtimeToHttpDate(time_t mtime) {
 
     return std::string(buf);
 }
+
+std::string ComputeEtag(size_t mtime, size_t size) {
+    // If mtime cannot be determined (negative value indicates an error
+    // or sentinel), do not generate an ETag. Returning a neutral / fixed
+    // value like 0 could collide with a real file that legitimately has
+    // mtime == 0 (epoch) and lead to misleading validators.
+
+    if (mtime < 0) {
+        return std::string();
+    }
+
+    // auto mtime = static_cast<size_t>(mtime_raw);
+
+    return std::string("W/\"") + FromIToHex(mtime) + "-" + FromIToHex(size) + "\"";
+}
+
+std::string FromIToHex(size_t n) {
+    static const auto charset = "0123456789abcdef";
+    std::string ret;
+    do {
+        ret = charset[n & 15] + ret;
+        n >>= 4;
+    } while (n > 0);
+    return ret;
+}

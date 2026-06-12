@@ -33,6 +33,7 @@
 #include <poll.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -142,7 +143,9 @@ namespace http {
          *          4. Returning appropriate HTTP response based on the processing outcome
          * @note This function is typically called from perform_request() to generate responses for client requests
          */
-        virtual std::string HandleRoute(http::Request& ctx);
+        virtual std::string HandleRoute(http::Request& req);
+
+        void HandleStaticResource(http::Request& req, http::Response& res);
 
         bool running_ = false;       // Is server running flag
         std::set<int> client_list_;  // client list for connections(slave sockets).
