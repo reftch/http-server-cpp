@@ -149,4 +149,8 @@ std::string computeEtag(size_t mtime_raw, size_t size);
 
 std::string fromIntToHex(size_t n);
 
+std::string sha1(const std::string& input);
+std::string base64_encode(const std::string& input);
+
+bool isWebSocketFrame(const std::string& data);
 #endif  // HTTP_UTILS_H_

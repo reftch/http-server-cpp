@@ -9,10 +9,12 @@
 
 #include "request.h"
 #include "response.h"
+#include "websocket.h"
 
 namespace http {
 
     using request_handler = std::function<void(const http::Request& req, http::Response& res)>;
+    using ws_handler = std::function<void(const http::Request& req, http::ws::Response& res)>;
 
     /**
      * @brief HTTP router class for mapping URL paths to request handlers
@@ -40,6 +42,8 @@ namespace http {
 
         Node root_;
 
+        std::map<std::string, ws_handler> wsRoutes;
+
         /**
          * @brief Splits a URL path into its component segments
          *
@@ -60,6 +64,8 @@ namespace http {
          * @return int Returns 0 on success, non-zero on failure
          */
         int registerHandler(const std::string& method, const std::string& path, request_handler handler);
+
+        int registerHandler(const std::string& protocol, const std::string& path, ws_handler handler);
 
         /**
          * @brief Matches an HTTP request to a registered handler

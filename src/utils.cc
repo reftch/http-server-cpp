@@ -175,3 +175,159 @@ std::string fromIntToHex(size_t n) {
     } while (n > 0);
     return ret;
 }
+
+std::string sha1(const std::string& input) {
+    // RFC 3174 SHA-1 implementation
+    auto left_rotate = [](uint32_t x, uint32_t n) -> uint32_t {
+        return (x << n) | (x >> (32 - n));
+    };
+
+    uint32_t h0 = 0x67452301;
+    uint32_t h1 = 0xEFCDAB89;
+    uint32_t h2 = 0x98BADCFE;
+    uint32_t h3 = 0x10325476;
+    uint32_t h4 = 0xC3D2E1F0;
+
+    // Pre-processing: adding padding bits
+    std::string msg = input;
+    uint64_t original_bit_len = static_cast<uint64_t>(msg.size()) * 8;
+    msg.push_back(static_cast<char>(0x80u));
+    while (msg.size() % 64 != 56) {
+        msg.push_back(0);
+    }
+
+    // Append original length in bits as 64-bit big-endian
+    for (int i = 56; i >= 0; i -= 8) {
+        msg.push_back(static_cast<char>((original_bit_len >> i) & 0xFF));
+    }
+
+    // Process each 512-bit chunk
+    for (size_t offset = 0; offset < msg.size(); offset += 64) {
+        uint32_t w[80];
+
+        for (size_t i = 0; i < 16; i++) {
+            w[i] = (static_cast<uint32_t>(static_cast<uint8_t>(msg[offset + i * 4])) << 24) |
+                   (static_cast<uint32_t>(static_cast<uint8_t>(msg[offset + i * 4 + 1])) << 16) |
+                   (static_cast<uint32_t>(static_cast<uint8_t>(msg[offset + i * 4 + 2])) << 8) |
+                   (static_cast<uint32_t>(static_cast<uint8_t>(msg[offset + i * 4 + 3])));
+        }
+
+        for (int i = 16; i < 80; i++) {
+            w[i] = left_rotate(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+        }
+
+        uint32_t a = h0, b = h1, c = h2, d = h3, e = h4;
+
+        for (int i = 0; i < 80; i++) {
+            uint32_t f, k;
+            if (i < 20) {
+                f = (b & c) | ((~b) & d);
+                k = 0x5A827999;
+            } else if (i < 40) {
+                f = b ^ c ^ d;
+                k = 0x6ED9EBA1;
+            } else if (i < 60) {
+                f = (b & c) | (b & d) | (c & d);
+                k = 0x8F1BBCDC;
+            } else {
+                f = b ^ c ^ d;
+                k = 0xCA62C1D6;
+            }
+
+            uint32_t temp = left_rotate(a, 5) + f + e + k + w[i];
+            e = d;
+            d = c;
+            c = left_rotate(b, 30);
+            b = a;
+            a = temp;
+        }
+
+        h0 += a;
+        h1 += b;
+        h2 += c;
+        h3 += d;
+        h4 += e;
+    }
+
+    // Produce the final hash as a 20-byte binary string
+    std::string hash(20, '\0');
+    for (size_t i = 0; i < 4; i++) {
+        hash[i] = static_cast<char>((h0 >> (24 - i * 8)) & 0xFF);
+        hash[4 + i] = static_cast<char>((h1 >> (24 - i * 8)) & 0xFF);
+        hash[8 + i] = static_cast<char>((h2 >> (24 - i * 8)) & 0xFF);
+        hash[12 + i] = static_cast<char>((h3 >> (24 - i * 8)) & 0xFF);
+        hash[16 + i] = static_cast<char>((h4 >> (24 - i * 8)) & 0xFF);
+    }
+    return hash;
+}
+
+std::string base64_encode(const std::string& input) {
+    static const auto lookup = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    std::string out;
+    out.reserve(input.size());
+
+    auto val = 0;
+    auto valb = -6;
+
+    for (auto c : input) {
+        val = (val << 8) + static_cast<uint8_t>(c);
+        valb += 8;
+        while (valb >= 0) {
+            out.push_back(lookup[(val >> valb) & 0x3F]);
+            valb -= 6;
+        }
+    }
+
+    if (valb > -6) {
+        out.push_back(lookup[((val << 8) >> (valb + 8)) & 0x3F]);
+    }
+
+    while (out.size() % 4) {
+        out.push_back('=');
+    }
+
+    return out;
+}
+
+bool isWebSocketFrame(const std::string& data) {
+    if (data.empty()) return false;
+
+    // Check if it looks like a WebSocket frame by examining first few bytes
+    const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data.data());
+    size_t length = data.length();
+
+    if (length < 2) return false;
+
+    // WebSocket frame structure:
+    // First byte: FIN bit (1) + RSV bits (3) + OPCODE (4)
+    // Second byte: MASK bit (1) + PAYLOAD LENGTH (7)
+
+    uint8_t first_byte = bytes[0];
+    uint8_t second_byte = bytes[1];
+
+    // Check if FIN bit is set (most significant bit of first byte)
+    bool fin = (first_byte & 0x80) != 0;
+
+    // Extract opcode (lower 4 bits of first byte)
+    uint8_t opcode = first_byte & 0x0F;
+
+    // Valid WebSocket opcodes:
+    // 0x0 - continuation frame
+    // 0x1 - text frame
+    // 0x2 - binary frame
+    // 0x8 - connection close
+    // 0x9 - ping
+    // 0xA - pong
+
+    if (opcode <= 0xA) {
+        // Check payload length field
+        bool mask = (second_byte & 0x80) != 0;
+        uint8_t payload_length = second_byte & 0x7F;
+
+        // Basic validation - if it's a valid frame structure, return true
+        return fin && (opcode <= 0xA);
+    }
+
+    return false;
+}

@@ -7,11 +7,12 @@
 
 #include "client.h"
 #include "server.h"
-#include "sslserver.h"
+// #include "sslserver.h"
 
 int main() {
     static auto& log = http::Logger::getInstance();
     http::Server s("0.0.0.0", 8080);
+    s.setAssetDirectory("./assets2");
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
@@ -37,6 +38,14 @@ int main() {
     s.setRoute<http::HttpMethod::POST>("/api/v1/users/:id", [](const http::Request& req, http::Response&) {
         std::string value = req.params().at("id");
         log.info("Request body: {}", req.body());
+    });
+
+    s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
+        log.info("XAXAXA");
+        std::string msg;
+        // while (res.read(msg)) {
+        //     res.send(msg);  // Send back the received message as-is
+        // }
     });
 
     s.start();

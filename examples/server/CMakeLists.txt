@@ -1,4 +1,5 @@
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/examples/server)
+file(COPY assets2 DESTINATION ${CMAKE_BINARY_DIR}/examples/server)
 
 find_package(OpenSSL REQUIRED)
 

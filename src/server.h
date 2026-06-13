@@ -55,6 +55,7 @@
 #include "response.h"
 #include "router.h"
 #include "utils.h"
+#include "websocket.h"
 
 namespace http {
 
@@ -102,9 +103,15 @@ namespace http {
          */
         virtual void stop();
 
-        template <HttpMethod Method>
+        template <HttpMethod M>
         void setRoute(const std::string& path, request_handler handler) {
-            router_.registerHandler(std::string(toString(Method)), path, handler);
+            router_.registerHandler(std::string(toString(M)), path, handler);
+        }
+
+        template <ws::Protocol P>
+        void setRoute(const std::string& path, ws_handler handler) {
+            std::cout << "Path " << path << '\n';
+            router_.registerHandler(std::string(toWsString(P)), path, handler);
         }
 
         void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
@@ -165,6 +172,8 @@ namespace http {
          */
         virtual void handleRequests();
 
+        bool makeWebsocketAccept(const int sd, http::Request& req);
+
         constexpr std::string_view toString(HttpMethod method) {
             switch (method) {
                 case HttpMethod::GET:
@@ -183,6 +192,16 @@ namespace http {
                     return "OPTIONS";
             }
             return "OPTIONS";  // or handle as unreachable
+        }
+
+        constexpr std::string_view toWsString(ws::Protocol protocol) {
+            switch (protocol) {
+                case ws::Protocol::WS:
+                    return "ws";
+                case ws::Protocol::WSS:
+                    return "wss";
+            }
+            return "ws";  // or handle as unreachable
         }
     };
 

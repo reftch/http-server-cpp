@@ -31,6 +31,8 @@ namespace http {
         return 0;
     }
 
+    int Router::registerHandler(const std::string& protocol, const std::string& path, ws_handler handler) {}
+
     bool Router::match(http::Request* req, request_handler* out_handler) const {
         std::string path = req->path();
         std::string method = req->method();
