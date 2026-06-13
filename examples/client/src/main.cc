@@ -8,7 +8,7 @@ int main() {
 
     http::Client cli("http://0.0.0.0:8080");
 
-    auto res = cli.Get("/api/v1/inc/2");
+    auto res = cli.get("/api/v1/inc/2");
 
     log.info("Response status: {}", static_cast<int>(res->status()));
     log.info("Response body: {}", res->content());

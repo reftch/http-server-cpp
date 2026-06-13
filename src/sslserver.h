@@ -33,7 +33,7 @@ namespace http {
          * Destructor
          */
         ~SSLServer() override {
-            Stop();
+            stop();
             if (ssl_ctx_) {
                 SSL_CTX_free(ssl_ctx_);
                 ssl_ctx_ = nullptr;
@@ -45,20 +45,20 @@ namespace http {
         /**
          * Start HTTPS server
          */
-        int Start() override {
-            if (!InitializeSSL()) {
+        int start() override {
+            if (!initializeSSL()) {
                 return 1;
             }
 
             sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
             if (sockfd_ < 0) {
-                log.Error("Socket creation failed");
+                log.error("Socket creation failed");
                 return 2;
             }
 
             int opt = 1;
             if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-                log.Error("setsockopt failed");
+                log.error("setsockopt failed");
                 return 3;
             }
 
@@ -71,12 +71,12 @@ namespace http {
             inet_pton(AF_INET, host_.c_str(), &server_addr.sin_addr);
 
             if (bind(sockfd_, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-                log.Error("Bind failed");
+                log.error("Bind failed");
                 return 4;
             }
 
-            if (listen(sockfd_, kMAX_CONNS) < 0) {
-                log.Error("Listen failed");
+            if (listen(sockfd_, SOMAXCONN) < 0) {
+                log.error("Listen failed");
                 return 5;
             }
 
@@ -85,9 +85,9 @@ namespace http {
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
 
-            log.Info("Server started on https://{}:{} in {} ", host_, port_, duration);
+            log.info("Server started on https://{}:{} in {} ", host_, port_, duration);
 
-            HandleRequests();
+            handleRequests();
 
             return 0;
         };
@@ -95,7 +95,7 @@ namespace http {
         /**
          * Stop HTTPS server
          */
-        void Stop() override {
+        void stop() override {
             running_ = false;
 
             std::vector<int> clients;
@@ -106,7 +106,7 @@ namespace http {
 
             size_t i;
             for (i = 0; i < clients.size(); ++i) {
-                CloseClient(clients[i]);
+                closeClient(clients[i]);
             }
 
             if (sockfd_ != -1) {
@@ -114,14 +114,14 @@ namespace http {
                 sockfd_ = -1;
             }
 
-            log.Info("HTTPS server stopped");
+            log.info("HTTPS server stopped");
         }
 
        protected:
         /**
          * HTTPS request handling loop
          */
-        void HandleRequests() override {
+        void handleRequests() override {
             std::vector<struct pollfd> pollfds;
             while (running_) {
                 // Clear and rebuild pollfds vector
@@ -146,12 +146,12 @@ namespace http {
                     pollfds.push_back(pfd);
                 }
 
-                int activity = poll(&pollfds[0], pollfds.size(), kCONNECTION_TIMEOUT_SECOND * 1000);
+                int activity = poll(&pollfds[0], pollfds.size(), POLL_TIMEOUT);
                 if (activity < 0) {
                     // if (errno == EINTR) {
                     //     continue;
                     // }
-                    log.Warning("poll failed");
+                    log.warning("poll failed");
                     continue;
                 }
 
@@ -161,7 +161,7 @@ namespace http {
                 if (pollfds[0].revents & POLLIN) {
                     int clientfd = accept(sockfd_, (struct sockaddr*)NULL, NULL);
                     if (clientfd < 0) {
-                        log.Warning("Accepted error");
+                        log.warning("Accepted error");
                         continue;
                     }
                     // Set non-blocking mode for client socket
@@ -217,7 +217,7 @@ namespace http {
                                 continue;
                             }
 
-                            log.Warning("TLS handshake failed FD={}", fd);
+                            log.warning("TLS handshake failed FD={}", fd);
                             dead_clients.push_back(fd);
                             continue;
                         }
@@ -229,7 +229,7 @@ namespace http {
                     char buffer[READ_BUFFER_SIZE];
                     ssize_t nread = SSLRead(client, buffer, sizeof(buffer));
                     if (nread > 0) {
-                        PerformRequest(fd, buffer, nread);
+                        performRequest(fd, buffer, nread);
                     } else if (nread < 0) {
                         dead_clients.push_back(fd);
                     }
@@ -239,7 +239,7 @@ namespace http {
                 // CLEANUP
                 //
                 for (i = 0; i < dead_clients.size(); ++i) {
-                    CloseClient(dead_clients[i]);
+                    closeClient(dead_clients[i]);
                 }
             }
         };
@@ -247,27 +247,27 @@ namespace http {
         /**
          * Route handling
          */
-        std::string HandleRoute(http::Request& req) override {
-            Response res(req.is_keep_alive(), static_directory_);
+        std::string handleRoute(http::Request& req) override {
+            Response res(req.isKeepAlive(), static_directory_);
 
-            if (req.mime_type().has_value()) {
-                std::string content = ReadFile(static_directory_ + req.path());
+            if (req.mimeType().has_value()) {
+                std::string content = readFile(static_directory_ + req.path());
 
                 if (!content.empty()) {
-                    res.SetContentByType(content, req.mime_type().value());
+                    res.setContentByType(content, req.mimeType().value());
                 } else {
-                    res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
+                    res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
                 }
             } else {
                 request_handler handler;
-                if (router_.Match(&req, &handler)) {
+                if (router_.match(&req, &handler)) {
                     handler(req, res);
                 } else {
-                    res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
+                    res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
                 }
             }
 
-            return res.Build();
+            return res.build();
         }
 
        private:
@@ -287,31 +287,31 @@ namespace http {
         /**
          * Initialize SSL context
          */
-        bool InitializeSSL() {
+        bool initializeSSL() {
             const SSL_METHOD* method = TLS_server_method();
 
             ssl_ctx_ = SSL_CTX_new(method);
             if (!ssl_ctx_) {
-                log.Error("Failed to create SSL context");
+                log.error("Failed to create SSL context");
                 ERR_print_errors_fp(stderr);
                 return false;
             }
 
             SSL_CTX_set_min_proto_version(ssl_ctx_, TLS1_2_VERSION);
             if (SSL_CTX_use_certificate_file(ssl_ctx_, cert_file_.c_str(), SSL_FILETYPE_PEM) <= 0) {
-                log.Error("Failed to load certificate file");
+                log.error("Failed to load certificate file");
                 ERR_print_errors_fp(stderr);
                 return false;
             }
 
             if (SSL_CTX_use_PrivateKey_file(ssl_ctx_, key_file_.c_str(), SSL_FILETYPE_PEM) <= 0) {
-                log.Error("Failed to load private key file");
+                log.error("Failed to load private key file");
                 ERR_print_errors_fp(stderr);
                 return false;
             }
 
             if (!SSL_CTX_check_private_key(ssl_ctx_)) {
-                log.Error("Private key mismatch");
+                log.error("Private key mismatch");
                 return false;
             }
 
@@ -321,7 +321,7 @@ namespace http {
         /**
          * Close + cleanup client
          */
-        void CloseClient(int fd) {
+        void closeClient(int fd) {
             std::unordered_map<int, ClientConnection>::iterator it = ssl_clients_.find(fd);
             if (it == ssl_clients_.end()) {
                 return;
@@ -345,7 +345,7 @@ namespace http {
         /**
          * Perform HTTPS request
          */
-        void PerformRequest(const int sd, const char* buffer, const ssize_t nread) override {
+        void performRequest(const int sd, const char* buffer, const ssize_t nread) override {
             if (ssl_clients_.find(sd) == ssl_clients_.end()) {
                 return;
             }
@@ -353,7 +353,7 @@ namespace http {
             ClientConnection& client = ssl_clients_[sd];
             std::string raw_request(buffer, nread);
             Request req(raw_request);
-            std::string response = HandleRoute(req);
+            std::string response = handleRoute(req);
 
             SSLWrite(client, response.c_str(), response.size());
         }

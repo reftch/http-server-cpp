@@ -7,7 +7,7 @@
 
 #include "client.h"
 #include "server.h"
-// #include "sslserver.h"
+#include "sslserver.h"
 
 int main() {
     static auto& log = http::Logger::getInstance();

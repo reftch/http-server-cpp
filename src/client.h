@@ -86,24 +86,24 @@ namespace http {
 // Initialize SSL context for HTTPS
 #ifdef HTTP_OPENSSL_SUPPORT
             if (is_https_) {
-                if (!InitializeSSL()) {
+                if (!initializeSSL()) {
                     throw std::runtime_error("Failed to initialize SSL context");
                 }
             }
 #endif
         }
 
-        std::optional<Response> Get(const std::string& path) {
+        std::optional<Response> get(const std::string& path) {
             try {
-                std::string response = SendRequest("GET", path);
-                return ParseResponse(response);
+                std::string response = sendRequest("GET", path);
+                return parseResponse(response);
             } catch (const std::exception& e) {
                 std::cerr << "Error in GET request: " << e.what() << std::endl;
                 return std::nullopt;
             }
         }
 
-        std::optional<Response> Post(const std::string& path, const std::string& body) {
+        std::optional<Response> post(const std::string& path, const std::string& body) {
             try {
                 std::ostringstream request;
                 request << "POST " << path << " HTTP/1.1\r\n";
@@ -114,15 +114,15 @@ namespace http {
                 request << "\r\n";
                 request << body;
 
-                std::string response = SendRequest("POST", path);
-                return ParseResponse(response);
+                std::string response = sendRequest("POST", path);
+                return parseResponse(response);
             } catch (const std::exception& e) {
                 std::cerr << "Error in POST request: " << e.what() << std::endl;
                 return std::nullopt;
             }
         }
 
-        std::optional<Response> Put(const std::string& path, const std::string& body) {
+        std::optional<Response> put(const std::string& path, const std::string& body) {
             try {
                 std::ostringstream request;
                 request << "PUT " << path << " HTTP/1.1\r\n";
@@ -133,18 +133,18 @@ namespace http {
                 request << "\r\n";
                 request << body;
 
-                std::string response = SendRequest("PUT", path);
-                return ParseResponse(response);
+                std::string response = sendRequest("PUT", path);
+                return parseResponse(response);
             } catch (const std::exception& e) {
                 std::cerr << "Error in PUT request: " << e.what() << std::endl;
                 return std::nullopt;
             }
         }
 
-        std::optional<Response> Delete(const std::string& path) {
+        std::optional<Response> del(const std::string& path) {
             try {
-                std::string response = SendRequest("DELETE", path);
-                return ParseResponse(response);
+                std::string response = sendRequest("DELETE", path);
+                return parseResponse(response);
             } catch (const std::exception& e) {
                 std::cerr << "Error in DELETE request: " << e.what() << std::endl;
                 return std::nullopt;
@@ -168,7 +168,7 @@ namespace http {
         SSL* ssl_;
 #endif
 
-        int CreateSocket() {
+        int createSocket() {
             int sock = socket(AF_INET, SOCK_STREAM, 0);
             if (sock < 0) {
                 throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
@@ -176,8 +176,8 @@ namespace http {
             return sock;
         }
 
-        std::string SendRequest(const std::string& method, const std::string& path) {
-            int sock = CreateSocket();
+        std::string sendRequest(const std::string& method, const std::string& path) {
+            int sock = createSocket();
             if (sock < 0) {
                 throw std::runtime_error("Failed to create socket");
             }
@@ -258,10 +258,10 @@ namespace http {
             }
 
             // Read response
-            return ReadResponse(sock);
+            return readResponse(sock);
         }
 
-        std::string ReadResponse(int sock) {
+        std::string readResponse(int sock) {
             std::string response;
             std::array<char, READ_BUFFER_SIZE> buffer{};
 
@@ -290,10 +290,10 @@ namespace http {
                 if (bytes_read < READ_BUFFER_SIZE) break;
             }
 
-            return Trim(response);
+            return trim(response);
         }
 
-        Response ParseResponse(const std::string& raw_response) {
+        Response parseResponse(const std::string& raw_response) {
             Response response;
 
             // Find the end of headers (after \r\n\r\n)
@@ -303,7 +303,7 @@ namespace http {
             }
 
             // Parse status line (first line)
-            Status status = ParseStatus(raw_response);
+            Status status = parseStatus(raw_response);
 
             // Parse headers
             std::string header_section = raw_response.substr(0, header_end);
@@ -319,8 +319,8 @@ namespace http {
                     std::string value = line.substr(colon_pos + 1);
 
                     // Trim whitespace
-                    key = Trim(key);
-                    value = Trim(value);
+                    key = trim(key);
+                    value = trim(value);
 
                     response.setHeader(key, value);
                 }
@@ -334,7 +334,7 @@ namespace http {
             if (!transfer_encoding.empty()) {
                 std::string transfer_encoding = response.headers().at("Transfer-Encoding");
                 if (transfer_encoding == "chunked") {
-                    body = ParseChunkedBody(body);
+                    body = parseChunkedBody(body);
                 }
             }
 
@@ -342,7 +342,7 @@ namespace http {
             return response;
         }
 
-        std::string ParseChunkedBody(const std::string& chunked_body) {
+        std::string parseChunkedBody(const std::string& chunked_body) {
             std::string result;
             size_t pos = 0;
 
@@ -372,7 +372,7 @@ namespace http {
             return result;
         }
 
-        http::Status ParseStatus(const std::string& raw_response) {
+        http::Status parseStatus(const std::string& raw_response) {
             size_t status_start = raw_response.find("HTTP/1.1 ");
             if (status_start == std::string::npos) {
                 status_start = raw_response.find("HTTP/1.0 ");
@@ -426,7 +426,7 @@ namespace http {
             return Status::ok;
         }
 
-        static std::string Trim(const std::string& str) {
+        static std::string trim(const std::string& str) {
             size_t start = str.find_first_not_of(" \t\r\n");
             if (start == std::string::npos) {
                 return "";
@@ -438,7 +438,7 @@ namespace http {
 
 #ifdef HTTP_OPENSSL_SUPPORT
         // SSL helper functions
-        bool InitializeSSL() {
+        bool initializeSSL() {
             SSL_library_init();
             SSL_load_error_strings();
             OpenSSL_add_ssl_algorithms();
@@ -476,7 +476,7 @@ namespace http {
             return true;
         }
 
-        void CleanupSSL() {
+        void cleanupSSL() {
             if (ssl_) {
                 SSL_shutdown(ssl_);
                 SSL_free(ssl_);
@@ -491,7 +491,7 @@ namespace http {
             EVP_cleanup();
         }
 
-        void SetCert(const std::string& cert_file) {
+        void setCert(const std::string& cert_file) {
             ca_cert_file_ = cert_file;
             use_custom_ca_ = true;
 
