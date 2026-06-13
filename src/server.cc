@@ -2,10 +2,10 @@
 
 namespace http {
 
-    int Server::Start() {
+    int Server::start() {
         // open socket
         if ((sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-            log.Error("Socket creation failed");
+            log.error("Socket creation failed");
             exit(1);
         }
 
@@ -13,7 +13,7 @@ namespace http {
         // For UDP SO_REUSEADDR may mean some problems...
         int optval = 1;
         if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int)) == -1) {
-            log.Error("Setting to allow multiple connection failed");
+            log.error("Setting to allow multiple connection failed");
             exit(2);
         }
 
@@ -24,17 +24,17 @@ namespace http {
         server_addr.sin_addr.s_addr = htonl(INADDR_ANY);  // 0.0.0.0
         server_addr.sin_port = htons(port_);
         if (bind(sockfd_, (struct sockaddr*)(&server_addr), sizeof(server_addr)) == -1) {
-            log.Error("Bind the server address failed");
+            log.error("Bind the server address failed");
             exit(3);
         }
 
         // Set listen socket to unblocking mode.
-        SetNonblockMode(sockfd_);
+        setNonblockMode(sockfd_);
 
         // Server is ready to get SOMAXCONN connection requests (128).
         // This is *SHOULD* be enought to call accept and create child process.
         if (listen(sockfd_, SOMAXCONN) == -1) {
-            log.Error("Listening the server port failed");
+            log.error("Listening the server port failed");
             exit(4);
         }
 
@@ -44,14 +44,14 @@ namespace http {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
 
-        log.Info("Server started on http://{}:{} in {} ", host_, port_, duration);
+        log.info("Server started on http://{}:{} in {} ", host_, port_, duration);
 
-        HandleRequests();
+        handleRequests();
 
         return 0;
     }
 
-    int Server::SetNonblockMode(int fd) {
+    int Server::setNonblockMode(int fd) {
         int flags;
 #if defined(O_NONBLOCK)
         if (-1 == (flags = fcntl(fd, F_GETFL, 0))) {
@@ -65,7 +65,7 @@ namespace http {
 #endif
     }
 
-    void Server::Stop() {
+    void Server::stop() {
         std::cout << "\n";
 
         // set the running flag to false to break the while loop in start()
@@ -75,21 +75,21 @@ namespace http {
         for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
             int sd = *iter;
             if (sd != -1) {
-                log.Info("closing client connection FD: {}", sd);
+                log.info("closing client connection FD: {}", sd);
                 close(sd);
             }
         }
 
         // close the listening socket (the main server socket)
         if (sockfd_ != -1) {
-            log.Info("Closing listening socket FD: {}", sockfd_);
+            log.info("Closing listening socket FD: {}", sockfd_);
             close(sockfd_);
         }
 
-        log.Info("Server stopped successfully");
+        log.info("Server stopped successfully");
     }
 
-    void Server::HandleRequests() {
+    void Server::handleRequests() {
         // Put listen socket at the beginning of all polling descriptors.
         struct pollfd descriptors[POLL_SIZE];
         descriptors[0].fd = sockfd_;
@@ -108,7 +108,7 @@ namespace http {
 
             int ready_fd = poll(descriptors, poll_size, POLL_TIMEOUT);
             if (ready_fd == -1) {
-                log.Error("Error of calling poll");
+                log.error("Error of calling poll");
                 exit(5);
             }
 
@@ -126,7 +126,7 @@ namespace http {
                             close(descriptors[i].fd);
                             client_list_.erase(descriptors[i].fd);
                         } else if (len > 0) {
-                            PerformRequest(descriptors[i].fd, buf, len);
+                            performRequest(descriptors[i].fd, buf, len);
                         }
                     } else {
                         // Master socket
@@ -136,13 +136,13 @@ namespace http {
                         int client_fd = accept(sockfd_, (struct sockaddr*)&client_addr, &slen);
                         if (client_fd == -1) {
                             if (errno != EWOULDBLOCK || errno != EAGAIN) {
-                                log.Error("Error of calling accept");
+                                log.error("Error of calling accept");
                                 exit(6);
                             }
                         }
 
                         // std::cout << "Client = " << inet_ntoa(client_addr.sin_addr) << std::endl;
-                        SetNonblockMode(client_fd);
+                        setNonblockMode(client_fd);
                         client_list_.insert(client_fd);
                     }
                 }
@@ -150,12 +150,12 @@ namespace http {
         }
     }
 
-    void Server::PerformRequest(const int sd, const char* buffer, const ssize_t nread) {
+    void Server::performRequest(const int sd, const char* buffer, const ssize_t nread) {
         std::string raw_request(buffer, nread);
         // Parse the request line to find method and path
         http::Request req(raw_request);
         // Handle route
-        std::string body = HandleRoute(req);
+        std::string body = handleRoute(req);
 
         // write response
         const char* ptr = body.c_str();
@@ -172,7 +172,7 @@ namespace http {
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     continue;
                 } else {
-                    log.Warning("Error writing response body: {}", strerror(errno));
+                    log.warning("Error writing response body: {}", strerror(errno));
                     break;
                 }
             }
@@ -180,26 +180,26 @@ namespace http {
         }
     }
 
-    std::string Server::HandleRoute(http::Request& req) {
-        Response res(req.is_keep_alive(), static_directory_);
+    std::string Server::handleRoute(http::Request& req) {
+        Response res(req.isKeepAlive(), static_directory_);
 
         // check on static resource
-        if (req.mime_type().has_value()) {
-            HandleStaticResource(req, res);
+        if (req.mimeType().has_value()) {
+            handleStaticResource(req, res);
         } else {
             // Call handler if it exists
             http::request_handler handler;
-            if (router_.Match(&req, &handler)) {
+            if (router_.match(&req, &handler)) {
                 handler(req, res);
             } else {
-                res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
+                res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
             }
         }
 
-        return res.Build();
+        return res.build();
     }
 
-    void Server::HandleStaticResource(http::Request& req, http::Response& res) {
+    void Server::handleStaticResource(http::Request& req, http::Response& res) {
         std::string path = static_directory_ + req.path();
         struct stat file_stat;
 
@@ -212,27 +212,28 @@ namespace http {
 
                 std::string content(size, '\0');
                 file.read(content.data(), size);
+                file.close();
 
                 // set basic headers
-                res.set_header("Content-Type", req.mime_type().value());
-                res.set_header("Cache-Control", "public, max-age=3600");
-                res.set_header("Content-Length", std::to_string(size));
+                res.setHeader("Content-Type", req.mimeType().value());
+                res.setHeader("Cache-Control", "public, max-age=3600");
+                res.setHeader("Content-Length", std::to_string(size));
 
-                auto last_modified = FileMtimeToHttpDate(file_stat.st_mtime);
+                auto last_modified = fileMtimeToHttpDate(file_stat.st_mtime);
                 if (!last_modified.empty()) {
-                    res.set_header("Last-Modified", FileMtimeToHttpDate(file_stat.st_mtime));
+                    res.setHeader("Last-Modified", last_modified);
                 }
 
-                auto etag = ComputeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
+                auto etag = computeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
                 if (!etag.empty()) {
-                    res.set_header("ETag", etag);
+                    res.setHeader("ETag", etag);
                 }
 
                 // set content
-                res.SetContent(content);
+                res.setContent(content);
             }
         } else {
-            res.SetContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
+            res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
         }
     }
 

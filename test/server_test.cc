@@ -28,7 +28,7 @@ void stop_server_thread(std::unique_ptr<Server>& server_ptr) {
 
     // check running state
     EXPECT_TRUE(server_ptr->is_running());
-    server_ptr->Stop();
+    server_ptr->stop();
 }
 
 // Test Suite for testing server control flow
@@ -36,7 +36,7 @@ TEST_F(ServerTestFixture, StartAndStopControlsState) {
     std::thread t(stop_server_thread, std::ref(server_));
 
     // start the server
-    int start_result = server_->Start();
+    int start_result = server_->start();
     EXPECT_EQ(0, start_result);  // expect success
 
     // The main thread will pause here until the worker_thread completes its execution

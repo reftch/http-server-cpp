@@ -60,7 +60,7 @@ namespace http {
          * it will be closed and reopened with the new path.
          * File logging will be disabled if the file cannot be opened.
          */
-        void EnableFileLogging(const std::string& filepath) {
+        void enableFileLogging(const std::string& filepath) {
             std::lock_guard<std::mutex> lock(log_mutex_);
             if (log_file_.is_open()) {
                 log_file_.close();
@@ -77,7 +77,7 @@ namespace http {
          * This method enables file logging using the default path "./http-server.log".
          * The log file will be created in the current working directory.
          */
-        void EnableFileLogging() { EnableFileLogging("./http-server.log"); }
+        void enableFileLogging() { enableFileLogging("./http-server.log"); }
 
         /**
          * @brief Disable file logging.
@@ -85,7 +85,7 @@ namespace http {
          * This method closes any open log file and disables file logging.
          * Console logging will continue to work normally.
          */
-        void DisableFileLogging() {
+        void disableFileLogging() {
             std::lock_guard<std::mutex> lock(log_mutex_);
             file_logging_enabled_ = false;
             if (log_file_.is_open()) {
@@ -97,7 +97,7 @@ namespace http {
          * @brief Get the current log file path.
          * @return Current log file path as a string.
          */
-        std::string GetLogFilePath() const {
+        std::string getLogFilePath() const {
             std::lock_guard<std::mutex> lock(log_mutex_);
             return log_file_path_;
         }
@@ -119,8 +119,8 @@ namespace http {
          * TRACE level messages are used for detailed debugging information.
          */
         template <typename... Args>
-        void Trace(std::string_view format, Args&&... args) {
-            Log(Level::TRACE, format, std::forward<Args>(args)...);
+        void trace(std::string_view format, Args&&... args) {
+            log(Level::TRACE, format, std::forward<Args>(args)...);
         }
 
         /**
@@ -131,8 +131,8 @@ namespace http {
          * DEBUG level messages are used for detailed debugging information.
          */
         template <typename... Args>
-        void Debug(std::string_view format, Args&&... args) {
-            Log(Level::DEBUG, format, std::forward<Args>(args)...);
+        void debug(std::string_view format, Args&&... args) {
+            log(Level::DEBUG, format, std::forward<Args>(args)...);
         }
 
         /**
@@ -143,8 +143,8 @@ namespace http {
          * INFO level messages provide general information about program execution.
          */
         template <typename... Args>
-        void Info(std::string_view format, Args&&... args) {
-            Log(Level::INFO, format, std::forward<Args>(args)...);
+        void info(std::string_view format, Args&&... args) {
+            log(Level::INFO, format, std::forward<Args>(args)...);
         }
 
         /**
@@ -155,8 +155,8 @@ namespace http {
          * WARNING level messages indicate potential problems that don't stop execution.
          */
         template <typename... Args>
-        void Warning(std::string_view format, Args&&... args) {
-            Log(Level::WARNING, format, std::forward<Args>(args)...);
+        void warning(std::string_view format, Args&&... args) {
+            log(Level::WARNING, format, std::forward<Args>(args)...);
         }
 
         /**
@@ -167,8 +167,8 @@ namespace http {
          * ERROR level messages indicate errors that occurred during execution.
          */
         template <typename... Args>
-        void Error(std::string_view format, Args&&... args) {
-            Log(Level::ERROR, format, std::forward<Args>(args)...);
+        void error(std::string_view format, Args&&... args) {
+            log(Level::ERROR, format, std::forward<Args>(args)...);
         }
 
         /**
@@ -179,8 +179,8 @@ namespace http {
          * CRITICAL level messages indicate serious errors that may cause program termination.
          */
         template <typename... Args>
-        void Critical(std::string_view format, Args&&... args) {
-            Log(Level::CRITICAL, format, std::forward<Args>(args)...);
+        void critical(std::string_view format, Args&&... args) {
+            log(Level::CRITICAL, format, std::forward<Args>(args)...);
         }
 
        protected:
@@ -196,7 +196,7 @@ namespace http {
          * @param time_info Pointer to struct tm containing time information.
          * @return Formatted timestamp string.
          */
-        std::string FormatTime(const struct tm* time_info) {
+        std::string formatTime(const struct tm* time_info) {
             char timestamp_buffer[23];
             std::string format = "[%Y-%m-%d %H:%M:%S] ";
             if (std::strftime(timestamp_buffer, sizeof(timestamp_buffer), format.c_str(), time_info) == 0) {
@@ -238,7 +238,7 @@ namespace http {
          * @param args Arguments to be formatted into the message.
          */
         template <typename... Args>
-        void Log(Level level, std::string_view format, Args&&... args) {
+        void log(Level level, std::string_view format, Args&&... args) {
             std::string level_str;
             switch (level) {
                 case Level::TRACE:
@@ -263,7 +263,7 @@ namespace http {
 
             time_t now = time(0);
             struct tm* time_info = localtime(&now);
-            std::string timestamp = FormatTime(time_info);
+            std::string timestamp = formatTime(time_info);
 
             std::string format_string(format.data(), format.size());
             std::string message = Format(format_string, std::forward<Args>(args)...);

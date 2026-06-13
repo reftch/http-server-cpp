@@ -24,7 +24,7 @@
  *
  * @return A string containing the current date in YYYY-MM-DD format.
  */
-std::string get_build_date();
+std::string getBuildDate();
 
 /**
  * @brief Prints the application's usage instructions and available options.
@@ -32,7 +32,7 @@ std::string get_build_date();
  * Displays a help message to the user with information about how to use the
  * application and what command-line options are available.
  */
-void print_help();
+void printHelp();
 
 /**
  * @brief Parses command-line arguments for host and port configuration.
@@ -54,7 +54,7 @@ void print_help();
  * parseArguments(5, {"server", "--port", "9000", "--host", "192.168.1.1"})
  * // Returns map with "--host": "192.168.1.1" and "--port": "9000"
  */
-std::map<std::string, std::string> ParseArguments(int argc, char* argv[]);
+std::map<std::string, std::string> parseArguments(int argc, char* argv[]);
 
 /**
  * @brief Converts an unordered map to a JSON string.
@@ -65,7 +65,7 @@ std::map<std::string, std::string> ParseArguments(int argc, char* argv[]);
  * @param params The unordered map to convert to JSON.
  * @return A string containing the JSON representation of the input map.
  */
-std::string MapToJson(const std::unordered_map<std::string, std::string>& params);
+std::string mapToJson(const std::unordered_map<std::string, std::string>& params);
 
 /**
  * @brief Reads the contents of a file into a string.
@@ -75,7 +75,7 @@ std::string MapToJson(const std::unordered_map<std::string, std::string>& params
  * @param path The file path to read from.
  * @return A string containing the file's contents.
  */
-std::string ReadFile(const std::string& path);
+std::string readFile(const std::string& path);
 
 /**
  * @brief Decodes a URL-encoded string.
@@ -86,7 +86,7 @@ std::string ReadFile(const std::string& path);
  * @param encoded The URL-encoded string to decode.
  * @return A decoded string.
  */
-std::string UrlDecode(const std::string& encoded);
+std::string urlDecode(const std::string& encoded);
 
 /**
  * @brief Retrieves an environment variable value with a default fallback.
@@ -106,7 +106,7 @@ std::string UrlDecode(const std::string& encoded);
  * auto debug = GetEnv<bool>("DEBUG", false);
  */
 template <typename T>
-T GetEnv(const std::string& key, const T& default_value) {
+T getEnv(const std::string& key, const T& default_value) {
     const char* value = std::getenv(key.c_str());
 
     if (!value) {
@@ -141,10 +141,12 @@ T GetEnv(const std::string& key, const T& default_value) {
     }
 }
 
-time_t GetMtime(const std::string& path);
-std::string FileMtimeToHttpDate(time_t mtime);
+time_t getMtime(const std::string& path);
 
-std::string ComputeEtag(size_t mtime_raw, size_t size);
-std::string FromIToHex(size_t n);
+std::string fileMtimeToHttpDate(time_t mtime);
+
+std::string computeEtag(size_t mtime_raw, size_t size);
+
+std::string fromIntToHex(size_t n);
 
 #endif  // HTTP_UTILS_H_

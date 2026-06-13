@@ -1,6 +1,6 @@
 #include "utils.h"
 
-std::string get_build_date() {
+std::string getBuildDate() {
     // Get current time
     std::time_t now = std::time(nullptr);
 
@@ -18,7 +18,7 @@ std::string get_build_date() {
 }
 
 // Helper function for help message
-void print_help() {
+void printHelp() {
     std::cout << "Usage: http_server [options] <address> <port>\n\n"
               << "Options (Optional):\n"
               << "  --help         Show this help message.\n"
@@ -26,7 +26,7 @@ void print_help() {
               << "  --port [num]   Specify the port number (default: 8080)\n";
 }
 
-std::map<std::string, std::string> ParseArguments(int argc, char* argv[]) {
+std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
     std::map<std::string, std::string> args;
 
     // Set default values
@@ -51,7 +51,7 @@ std::map<std::string, std::string> ParseArguments(int argc, char* argv[]) {
     return args;
 }
 
-std::string MapToJson(const std::unordered_map<std::string, std::string>& params) {
+std::string mapToJson(const std::unordered_map<std::string, std::string>& params) {
     std::stringstream ss;
     ss << "{";  // Start the JSON object
 
@@ -79,7 +79,7 @@ std::string MapToJson(const std::unordered_map<std::string, std::string>& params
     return ss.str();
 }
 
-std::string ReadFile(const std::string& path) {
+std::string readFile(const std::string& path) {
     // Binary mode for faster reading
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file) {
@@ -95,7 +95,7 @@ std::string ReadFile(const std::string& path) {
     return content;
 }
 
-std::string UrlDecode(const std::string& encoded) {
+std::string urlDecode(const std::string& encoded) {
     std::string decoded;
     for (size_t i = 0; i < encoded.length(); ++i) {
         if (encoded[i] == '%' && i + 2 < encoded.length()) {
@@ -113,7 +113,7 @@ std::string UrlDecode(const std::string& encoded) {
     return decoded;
 }
 
-time_t GetMtime(const std::string& path) {
+time_t getMtime(const std::string& path) {
     // Check if file exists
     if (!std::filesystem::exists(path)) {
         return -1;
@@ -136,7 +136,7 @@ time_t GetMtime(const std::string& path) {
     return static_cast<time_t>(time_t_duration.count());
 }
 
-std::string FileMtimeToHttpDate(time_t mtime) {
+std::string fileMtimeToHttpDate(time_t mtime) {
     if (mtime < 0) {
         return std::string();
     }
@@ -153,7 +153,7 @@ std::string FileMtimeToHttpDate(time_t mtime) {
     return std::string(buf);
 }
 
-std::string ComputeEtag(size_t mtime, size_t size) {
+std::string computeEtag(size_t mtime, size_t size) {
     // If mtime cannot be determined (negative value indicates an error
     // or sentinel), do not generate an ETag. Returning a neutral / fixed
     // value like 0 could collide with a real file that legitimately has
@@ -163,12 +163,10 @@ std::string ComputeEtag(size_t mtime, size_t size) {
         return std::string();
     }
 
-    // auto mtime = static_cast<size_t>(mtime_raw);
-
-    return std::string("W/\"") + FromIToHex(mtime) + "-" + FromIToHex(size) + "\"";
+    return std::string("W/\"") + fromIntToHex(mtime) + "-" + fromIntToHex(size) + "\"";
 }
 
-std::string FromIToHex(size_t n) {
+std::string fromIntToHex(size_t n) {
     static const auto charset = "0123456789abcdef";
     std::string ret;
     do {

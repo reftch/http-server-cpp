@@ -4,8 +4,8 @@
 
 namespace http {
 
-    int Router::RegisterHandler(const std::string& method, const std::string& path, request_handler handler) {
-        auto parts = SplitPath(path);
+    int Router::registerHandler(const std::string& method, const std::string& path, request_handler handler) {
+        auto parts = splitPath(path);
         Node* node = &root_;
 
         for (const auto& part : parts) {
@@ -31,7 +31,7 @@ namespace http {
         return 0;
     }
 
-    bool Router::Match(http::Request* req, request_handler* out_handler) const {
+    bool Router::match(http::Request* req, request_handler* out_handler) const {
         std::string path = req->path();
         std::string method = req->method();
         std::string path_without_query;
@@ -46,7 +46,7 @@ namespace http {
             path_without_query = path;
         }
 
-        auto parts = SplitPath(path_without_query);
+        auto parts = splitPath(path_without_query);
         const Node* node = &root_;
 
         for (const auto& part : parts) {
@@ -54,7 +54,7 @@ namespace http {
             if (it != node->static_children.end()) {
                 node = it->second.get();
             } else if (node->param_child) {
-                req->set_param(node->param_child->param_name, part);
+                req->setParam(node->param_child->param_name, part);
                 node = node->param_child.get();
             } else {
                 return false;
@@ -69,12 +69,12 @@ namespace http {
         *out_handler = it->second;
 
         // Parse query parameters
-        ParseQueryString(query_string, req);
+        parseQueryString(query_string, req);
 
         return true;
     }
 
-    std::vector<std::string> Router::SplitPath(const std::string& path) {
+    std::vector<std::string> Router::splitPath(const std::string& path) {
         std::vector<std::string> parts;
         std::string current;
         for (char c : path) {
@@ -93,7 +93,7 @@ namespace http {
         return parts;
     }
 
-    void Router::ParseQueryString(const std::string& query_string, http::Request* req) const {
+    void Router::parseQueryString(const std::string& query_string, http::Request* req) const {
         if (query_string.empty()) {
             return;
         }
@@ -117,9 +117,9 @@ namespace http {
             }
 
             // URL decode and store
-            key = UrlDecode(key);
-            value = UrlDecode(value);
-            req->set_query(key, value);
+            key = urlDecode(key);
+            value = urlDecode(value);
+            req->setQuery(key, value);
 
             start = ampersand_pos + 1;
         }

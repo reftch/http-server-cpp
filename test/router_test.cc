@@ -9,21 +9,21 @@ TEST_F(ServerTestFixture, RegisterRootHandler) {
     std::string method = "GET";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.RegisterHandler(method, path, handler);
+    r.registerHandler(method, path, handler);
 
     // Create a request
     http::Request req;
-    req.set_method(method);
-    req.set_path(path);
+    req.setMethod(method);
+    req.setPath(path);
 
     http::Response res;
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -38,21 +38,21 @@ TEST_F(ServerTestFixture, RegisterHandlerSucceeds) {
     std::string method = "GET";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.RegisterHandler(method, path, handler);
+    r.registerHandler(method, path, handler);
 
     // Create a request
     http::Request req;
-    req.set_method(method);
-    req.set_path(path);
+    req.setMethod(method);
+    req.setPath(path);
 
     http::Response res;
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -67,21 +67,21 @@ TEST_F(ServerTestFixture, RegisterPostHandlerSucceeds) {
     std::string method = "POST";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.RegisterHandler(method, path, handler);
+    r.registerHandler(method, path, handler);
 
     // Create a request
     http::Request req;
-    req.set_method(method);
-    req.set_path(path);
+    req.setMethod(method);
+    req.setPath(path);
 
     http::Response res;
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -96,21 +96,21 @@ TEST_F(ServerTestFixture, RegisterHandlerWithPathParameter) {
     std::string method = "GET";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.RegisterHandler(method, path, handler);
+    r.registerHandler(method, path, handler);
 
     // Create a request
     http::Request req;
-    req.set_method(method);
-    req.set_path("/api/v1/users/123");
+    req.setMethod(method);
+    req.setPath("/api/v1/users/123");
 
     http::Response res;
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -126,21 +126,21 @@ TEST_F(ServerTestFixture, RegisterHandlerWithMultiplePathParameter) {
     std::string method = "GET";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.RegisterHandler(method, path, handler);
+    r.registerHandler(method, path, handler);
 
     // Create a request
     http::Request req;
-    req.set_method(method);
-    req.set_path("/api/v1/users/123/age/33/step/100");
+    req.setMethod(method);
+    req.setPath("/api/v1/users/123/age/33/step/100");
 
     http::Response res;
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -158,21 +158,21 @@ TEST_F(ServerTestFixture, RegisterHandlerWithMultipleSequencePathParameter) {
     std::string method = "GET";
 
     auto handler = [](const http::Request& req, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test " + req.path());
     };
 
-    r.RegisterHandler(method, path, handler);
+    r.registerHandler(method, path, handler);
 
     // Create a request
     http::Request req;
-    req.set_method(method);
-    req.set_path("/api/v1/users/123/10/100");
+    req.setMethod(method);
+    req.setPath("/api/v1/users/123/10/100");
 
     http::Response res;
 
     // Act
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -187,19 +187,19 @@ TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
 
-    r.RegisterHandler("GET", "/search", handler);
+    r.registerHandler("GET", "/search", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/search?query=hello world&filter=category 1");
+    req.setMethod("GET");
+    req.setPath("/search?query=hello world&filter=category 1");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -213,19 +213,19 @@ TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
 
-    r.RegisterHandler("GET", "/users", handler);
+    r.registerHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/users?name=John");
+    req.setMethod("GET");
+    req.setPath("/users?name=John");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -238,18 +238,18 @@ TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.RegisterHandler("GET", "/users", handler);
+    r.registerHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/users?name=John&age=30&city=NYC");
+    req.setMethod("GET");
+    req.setPath("/users?name=John&age=30&city=NYC");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -264,18 +264,18 @@ TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.RegisterHandler("GET", "/users/:id", handler);
+    r.registerHandler("GET", "/users/:id", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/users/123?format=json&include=posts");
+    req.setMethod("GET");
+    req.setPath("/users/123?format=json&include=posts");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -291,18 +291,18 @@ TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.RegisterHandler("GET", "/users", handler);
+    r.registerHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/users?");
+    req.setMethod("GET");
+    req.setPath("/users?");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -314,18 +314,18 @@ TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.RegisterHandler("GET", "/users", handler);
+    r.registerHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/users?name");
+    req.setMethod("GET");
+    req.setPath("/users?name");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -337,18 +337,18 @@ TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.RegisterHandler("GET", "/search", handler);
+    r.registerHandler("GET", "/search", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/search?q=hello%20world&category=tech%2Bdev");
+    req.setMethod("GET");
+    req.setPath("/search?q=hello%20world&category=tech%2Bdev");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -362,18 +362,18 @@ TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.RegisterHandler("GET", "/users", handler);
+    r.registerHandler("GET", "/users", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/users?filter=active&filter=verified");
+    req.setMethod("GET");
+    req.setPath("/users?filter=active&filter=verified");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);
@@ -386,18 +386,18 @@ TEST_F(ServerTestFixture, MatchWithNoQueryParameters) {
     // Arrange
     http::Router r;
     auto handler = [](const http::Request&, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test");
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
     };
-    r.RegisterHandler("GET", "/users/:id", handler);
+    r.registerHandler("GET", "/users/:id", handler);
 
     // Act
     http::Request req;
-    req.set_method("GET");
-    req.set_path("/users/123");
+    req.setMethod("GET");
+    req.setPath("/users/123");
 
     http::Response res;
     http::request_handler out_handler;
-    bool matched = r.Match(&req, &out_handler);
+    bool matched = r.match(&req, &out_handler);
 
     // Assert
     ASSERT_TRUE(matched);

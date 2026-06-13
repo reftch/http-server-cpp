@@ -16,12 +16,12 @@ class LoggerTest : public ::testing::Test {
    protected:
     void SetUp() override {
         // Ensure clean state before each test
-        Logger::getInstance().DisableFileLogging();
+        Logger::getInstance().disableFileLogging();
     }
 
     void TearDown() override {
         // Clean up after each test
-        Logger::getInstance().DisableFileLogging();
+        Logger::getInstance().disableFileLogging();
         namespace fs = std::filesystem;
 
         // change this if you want another directory
@@ -48,34 +48,34 @@ TEST_F(LoggerTest, SingletonInstance) {
 
 TEST_F(LoggerTest, EnableFileLoggingWithPath) {
     Logger& logger = Logger::getInstance();
-    logger.EnableFileLogging("./test.log");
+    logger.enableFileLogging("./test.log");
     EXPECT_TRUE(logger.IsFileLoggingEnabled());
-    EXPECT_EQ(logger.GetLogFilePath(), "./test.log");
+    EXPECT_EQ(logger.getLogFilePath(), "./test.log");
 }
 
 TEST_F(LoggerTest, EnableFileLoggingDefaultPath) {
     Logger& logger = Logger::getInstance();
-    logger.EnableFileLogging();  // Should use default path
+    logger.enableFileLogging();  // Should use default path
     EXPECT_TRUE(logger.IsFileLoggingEnabled());
-    EXPECT_EQ(logger.GetLogFilePath(), "./http-server.log");
+    EXPECT_EQ(logger.getLogFilePath(), "./http-server.log");
 }
 
 TEST_F(LoggerTest, DisableFileLogging) {
     Logger& logger = Logger::getInstance();
-    logger.EnableFileLogging("./test.log");
+    logger.enableFileLogging("./test.log");
     EXPECT_TRUE(logger.IsFileLoggingEnabled());
 
-    logger.DisableFileLogging();
+    logger.disableFileLogging();
     EXPECT_FALSE(logger.IsFileLoggingEnabled());
 }
 
 TEST_F(LoggerTest, LogToFileAndConsole) {
     const std::string test_file = "./log_test.log";
     Logger& logger = Logger::getInstance();
-    logger.EnableFileLogging(test_file);
+    logger.enableFileLogging(test_file);
 
     // Capture console output (optional, but not directly testable in gtest)
-    logger.Info("Test message: {}", 42);
+    logger.info("Test message: {}", 42);
 
     // Check file exists and has content
     std::ifstream file(test_file);
@@ -91,14 +91,14 @@ TEST_F(LoggerTest, LogToFileAndConsole) {
 TEST_F(LoggerTest, LogLevels) {
     const std::string test_file = "./levels_test.log";
     Logger& logger = Logger::getInstance();
-    logger.EnableFileLogging(test_file);
+    logger.enableFileLogging(test_file);
 
-    logger.Trace("Trace message");
-    logger.Debug("Debug message");
-    logger.Info("Info message");
-    logger.Warning("Warning message");
-    logger.Error("Error message");
-    logger.Critical("Critical message");
+    logger.trace("Trace message");
+    logger.debug("Debug message");
+    logger.info("Info message");
+    logger.warning("Warning message");
+    logger.error("Error message");
+    logger.critical("Critical message");
 
     std::ifstream file(test_file);
     EXPECT_TRUE(file.is_open());
@@ -117,7 +117,7 @@ TEST_F(LoggerTest, LogLevels) {
 class LoggerForTest : public Logger {
    public:
     using Logger::Format;
-    using Logger::FormatTime;
+    using Logger::formatTime;
 };
 
 TEST_F(LoggerTest, FormatTime) {
@@ -131,7 +131,7 @@ TEST_F(LoggerTest, FormatTime) {
     time_info.tm_sec = 45;
 
     std::string expected = "[2026-05-15 10:30:45] ";
-    std::string actual = logger.FormatTime(&time_info);
+    std::string actual = logger.formatTime(&time_info);
 
     EXPECT_EQ(expected, actual);
 }
@@ -148,7 +148,7 @@ TEST_F(LoggerTest, FormatTimeJanuary) {
     time_info.tm_sec = 0;
 
     std::string expected = "[2026-01-01 00:00:00] ";
-    std::string actual = logger.FormatTime(&time_info);
+    std::string actual = logger.formatTime(&time_info);
 
     EXPECT_EQ(expected, actual);
 }
@@ -165,7 +165,7 @@ TEST_F(LoggerTest, FormatTimeJustBeforeMidnight) {
     time_info.tm_sec = 59;
 
     std::string expected = "[2026-12-31 23:59:59] ";
-    std::string actual = logger.FormatTime(&time_info);
+    std::string actual = logger.formatTime(&time_info);
 
     EXPECT_EQ(expected, actual);
 }

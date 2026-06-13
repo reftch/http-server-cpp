@@ -110,54 +110,51 @@ namespace http {
         Response() = default;
         Response(bool is_keep_alive, const std::string& static_directory);
 
-        void set_header(const std::string& key, const std::string& val) { headers_[key] = val; }
+        void setHeader(const std::string& key, const std::string& val) { headers_[key] = val; }
 
         std::string content() { return content_; }
         http::Status status() { return status_; }
         std::unordered_map<std::string, std::string> headers() { return headers_; }
 
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
-        void SetContent(const std::string& content) {
-            set_header("Content-Type", ContentTypeToString(T));
+        void setContent(const std::string& content) {
+            setHeader("Content-Type", ContentTypeToString(T));
 
             // Set content based on content type
             if (T == ContentType::HTML) {
-                content_ = ReadFile(static_directory_ + '/' + content);
+                content_ = readFile(static_directory_ + '/' + content);
             } else {
                 content_ = content;
             }
 
             // Set Content-Length header using the actual content size
-            set_header("Content-Length", std::to_string(content_.size()));
+            setHeader("Content-Length", std::to_string(content_.size()));
 
             status_ = S;
         }
 
         template <Status S = Status::ok>
-        void SetContentByType(const std::string& content, std::string type) {
-            set_header("Content-Type", type);
-            // set_header("Transfer-Encoding", "chunked");
-            set_header("Content-Length", std::to_string(content.size()));
-            set_header("Cache-Control", "public, max-age=3600");
+        void setContentByType(const std::string& content, std::string type) {
+            setHeader("Content-Type", type);
+            setHeader("Content-Length", std::to_string(content.size()));
+            setHeader("Cache-Control", "public, max-age=3600");
             content_ = content;
 
             status_ = S;
         }
 
-        void SetContentByType(const std::string& content, Status s = Status::ok) {
-            set_header("Content-Length", std::to_string(content.size()));
+        void setContentByType(const std::string& content, Status s = Status::ok) {
+            setHeader("Content-Length", std::to_string(content.size()));
             content_ = content;
             status_ = s;
         }
 
-        void SetContent(const std::string& content, Status s = Status::ok) {
+        void setContent(const std::string& content, Status s = Status::ok) {
             content_ = content;
             status_ = s;
         }
 
-        // void SetContent(const std::string& content) { content_ = content; }
-
-        std::string Build();
+        std::string build();
 
        private:
         http::Status status_ = Status::ok;
@@ -167,7 +164,7 @@ namespace http {
         std::string static_directory_;
         std::unordered_map<std::string, std::string> headers_;
 
-        std::string StatusToString();
+        std::string statusToString();
 
         constexpr std::string ContentTypeToString(ContentType type) {
             switch (type) {
@@ -214,12 +211,12 @@ namespace http {
         }
     };
 
-    namespace misc_strings {
+    namespace miscStrings {
         const char name_value_separator[] = {':', ' ', '\0'};
         const char crlf[] = {'\r', '\n', '\0'};
-    }  // namespace misc_strings
+    }  // namespace miscStrings
 
-    namespace status_strings {
+    namespace statusToStrings {
         const std::string ok = "HTTP/1.0 200 OK\r\n";
         const std::string created = "HTTP/1.0 201 Created\r\n";
         const std::string accepted = "HTTP/1.0 202 Accepted\r\n";
@@ -236,7 +233,7 @@ namespace http {
         const std::string not_implemented = "HTTP/1.0 501 Not Implemented\r\n";
         const std::string bad_gateway = "HTTP/1.0 502 Bad Gateway\r\n";
         const std::string service_unavailable = "HTTP/1.0 503 Service Unavailable\r\n";
-    }  // namespace status_strings
+    }  // namespace statusToStrings
 
 }  // namespace http
 

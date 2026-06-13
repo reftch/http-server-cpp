@@ -10,9 +10,9 @@ int main() {
 
     auto res = cli.Get("/api/v1/inc/2");
 
-    log.Info("Response status: {}", static_cast<int>(res->status()));
-    log.Info("Response body: {}", res->content());
-    log.Info("Response Content-Type: {}", res->headers().at("Content-Type"));
+    log.info("Response status: {}", static_cast<int>(res->status()));
+    log.info("Response body: {}", res->content());
+    log.info("Response Content-Type: {}", res->headers().at("Content-Type"));
 
     return 0;
 }

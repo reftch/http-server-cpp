@@ -95,19 +95,19 @@ namespace http {
          * @return 3 on connection binding error
          * @return 4 on connection listener error
          */
-        virtual int Start();
+        virtual int start();
 
         /**
          * Signals the server to shut down, stops the polling loop, and closes all sockets.
          */
-        virtual void Stop();
+        virtual void stop();
 
         template <HttpMethod Method>
-        void SetRoute(const std::string& path, request_handler handler) {
-            router_.RegisterHandler(std::string(ToString(Method)), path, handler);
+        void setRoute(const std::string& path, request_handler handler) {
+            router_.registerHandler(std::string(toString(Method)), path, handler);
         }
 
-        void SetAssetDirectory(const std::string& directory) { static_directory_ = directory; }
+        void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
        protected:
         // logger
@@ -116,7 +116,7 @@ namespace http {
         // router
         http::Router router_;
 
-        int SetNonblockMode(int fd);
+        int setNonblockMode(int fd);
 
         /**
          * Performs an asynchronous HTTP request handling operation
@@ -130,7 +130,7 @@ namespace http {
          *          4. Writing the response back to the client socket
          * @note This function is typically called asynchronously to handle multiple concurrent connections
          */
-        virtual void PerformRequest(const int sd, const char* buffer, const ssize_t nread);
+        virtual void performRequest(const int sd, const char* buffer, const ssize_t nread);
 
         /**
          * Handles HTTP route matching and request processing
@@ -143,9 +143,9 @@ namespace http {
          *          4. Returning appropriate HTTP response based on the processing outcome
          * @note This function is typically called from perform_request() to generate responses for client requests
          */
-        virtual std::string HandleRoute(http::Request& req);
+        virtual std::string handleRoute(http::Request& req);
 
-        void HandleStaticResource(http::Request& req, http::Response& res);
+        void handleStaticResource(http::Request& req, http::Response& res);
 
         bool running_ = false;       // Is server running flag
         std::set<int> client_list_;  // client list for connections(slave sockets).
@@ -163,9 +163,9 @@ namespace http {
          *          It continuously monitors multiple file descriptors and processes events as they occur.
          * @note This function runs in an infinite loop until the server's running_ flag is set to false
          */
-        virtual void HandleRequests();
+        virtual void handleRequests();
 
-        constexpr std::string_view ToString(HttpMethod method) {
+        constexpr std::string_view toString(HttpMethod method) {
             switch (method) {
                 case HttpMethod::GET:
                     return "GET";

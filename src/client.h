@@ -322,7 +322,7 @@ namespace http {
                     key = Trim(key);
                     value = Trim(value);
 
-                    response.set_header(key, value);
+                    response.setHeader(key, value);
                 }
             }
 
@@ -338,7 +338,7 @@ namespace http {
                 }
             }
 
-            response.SetContentByType(body, status);
+            response.setContentByType(body, status);
             return response;
         }
 

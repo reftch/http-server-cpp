@@ -9,10 +9,10 @@ namespace http {
         size_t line_end = raw_request.find("\r\n");
         if (line_end == std::string::npos) return;
 
-        ParseRequestLine(std::string_view(raw_request).substr(0, line_end));
+        parseRequestLine(std::string_view(raw_request).substr(0, line_end));
 
         size_t pos = line_end + 2;
-        ParseHeaders(std::string_view(raw_request), pos);
+        parseHeaders(std::string_view(raw_request), pos);
 
         // get request body
         size_t header_end = raw_request.find("\r\n\r\n");
@@ -21,7 +21,7 @@ namespace http {
         }
     }
 
-    void Request::ParseRequestLine(std::string_view line) {
+    void Request::parseRequestLine(std::string_view line) {
         size_t m1 = line.find(' ');
         size_t m2 = line.find(' ', m1 + 1);
         if (m1 == std::string_view::npos || m2 == std::string_view::npos) return;
@@ -29,12 +29,12 @@ namespace http {
         method_ = std::string(line.substr(0, m1));
         path_ = std::string(line.substr(m1 + 1, m2 - m1 - 1));
         version_ = std::string(line.substr(m2 + 1));
-        mime_type_ = GetMimeType(path_);
+        mime_type_ = getMimeType(path_);
         params_.clear();
         query_.clear();
     }
 
-    void Request::ParseHeaders(std::string_view raw_request, size_t& pos) {
+    void Request::parseHeaders(std::string_view raw_request, size_t& pos) {
         while (pos < raw_request.size()) {
             size_t end = raw_request.find("\r\n", pos);
             if (end == std::string_view::npos) break;
@@ -60,7 +60,7 @@ namespace http {
         }
     }
 
-    bool Request::is_keep_alive() {
+    bool Request::isKeepAlive() {
         // HTTP/1.1 default is keep-alive
         // Only close if explicitly requested
         auto it = headers_.find("Connection");
@@ -73,7 +73,7 @@ namespace http {
         return it->second != "close";
     }
 
-    std::string Request::GetMimeType(const std::string& path) {
+    std::string Request::getMimeType(const std::string& path) {
         // Extract just the filename part (before any query parameters)
         std::string clean_path = path;
         size_t query_pos = path.find('?');

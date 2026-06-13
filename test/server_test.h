@@ -16,7 +16,7 @@ class ServerTestFixture : public ::testing::Test {
 
     // Helper function to create a simple handler for testing
     static void dummy_handler(const http::Request& req, http::Response& res) {
-        res.SetContent<http::ContentType::PLAIN_TEXT>("Test Response for " + req.path());
+        res.setContent<http::ContentType::PLAIN_TEXT>("Test Response for " + req.path());
     }
 
     // SetUp runs before EVERY test in this fixture

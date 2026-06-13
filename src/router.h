@@ -46,9 +46,9 @@ namespace http {
          * @param path The URL path to split
          * @return std::vector<std::string> Vector of path segments
          */
-        static std::vector<std::string> SplitPath(const std::string& path);
+        static std::vector<std::string> splitPath(const std::string& path);
 
-        void ParseQueryString(const std::string& query_string, http::Request* req) const;
+        void parseQueryString(const std::string& query_string, http::Request* req) const;
 
        public:
         /**
@@ -59,7 +59,7 @@ namespace http {
          * @param handler The handler function to call when matched
          * @return int Returns 0 on success, non-zero on failure
          */
-        int RegisterHandler(const std::string& method, const std::string& path, request_handler handler);
+        int registerHandler(const std::string& method, const std::string& path, request_handler handler);
 
         /**
          * @brief Matches an HTTP request to a registered handler
@@ -72,7 +72,7 @@ namespace http {
          * @param out_handler Pointer to store the matched handler function (output parameter)
          * @return bool True if a matching handler was found, false otherwise
          */
-        bool Match(http::Request* req, request_handler* out_handler) const;
+        bool match(http::Request* req, request_handler* out_handler) const;
     };
 
 }  // namespace http
