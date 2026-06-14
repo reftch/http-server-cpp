@@ -9,6 +9,7 @@
 
 #include "request.h"
 #include "response.h"
+#include "websocket.h"
 
 namespace http {
 

@@ -122,7 +122,7 @@ namespace http {
 
             // Set content based on content type
             if (T == ContentType::HTML) {
-                content_ = readFile(static_directory_ + '/' + content);
+                content_ = utils::readFile(static_directory_ + '/' + content);
             } else {
                 content_ = content;
             }

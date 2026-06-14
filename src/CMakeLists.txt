@@ -1,3 +1,4 @@
+
 add_library(http-server STATIC
   client.h
   logger.h
@@ -12,6 +13,8 @@ add_library(http-server STATIC
   sslserver.h
   utils.cc
   utils.h
+  websocket.h
+  websocket.cc
 )
 
 target_include_directories(http-server

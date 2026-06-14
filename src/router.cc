@@ -117,8 +117,8 @@ namespace http {
             }
 
             // URL decode and store
-            key = urlDecode(key);
-            value = urlDecode(value);
+            key = ::utils::urlDecode(key);
+            value = ::utils::urlDecode(value);
             req->setQuery(key, value);
 
             start = ampersand_pos + 1;

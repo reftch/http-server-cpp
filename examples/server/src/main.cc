@@ -7,7 +7,21 @@
 
 #include "client.h"
 #include "server.h"
-#include "sslserver.h"
+
+std::string getCurrentTimeJson() {
+    auto now = std::chrono::system_clock::now();
+    auto time_t = std::chrono::system_clock::to_time_t(now);
+
+    // Format as ISO 8601 string
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&time_t), "%Y-%m-%dT%H:%M:%S");
+
+    // Add milliseconds
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    ss << "." << std::setfill('0') << std::setw(3) << ms.count() << "Z";
+
+    return "{\"time\":\"" + ss.str() + "\"}";
+}
 
 int main() {
     static auto& log = http::Logger::getInstance();
@@ -34,9 +48,25 @@ int main() {
         res.setContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 
-    s.setRoute<http::HttpMethod::POST>("/api/v1/users/:id", [](const http::Request& req, http::Response&) {
-        std::string value = req.params().at("id");
-        log.info("Request body: {}", req.body());
+    s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
+        std::string msg;
+        auto result = res.read(msg);
+        if (result != http::ws::Result::Fail) {
+            log.info("Received websocket message {}", msg);
+        }
+
+        // Create a shared pointer to manage the thread lifecycle
+        auto thread_ptr = std::make_shared<std::thread>([&res]() {
+            std::string time_json = "";
+            while (res.send(time_json) >= 0) {
+                // Add 1 second delay
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                time_json = getCurrentTimeJson();
+            }
+        });
+
+        // Detach the thread to let it run independently
+        thread_ptr->detach();
     });
 
     s.start();

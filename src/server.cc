@@ -80,9 +80,18 @@ namespace http {
             }
         }
 
+        // close all websocket connections
+        for (auto iter = wsRoutes.begin(); iter != wsRoutes.end(); iter++) {
+            auto wsRoute = *iter;
+            if (wsRoute.sockfd != -1) {
+                log.info("closing websocket connection FD: {}", wsRoute.sockfd);
+                close(wsRoute.sockfd);
+            }
+        }
+
         // close the listening socket (the main server socket)
         if (sockfd_ != -1) {
-            log.info("Closing listening socket FD: {}", sockfd_);
+            log.info("closing master connection socket FD: {}", sockfd_);
             close(sockfd_);
         }
 
@@ -154,30 +163,104 @@ namespace http {
         std::string raw_request(buffer, nread);
         // Parse the request line to find method and path
         http::Request req(raw_request);
-        // Handle route
-        std::string body = handleRoute(req);
 
-        // write response
-        const char* ptr = body.c_str();
-        ssize_t total_written = 0;
-        ssize_t size = body.size();
-
-        while (total_written < size) {
-            ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
-            if (written == -1) {
-                // Check if it's a temporary error
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // This is expected in non-blocking mode - just continue
-                    // But we should add a timeout mechanism for large files
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                    continue;
-                } else {
-                    log.warning("Error writing response body: {}", strerror(errno));
-                    break;
-                }
+        // is websocket requests
+        if (ws::isWebSocketFrame(raw_request)) {
+            ws::Response res(sd, raw_request);
+            auto handler = getWsHandlerBySocketId(sd);
+            if (handler.has_value()) {
+                handler.value()(req, res);
             }
-            total_written += written;
+            return;
         }
+
+        if (!processWebsocketHandshake(sd, req)) {
+            // Handle route
+            std::string body = handleRoute(req);
+            // write response
+            const char* ptr = body.c_str();
+            ssize_t total_written = 0;
+            ssize_t size = body.size();
+
+            while (total_written < size) {
+                ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
+                if (written == -1) {
+                    // Check if it's a temporary error
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        // This is expected in non-blocking mode - just continue
+                        // But we should add a timeout mechanism for large files
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        continue;
+                    } else {
+                        log.warning("Error writing response body: {}", strerror(errno));
+                        break;
+                    }
+                }
+                total_written += written;
+            }
+        }
+    }
+
+    bool Server::processWebsocketHandshake(const int sd, http::Request& req) {
+        const auto& headers = req.headers();
+
+        // Fast path: check both headers in one go with minimal string operations
+        auto upgrade_it = headers.find("Upgrade");
+        if (upgrade_it == headers.end()) {
+            return false;
+        }
+
+        // Direct comparison without creating temporary strings
+        const std::string_view& upgrade_value = upgrade_it->second;
+        if (upgrade_value.size() != 9 || (upgrade_value[0] != 'w' && upgrade_value[0] != 'W') ||
+            upgrade_value.substr(0, 9) != "websocket") {
+            return false;
+        }
+
+        // Check Sec-WebSocket-Key
+        auto key_it = headers.find("Sec-WebSocket-Key");
+        if (key_it == headers.end()) {
+            return false;
+        }
+
+        const std::string_view& client_key = key_it->second;
+        if (client_key.empty()) {
+            return false;
+        }
+
+        // Check Sec-WebSocket-Key is a valid base64-encoded 16-byte value (24 chars)
+        // RFC 6455 Section 4.2.1
+        if (client_key.size() != 24 || client_key[22] != '=' || client_key[23] != '=') {
+            return false;
+        }
+
+        log.debug("Websocket request for accepting with client key {}",
+                  std::string(client_key));  // Only convert to string for logging
+
+        // Base64 encode the hash
+        const std::string_view magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        std::string accept_key = ::utils::base64_encode(::utils::sha1(std::string(client_key) + std::string(magic)));
+
+        std::string response;
+        response =
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            "Sec-WebSocket-Accept: ";
+
+        response += accept_key;
+        response += "\r\n\r\n";
+
+        log.debug("Websocket accepted with key {}", accept_key);
+
+        ssize_t written = send(sd, response.data(), response.size(), MSG_NOSIGNAL);
+        if (written == -1) {
+            log.error("Error writing response body: {}", strerror(errno));
+            return false;
+        }
+
+        // update route with socket id
+        return updateWsRoute(req.path(), sd);
     }
 
     std::string Server::handleRoute(http::Request& req) {
@@ -219,12 +302,12 @@ namespace http {
                 res.setHeader("Cache-Control", "public, max-age=3600");
                 res.setHeader("Content-Length", std::to_string(size));
 
-                auto last_modified = fileMtimeToHttpDate(file_stat.st_mtime);
+                auto last_modified = ::utils::fileMtimeToHttpDate(file_stat.st_mtime);
                 if (!last_modified.empty()) {
                     res.setHeader("Last-Modified", last_modified);
                 }
 
-                auto etag = computeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
+                auto etag = ::utils::computeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
                 if (!etag.empty()) {
                     res.setHeader("ETag", etag);
                 }

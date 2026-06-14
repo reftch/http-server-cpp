@@ -55,11 +55,30 @@
 #include "response.h"
 #include "router.h"
 #include "utils.h"
+#include "websocket.h"
 
 namespace http {
 
     // HTTP Method enum
     enum class HttpMethod { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS };
+
+    using WsHandler = std::function<void(const http::Request& req, http::ws::Response& res)>;
+
+    struct WsRoute {
+        int32_t sockfd;
+        std::string path;
+        WsHandler handler;
+        ws::Protocol protocol;
+
+        // Add comparison operator for std::set
+        bool operator<(const WsRoute& other) const {
+            // Compare by path first, then by protocol
+            if (path != other.path) {
+                return path < other.path;
+            }
+            return protocol < other.protocol;
+        }
+    };
 
     /**
      * Represents an HTTP server instance.
@@ -102,12 +121,46 @@ namespace http {
          */
         virtual void stop();
 
-        template <HttpMethod Method>
+        template <HttpMethod M>
         void setRoute(const std::string& path, request_handler handler) {
-            router_.registerHandler(std::string(toString(Method)), path, handler);
+            router_.registerHandler(std::string(toString(M)), path, handler);
+        }
+
+        template <ws::Protocol P>
+        void setRoute(const std::string& path, WsHandler handler) {
+            WsRoute wsRoute;
+            wsRoute.path = path;
+            wsRoute.handler = handler;
+            wsRoute.sockfd = -1;
+            wsRoute.protocol = P;
+            wsRoutes.insert(wsRoute);
+        }
+
+        bool updateWsRoute(const std::string& path, int32_t socketFd) {
+            // Search for the route with matching path and protocol
+            for (auto it = wsRoutes.begin(); it != wsRoutes.end(); ++it) {
+                if (it->path == path) {
+                    const_cast<WsRoute&>(*it).sockfd = socketFd;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        std::optional<WsHandler> getWsHandlerBySocketId(int32_t socketFd) {
+            for (const auto& route : wsRoutes) {
+                if (route.sockfd == socketFd) {
+                    return route.handler;
+                }
+            }
+            return std::nullopt;
         }
 
         void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
+
+       private:
+        // Websocket routes
+        std::set<WsRoute> wsRoutes;
 
        protected:
         // logger
@@ -165,6 +218,8 @@ namespace http {
          */
         virtual void handleRequests();
 
+        bool processWebsocketHandshake(const int sd, http::Request& req);
+
         constexpr std::string_view toString(HttpMethod method) {
             switch (method) {
                 case HttpMethod::GET:
@@ -183,6 +238,16 @@ namespace http {
                     return "OPTIONS";
             }
             return "OPTIONS";  // or handle as unreachable
+        }
+
+        constexpr std::string_view toWsString(ws::Protocol protocol) {
+            switch (protocol) {
+                case ws::Protocol::WS:
+                    return "ws";
+                case ws::Protocol::WSS:
+                    return "wss";
+            }
+            return "ws";  // or handle as unreachable
         }
     };
 
