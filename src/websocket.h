@@ -6,24 +6,11 @@
 
 #include <array>
 #include <cstring>
+#include <mutex>
 #include <string>
 
 namespace http {
     namespace ws {
-
-        struct Frame {
-            bool fin;
-            uint8_t opcode;
-            bool mask;
-            std::size_t payload_length;
-            std::array<uint8_t, 4> masking_key;
-            std::vector<uint8_t> payload_data;
-            std::string text_payload;  // For text frames only
-            uint32_t sockfd;
-
-            Frame() : fin(false), opcode(0), mask(false), payload_length(0) {}
-            Frame(uint32_t sfd) : fin(false), opcode(0), mask(false), payload_length(0), sockfd(sfd) {}
-        };
 
         enum Result : int { Fail = 0, Text = 1, Binary = 2 };
 
@@ -33,7 +20,31 @@ namespace http {
             WSS,  // WebSocket Secure
         };
 
+        enum class Opcode : uint8_t {
+            Continuation = 0x0,
+            Text = 0x1,
+            Binary = 0x2,
+            Close = 0x8,
+            Ping = 0x9,
+            Pong = 0xA,
+        };
+
         class Response {
+           private:
+            struct Frame {
+                bool fin;
+                uint8_t opcode;
+                bool mask;
+                std::size_t payload_length;
+                std::array<uint8_t, 4> masking_key;
+                std::vector<uint8_t> payload_data;
+                std::string text_payload;  // For text frames only
+                uint32_t sockfd;
+
+                Frame() : fin(false), opcode(0), mask(false), payload_length(0) {}
+                Frame(uint32_t sfd) : fin(false), opcode(0), mask(false), payload_length(0), sockfd(sfd) {}
+            };
+
            public:
             explicit Response(uint32_t sockfd, const std::string& raw_request)
                 : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()) {}
@@ -43,7 +54,7 @@ namespace http {
 
             // Send method - creates WebSocket frame from string
             ssize_t send(const std::string& msg) {
-                auto response = createFrame(msg, frame.fin, frame.opcode);
+                auto response = writeFrame(msg, frame.fin, frame.opcode);
                 if (response.empty()) {
                     return -1;  // Return error if frame creation failed
                 }
@@ -57,21 +68,62 @@ namespace http {
             }
 
             Result read(std::string& msg) {
-                frame = parseFrame(byte_data);
-                msg = frame.text_payload;
-                return Text;
+                while (!closed_) {
+                    if (!readFrame(byte_data)) {
+                        closed_ = true;
+                        return Fail;
+                    }
+
+                    msg = frame.text_payload;
+
+                    switch (frame.opcode) {
+                        // Ping
+                        case 0x9: {
+                            std::lock_guard<std::mutex> lock(write_mutex_);
+                            writeFrame(msg, frame.fin, frame.opcode);
+                            continue;
+                        }
+                        // Pong
+                        case 0xA: {
+                            std::lock_guard<std::mutex> lock(ping_mutex_);
+                            unacked_pings_ = 0;
+                            continue;
+                        }
+                        // Close
+                        case 0x8: {
+                            std::lock_guard<std::mutex> lock(write_mutex_);
+                            writeFrame(msg, frame.fin, frame.opcode);
+                            return Fail;
+                        }
+                        // Text
+                        case 0x1: {
+                            return Text;
+                        }
+                        // Binary
+                        case 0x2: {
+                            return Binary;
+                        }
+                    }
+                }
+
+                return Fail;
             }
 
            private:
             Frame frame;
+
             std::vector<uint8_t> byte_data;
+            std::atomic<bool> closed_{false};
+            std::mutex ping_mutex_;
+            std::mutex write_mutex_;
+            int unacked_pings_ = 0;
 
             // Parse a single WebSocket frame from raw bytes
-            Frame parseFrame(const std::vector<uint8_t>& data) {
+            bool readFrame(const std::vector<uint8_t>& data) {
                 std::size_t offset = 0;
 
                 if (data.size() < 2) {
-                    return frame;  // Invalid frame
+                    return false;  // Invalid frame
                 }
 
                 // Read FIN and RSV bits (1 byte)
@@ -87,12 +139,12 @@ namespace http {
                 // Handle extended payload length
                 if (frame.payload_length == 126) {
                     // 2-byte extended length
-                    if (data.size() < offset + 2) return frame;  // Incomplete frame
+                    if (data.size() < offset + 2) return false;  // Incomplete frame
                     frame.payload_length = (data[offset] << 8) | data[offset + 1];
                     offset += 2;
                 } else if (frame.payload_length == 127) {
                     // 8-byte extended length
-                    if (data.size() < offset + 8) return frame;  // Incomplete frame
+                    if (data.size() < offset + 8) return false;  // Incomplete frame
                     frame.payload_length = 0;
                     for (int i = 0; i < 8; ++i) {
                         frame.payload_length |= (static_cast<std::size_t>(data[offset + i]) << (56 - 8 * i));
@@ -102,7 +154,7 @@ namespace http {
 
                 // Read masking key if present
                 if (frame.mask) {
-                    if (data.size() < offset + 4) return frame;  // Incomplete frame
+                    if (data.size() < offset + 4) return false;  // Incomplete frame
                     for (int i = 0; i < 4; ++i) {
                         frame.masking_key[i] = data[offset + i];
                     }
@@ -110,7 +162,7 @@ namespace http {
                 }
 
                 // Read payload data
-                if (data.size() < offset + frame.payload_length) return frame;  // Incomplete frame
+                if (data.size() < offset + frame.payload_length) return false;  // Incomplete frame
 
                 frame.payload_data.resize(frame.payload_length);
                 for (std::size_t i = 0; i < frame.payload_length; ++i) {
@@ -126,20 +178,11 @@ namespace http {
                     frame.text_payload = std::string(frame.payload_data.begin(), frame.payload_data.end());
                 }
 
-                return frame;
-            }
-
-            // Parse WebSocket message (may consist of multiple frames)
-            std::string parseMessage(const std::vector<uint8_t>& data) {
-                // This is a simplified version - in practice, you'd need to handle
-                // fragmented messages and reassembly. For now, we assume single frame.
-
-                auto frame = parseFrame(data);
-                return frame.text_payload;
+                return true;
             }
 
             // Create a WebSocket frame for sending
-            static std::vector<uint8_t> createFrame(const std::string& message, bool fin = true, uint8_t opcode = 1) {
+            static std::vector<uint8_t> writeFrame(const std::string& message, bool fin = true, uint8_t opcode = 1) {
                 std::vector<uint8_t> frame;
 
                 // First byte: FIN bit + RSV bits + OPCODE
@@ -170,8 +213,8 @@ namespace http {
             }
 
             // Create a masked WebSocket frame (for client-to-server messages)
-            static std::vector<uint8_t> createMaskedFrame(const std::string& message, bool fin = true,
-                                                          uint8_t opcode = 1) {
+            static std::vector<uint8_t> writeMaskedFrame(const std::string& message, bool fin = true,
+                                                         uint8_t opcode = 1) {
                 std::vector<uint8_t> frame;
 
                 // First byte: FIN bit + RSV bits + OPCODE
@@ -209,14 +252,6 @@ namespace http {
 
                 return frame;
             }
-
-            // Send method with explicit parameters
-            static std::vector<uint8_t> send(const std::string& msg, bool fin, uint8_t opcode) {
-                return createFrame(msg, fin, opcode);
-            }
-
-            // Send masked message (for client-to-server communication)
-            static std::vector<uint8_t> sendMasked(const std::string& msg) { return createMaskedFrame(msg); }
         };
     }  // namespace ws
 }  // namespace http

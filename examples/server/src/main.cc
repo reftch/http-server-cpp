@@ -9,6 +9,21 @@
 #include "server.h"
 // #include "sslserver.h"
 
+std::string getCurrentTimeJson() {
+    auto now = std::chrono::system_clock::now();
+    auto time_t = std::chrono::system_clock::to_time_t(now);
+
+    // Format as ISO 8601 string
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&time_t), "%Y-%m-%dT%H:%M:%S");
+
+    // Add milliseconds
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    ss << "." << std::setfill('0') << std::setw(3) << ms.count() << "Z";
+
+    return "{\"time\":\"" + ss.str() + "\"}";
+}
+
 int main() {
     static auto& log = http::Logger::getInstance();
     http::Server s("0.0.0.0", 8080);
@@ -43,10 +58,16 @@ int main() {
     s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
         std::string msg;
         auto result = res.read(msg);
-        // while (res.read(msg)) {
-        log.info("Web socket payload {}", msg);
-        res.send(msg);  // Send back the received message as-is
-        // }
+        if (result) {
+            log.info("Received websocket message {}", msg);
+        }
+
+        std::string time_json = "";
+        while (res.send(time_json) >= 0) {
+            // Add 1 second delay
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            time_json = getCurrentTimeJson();
+        }
     });
 
     s.start();

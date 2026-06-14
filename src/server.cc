@@ -263,43 +263,6 @@ namespace http {
         return updateWsRoute(req.path(), sd);
     }
 
-    // bool Server::makeWebsocketAccept(const int sd, http::Request& req) {
-    //     auto headers = req.headers();
-    //     std::string_view upgrade_view = headers.at("Upgrade");
-    //     std::string upgrade(upgrade_view);
-
-    //     if (upgrade == "websocket" && headers.contains("Sec-WebSocket-Key")) {
-    //         std::string_view key_view = headers.at("Sec-WebSocket-Key");
-    //         std::string client_key(key_view);
-
-    //         log.debug("Websocket request for accepting with client key {}", client_key);
-
-    //         // Base64 encode the hash
-    //         const std::string magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    //         std::string accept_key = base64_encode(sha1(client_key + magic));
-
-    //         std::string response =
-    //             "HTTP/1.1 101 Switching Protocols\r\n"
-    //             "Upgrade: websocket\r\n"
-    //             "Connection: Upgrade\r\n"
-    //             "Sec-WebSocket-Accept: " +
-    //             accept_key + "\r\n\r\n";
-
-    //         log.debug("Websocket accepted with key {}", accept_key);
-
-    //         ssize_t written = send(sd, response.data(), response.size(), MSG_NOSIGNAL);
-    //         if (written == -1) {
-    //             log.error("Error writing response body: {}", strerror(errno));
-    //             return false;
-    //         }
-
-    //         // update route with socket id
-    //         return updateWsRoute(req.path(), sd);
-    //     }
-
-    //     return false;
-    // }
-
     std::string Server::handleRoute(http::Request& req) {
         Response res(req.isKeepAlive(), static_directory_);
 
