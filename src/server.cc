@@ -80,9 +80,18 @@ namespace http {
             }
         }
 
+        // close all websocket connections
+        for (auto iter = wsRoutes.begin(); iter != wsRoutes.end(); iter++) {
+            auto wsRoute = *iter;
+            if (wsRoute.sockfd != -1) {
+                log.info("closing websocket connection FD: {}", wsRoute.sockfd);
+                close(wsRoute.sockfd);
+            }
+        }
+
         // close the listening socket (the main server socket)
         if (sockfd_ != -1) {
-            log.info("Closing listening socket FD: {}", sockfd_);
+            log.info("closing master connection socket FD: {}", sockfd_);
             close(sockfd_);
         }
 
@@ -155,12 +164,17 @@ namespace http {
 
         if (isWebSocketFrame(raw_request)) {
             // log.info("Received message: {}", raw_request);
-            ws::Response res;
-            std::vector<uint8_t> byte_data(raw_request.begin(), raw_request.end());
+            ws::Response res(sd, raw_request);
+            // std::vector<uint8_t> byte_data(raw_request.begin(), raw_request.end());
 
-            auto frame = res.parseFrame(byte_data);
+            // auto frame = res.parseFrame(byte_data);
             log.info("SocketID {}", sd);
-            log.info("Frame payload {}", frame.text_payload);
+            auto handler = getWsHandlerBySocketId(sd);
+            if (handler.has_value()) {
+                http::Request req(raw_request);
+
+                handler.value()(req, res);
+            }
         } else {
             // Parse the request line to find method and path
             http::Request req(raw_request);
@@ -169,11 +183,7 @@ namespace http {
                 // Handle websockt request
                 if (makeWebsocketAccept(sd, req)) {
                     log.info("Path {}, socketID {}", req.path(), sd);
-                    http::request_handler handler;
-                    if (router_.match(&req, &handler)) {
-                        log.info("Found handler {}", req.path());
-                        // handler(req, res);
-                    }
+                    updateWsRoute(req.path(), sd);
                 }
             } else {
                 // Handle route

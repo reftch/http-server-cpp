@@ -19,8 +19,7 @@ namespace http {
             std::array<uint8_t, 4> masking_key;
             std::vector<uint8_t> payload_data;
             std::string text_payload;  // For text frames only
-            std::string client_id;     // Client identifier
-            std::string path;          // Request path
+            uint32_t sockfd;
 
             Frame() : fin(false), opcode(0), mask(false), payload_length(0) {}
         };
@@ -34,10 +33,35 @@ namespace http {
         class Response {
            public:
             Response() = default;
+            explicit Response(uint32_t sockfd, std::string& raw_request) {
+                std::vector<uint8_t> byte_data(raw_request.begin(), raw_request.end());
+                frame = parseFrame(byte_data);
+                frame.sockfd = sockfd;
+            }
+
+            std::vector<uint8_t> payloadData() { return frame.payload_data; }
+            std::string payload() { return frame.text_payload; }
+
+            // Send method - creates WebSocket frame from string
+            ssize_t send(const std::string& msg) {
+                auto response = createFrame(msg, frame.fin, frame.opcode);
+                if (response.empty()) {
+                    return -1;  // Return error if frame creation failed
+                }
+
+                // Send the frame to the socket
+                ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
+                if (sent < 0) {
+                    perror("WebSocket send failed");
+                }
+                return sent;
+            }
+
+           private:
+            Frame frame;
 
             // Parse a single WebSocket frame from raw bytes
             Frame parseFrame(const std::vector<uint8_t>& data) {
-                Frame frame;
                 std::size_t offset = 0;
 
                 if (data.size() < 2) {
@@ -107,26 +131,6 @@ namespace http {
                 auto frame = parseFrame(data);
                 return frame.text_payload;
             }
-
-            // Helper function to check if data looks like a WebSocket frame
-            bool isWebSocketFrame(const std::vector<uint8_t>& data) {
-                if (data.size() < 2) return false;
-
-                uint8_t first_byte = data[0];
-                // uint8_t second_byte = data[1];
-
-                // Check FIN bit and valid opcode
-                bool fin = (first_byte & 0x80) != 0;
-                uint8_t opcode = first_byte & 0x0F;
-
-                return fin && (opcode <= 0xA);
-            }
-
-            // // Parse WebSocket frame from string (converts to vector<uint8_t>)
-            // Frame parseFrameFromString(const std::string& data) {
-            //     std::vector<uint8_t> byte_data(data.begin(), data.end());
-            //     return parseFrame(byte_data);
-            // }
 
             // Create a WebSocket frame for sending
             static std::vector<uint8_t> createFrame(const std::string& message, bool fin = true, uint8_t opcode = 1) {
@@ -199,9 +203,6 @@ namespace http {
 
                 return frame;
             }
-
-            // Send method - creates WebSocket frame from string
-            static std::vector<uint8_t> send(const std::string& msg) { return createFrame(msg); }
 
             // Send method with explicit parameters
             static std::vector<uint8_t> send(const std::string& msg, bool fin, uint8_t opcode) {

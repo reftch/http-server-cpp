@@ -12,7 +12,7 @@
 int main() {
     static auto& log = http::Logger::getInstance();
     http::Server s("0.0.0.0", 8080);
-    s.setAssetDirectory("./assets2");
+    // s.setAssetDirectory("./assets2");
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
@@ -41,10 +41,10 @@ int main() {
     });
 
     s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
-        log.info("XAXAXA");
-        std::string msg;
+        std::string msg = res.payload();
+        log.info("Frame payload {}", msg);
         // while (res.read(msg)) {
-        //     res.send(msg);  // Send back the received message as-is
+        res.send(msg);  // Send back the received message as-is
         // }
     });
 
