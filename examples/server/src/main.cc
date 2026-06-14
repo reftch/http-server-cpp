@@ -7,7 +7,6 @@
 
 #include "client.h"
 #include "server.h"
-// #include "sslserver.h"
 
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
@@ -27,7 +26,6 @@ std::string getCurrentTimeJson() {
 int main() {
     static auto& log = http::Logger::getInstance();
     http::Server s("0.0.0.0", 8080);
-    // s.setAssetDirectory("./assets2");
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
@@ -50,11 +48,6 @@ int main() {
         res.setContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 
-    s.setRoute<http::HttpMethod::POST>("/api/v1/users/:id", [](const http::Request& req, http::Response&) {
-        std::string value = req.params().at("id");
-        log.info("Request body: {}", req.body());
-    });
-
     s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
         std::string msg;
         auto result = res.read(msg);
@@ -62,12 +55,18 @@ int main() {
             log.info("Received websocket message {}", msg);
         }
 
-        std::string time_json = "";
-        while (res.send(time_json) >= 0) {
-            // Add 1 second delay
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            time_json = getCurrentTimeJson();
-        }
+        // Create a shared pointer to manage the thread lifecycle
+        auto thread_ptr = std::make_shared<std::thread>([&res]() {
+            std::string time_json = "";
+            while (res.send(time_json) >= 0) {
+                // Add 1 second delay
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                time_json = getCurrentTimeJson();
+            }
+        });
+
+        // Detach the thread to let it run independently
+        thread_ptr->detach();
     });
 
     s.start();
