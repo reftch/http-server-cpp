@@ -22,7 +22,10 @@ namespace http {
             uint32_t sockfd;
 
             Frame() : fin(false), opcode(0), mask(false), payload_length(0) {}
+            Frame(uint32_t sfd) : fin(false), opcode(0), mask(false), payload_length(0), sockfd(sfd) {}
         };
+
+        enum Result : int { Fail = 0, Text = 1, Binary = 2 };
 
         // For WebSocket protocols
         enum class Protocol {
@@ -32,12 +35,8 @@ namespace http {
 
         class Response {
            public:
-            Response() = default;
-            explicit Response(uint32_t sockfd, std::string& raw_request) {
-                std::vector<uint8_t> byte_data(raw_request.begin(), raw_request.end());
-                frame = parseFrame(byte_data);
-                frame.sockfd = sockfd;
-            }
+            explicit Response(uint32_t sockfd, const std::string& raw_request)
+                : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()) {}
 
             std::vector<uint8_t> payloadData() { return frame.payload_data; }
             std::string payload() { return frame.text_payload; }
@@ -57,8 +56,15 @@ namespace http {
                 return sent;
             }
 
+            Result read(std::string& msg) {
+                frame = parseFrame(byte_data);
+                msg = frame.text_payload;
+                return Text;
+            }
+
            private:
             Frame frame;
+            std::vector<uint8_t> byte_data;
 
             // Parse a single WebSocket frame from raw bytes
             Frame parseFrame(const std::vector<uint8_t>& data) {

@@ -41,9 +41,10 @@ int main() {
     });
 
     s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
-        std::string msg = res.payload();
-        log.info("Frame payload {}", msg);
+        std::string msg;
+        auto result = res.read(msg);
         // while (res.read(msg)) {
+        log.info("Web socket payload {}", msg);
         res.send(msg);  // Send back the received message as-is
         // }
     });

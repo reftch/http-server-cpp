@@ -218,7 +218,7 @@ namespace http {
          */
         virtual void handleRequests();
 
-        bool makeWebsocketAccept(const int sd, http::Request& req);
+        bool processWebsocketHandshake(const int sd, http::Request& req);
 
         constexpr std::string_view toString(HttpMethod method) {
             switch (method) {

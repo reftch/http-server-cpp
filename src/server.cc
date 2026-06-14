@@ -161,92 +161,144 @@ namespace http {
 
     void Server::performRequest(const int sd, const char* buffer, const ssize_t nread) {
         std::string raw_request(buffer, nread);
+        // Parse the request line to find method and path
+        http::Request req(raw_request);
 
+        // is websocket requests
         if (isWebSocketFrame(raw_request)) {
-            // log.info("Received message: {}", raw_request);
             ws::Response res(sd, raw_request);
-            // std::vector<uint8_t> byte_data(raw_request.begin(), raw_request.end());
-
-            // auto frame = res.parseFrame(byte_data);
-            log.info("SocketID {}", sd);
             auto handler = getWsHandlerBySocketId(sd);
             if (handler.has_value()) {
-                http::Request req(raw_request);
-
                 handler.value()(req, res);
             }
-        } else {
-            // Parse the request line to find method and path
-            http::Request req(raw_request);
+            return;
+        }
 
-            if (req.headers().contains("Upgrade")) {
-                // Handle websockt request
-                if (makeWebsocketAccept(sd, req)) {
-                    log.info("Path {}, socketID {}", req.path(), sd);
-                    updateWsRoute(req.path(), sd);
-                }
-            } else {
-                // Handle route
-                std::string body = handleRoute(req);
-                // write response
-                const char* ptr = body.c_str();
-                ssize_t total_written = 0;
-                ssize_t size = body.size();
+        if (!processWebsocketHandshake(sd, req)) {
+            // Handle route
+            std::string body = handleRoute(req);
+            // write response
+            const char* ptr = body.c_str();
+            ssize_t total_written = 0;
+            ssize_t size = body.size();
 
-                while (total_written < size) {
-                    ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
-                    if (written == -1) {
-                        // Check if it's a temporary error
-                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                            // This is expected in non-blocking mode - just continue
-                            // But we should add a timeout mechanism for large files
-                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                            continue;
-                        } else {
-                            log.warning("Error writing response body: {}", strerror(errno));
-                            break;
-                        }
+            while (total_written < size) {
+                ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
+                if (written == -1) {
+                    // Check if it's a temporary error
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        // This is expected in non-blocking mode - just continue
+                        // But we should add a timeout mechanism for large files
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        continue;
+                    } else {
+                        log.warning("Error writing response body: {}", strerror(errno));
+                        break;
                     }
-                    total_written += written;
                 }
+                total_written += written;
             }
         }
     }
 
-    bool Server::makeWebsocketAccept(const int sd, http::Request& req) {
-        auto headers = req.headers();
-        std::string_view upgrade_view = headers.at("Upgrade");
-        std::string upgrade(upgrade_view);
+    bool Server::processWebsocketHandshake(const int sd, http::Request& req) {
+        const auto& headers = req.headers();
 
-        if (upgrade == "websocket" && headers.contains("Sec-WebSocket-Key")) {
-            std::string_view key_view = headers.at("Sec-WebSocket-Key");
-            std::string client_key(key_view);
-
-            log.debug("Websocket request for accepting with client key {}", client_key);
-
-            // Base64 encode the hash
-            const std::string magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-            std::string accept_key = base64_encode(sha1(client_key + magic));
-
-            std::string response =
-                "HTTP/1.1 101 Switching Protocols\r\n"
-                "Upgrade: websocket\r\n"
-                "Connection: Upgrade\r\n"
-                "Sec-WebSocket-Accept: " +
-                accept_key + "\r\n\r\n";
-
-            log.debug("Websocket accepted with key {}", accept_key);
-
-            ssize_t written = send(sd, response.data(), response.size(), MSG_NOSIGNAL);
-            if (written == -1) {
-                log.error("Error writing response body: {}", strerror(errno));
-                return false;
-            }
-            return true;
+        // Fast path: check both headers in one go with minimal string operations
+        auto upgrade_it = headers.find("Upgrade");
+        if (upgrade_it == headers.end()) {
+            return false;
         }
 
-        return false;
+        // Direct comparison without creating temporary strings
+        const std::string_view& upgrade_value = upgrade_it->second;
+        if (upgrade_value.size() != 9 || (upgrade_value[0] != 'w' && upgrade_value[0] != 'W') ||
+            upgrade_value.substr(0, 9) != "websocket") {
+            return false;
+        }
+
+        // Check Sec-WebSocket-Key
+        auto key_it = headers.find("Sec-WebSocket-Key");
+        if (key_it == headers.end()) {
+            return false;
+        }
+
+        const std::string_view& client_key = key_it->second;
+        if (client_key.empty()) {
+            return false;
+        }
+
+        // Check Sec-WebSocket-Key is a valid base64-encoded 16-byte value (24 chars)
+        // RFC 6455 Section 4.2.1
+        if (client_key.size() != 24 || client_key[22] != '=' || client_key[23] != '=') {
+            return false;
+        }
+
+        log.debug("Websocket request for accepting with client key {}",
+                  std::string(client_key));  // Only convert to string for logging
+
+        // Base64 encode the hash
+        const std::string_view magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        std::string accept_key = base64_encode(sha1(std::string(client_key) + std::string(magic)));
+
+        std::string response;
+        response =
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            "Sec-WebSocket-Accept: ";
+
+        response += accept_key;
+        response += "\r\n\r\n";
+
+        log.debug("Websocket accepted with key {}", accept_key);
+
+        ssize_t written = send(sd, response.data(), response.size(), MSG_NOSIGNAL);
+        if (written == -1) {
+            log.error("Error writing response body: {}", strerror(errno));
+            return false;
+        }
+
+        // update route with socket id
+        return updateWsRoute(req.path(), sd);
     }
+
+    // bool Server::makeWebsocketAccept(const int sd, http::Request& req) {
+    //     auto headers = req.headers();
+    //     std::string_view upgrade_view = headers.at("Upgrade");
+    //     std::string upgrade(upgrade_view);
+
+    //     if (upgrade == "websocket" && headers.contains("Sec-WebSocket-Key")) {
+    //         std::string_view key_view = headers.at("Sec-WebSocket-Key");
+    //         std::string client_key(key_view);
+
+    //         log.debug("Websocket request for accepting with client key {}", client_key);
+
+    //         // Base64 encode the hash
+    //         const std::string magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    //         std::string accept_key = base64_encode(sha1(client_key + magic));
+
+    //         std::string response =
+    //             "HTTP/1.1 101 Switching Protocols\r\n"
+    //             "Upgrade: websocket\r\n"
+    //             "Connection: Upgrade\r\n"
+    //             "Sec-WebSocket-Accept: " +
+    //             accept_key + "\r\n\r\n";
+
+    //         log.debug("Websocket accepted with key {}", accept_key);
+
+    //         ssize_t written = send(sd, response.data(), response.size(), MSG_NOSIGNAL);
+    //         if (written == -1) {
+    //             log.error("Error writing response body: {}", strerror(errno));
+    //             return false;
+    //         }
+
+    //         // update route with socket id
+    //         return updateWsRoute(req.path(), sd);
+    //     }
+
+    //     return false;
+    // }
 
     std::string Server::handleRoute(http::Request& req) {
         Response res(req.isKeepAlive(), static_directory_);

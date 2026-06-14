@@ -291,26 +291,12 @@ std::string base64_encode(const std::string& input) {
 }
 
 bool isWebSocketFrame(const std::string& data) {
-    if (data.empty()) return false;
+    if (data.length() < 2) return false;
 
-    // Check if it looks like a WebSocket frame by examining first few bytes
     const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data.data());
-    size_t length = data.length();
-
-    if (length < 2) return false;
-
-    // WebSocket frame structure:
-    // First byte: FIN bit (1) + RSV bits (3) + OPCODE (4)
-    // Second byte: MASK bit (1) + PAYLOAD LENGTH (7)
-
     uint8_t first_byte = bytes[0];
-    uint8_t second_byte = bytes[1];
-
-    // Check if FIN bit is set (most significant bit of first byte)
-    bool fin = (first_byte & 0x80) != 0;
-
-    // Extract opcode (lower 4 bits of first byte)
     uint8_t opcode = first_byte & 0x0F;
+    bool fin = (first_byte & 0x80) != 0;
 
     // Valid WebSocket opcodes:
     // 0x0 - continuation frame
@@ -320,14 +306,9 @@ bool isWebSocketFrame(const std::string& data) {
     // 0x9 - ping
     // 0xA - pong
 
-    if (opcode <= 0xA) {
-        // Check payload length field
-        bool mask = (second_byte & 0x80) != 0;
-        uint8_t payload_length = second_byte & 0x7F;
+    // Valid WebSocket opcodes: 0x0-0xA
+    if (opcode > 0xA) return false;
 
-        // Basic validation - if it's a valid frame structure, return true
-        return fin && (opcode <= 0xA);
-    }
-
-    return false;
+    // Basic frame structure validation
+    return fin && opcode <= 0xA;
 }
