@@ -165,7 +165,7 @@ namespace http {
         http::Request req(raw_request);
 
         // is websocket requests
-        if (utils::isWebSocketFrame(raw_request)) {
+        if (ws::isWebSocketFrame(raw_request)) {
             ws::Response res(sd, raw_request);
             auto handler = getWsHandlerBySocketId(sd);
             if (handler.has_value()) {
@@ -239,7 +239,7 @@ namespace http {
 
         // Base64 encode the hash
         const std::string_view magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-        std::string accept_key = utils::base64_encode(utils::sha1(std::string(client_key) + std::string(magic)));
+        std::string accept_key = ::utils::base64_encode(::utils::sha1(std::string(client_key) + std::string(magic)));
 
         std::string response;
         response =
@@ -302,12 +302,12 @@ namespace http {
                 res.setHeader("Cache-Control", "public, max-age=3600");
                 res.setHeader("Content-Length", std::to_string(size));
 
-                auto last_modified = utils::fileMtimeToHttpDate(file_stat.st_mtime);
+                auto last_modified = ::utils::fileMtimeToHttpDate(file_stat.st_mtime);
                 if (!last_modified.empty()) {
                     res.setHeader("Last-Modified", last_modified);
                 }
 
-                auto etag = utils::computeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
+                auto etag = ::utils::computeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
                 if (!etag.empty()) {
                     res.setHeader("ETag", etag);
                 }

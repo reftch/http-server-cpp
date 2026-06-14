@@ -58,7 +58,7 @@ int main() {
     s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
         std::string msg;
         auto result = res.read(msg);
-        if (result) {
+        if (result != http::ws::Result::Fail) {
             log.info("Received websocket message {}", msg);
         }
 

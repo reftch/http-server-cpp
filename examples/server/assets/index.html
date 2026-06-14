@@ -42,26 +42,28 @@
 
                 ws.onmessage = function (event) {
                     // Handle incoming messages
-                    const data = JSON.parse(event.data);
-                    // console.log('WebSocket message:', data);
-                    // if (data.type === 'time_update') {
-                    timeDisplay.textContent = new Date(data.time).toLocaleString('de-DE', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false
-                    });
-                    // timeDisplay.textContent = new Date(data.timestamp).toISOString().split('T')[0];
-                    // }
+                    if (event.data) {
+                        const data = JSON.parse(event.data);
+
+                        // console.log('WebSocket message:', data);
+                        // if (data.type === 'time_update') {
+                        timeDisplay.textContent = new Date(data.time).toLocaleString('de-DE', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        });
+
+                    }
                 };
 
                 ws.onclose = function (event) {
                     console.log('WebSocket disconnected');
                     // Attempt to reconnect after 3 seconds
-                    // setTimeout(initWebSocket, 3000);
+                    setTimeout(initWebSocket, 3000);
                 };
 
                 ws.onerror = function (error) {

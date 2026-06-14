@@ -154,7 +154,5 @@ namespace utils {
     std::string sha1(const std::string& input);
     std::string base64_encode(const std::string& input);
 
-    bool isWebSocketFrame(const std::string& data);
-
 }  // namespace utils
 #endif  // HTTP_UTILS_H_

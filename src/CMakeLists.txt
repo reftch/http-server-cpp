@@ -14,6 +14,7 @@ add_library(http-server STATIC
   utils.cc
   utils.h
   websocket.h
+  websocket.cc
 )
 
 target_include_directories(http-server
