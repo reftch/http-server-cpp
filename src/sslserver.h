@@ -244,32 +244,6 @@ namespace http {
             }
         };
 
-        /**
-         * Route handling
-         */
-        std::string handleRoute(http::Request& req) override {
-            Response res(req.isKeepAlive(), static_directory_);
-
-            if (req.mimeType().has_value()) {
-                std::string content = readFile(static_directory_ + req.path());
-
-                if (!content.empty()) {
-                    res.setContentByType(content, req.mimeType().value());
-                } else {
-                    res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
-                }
-            } else {
-                request_handler handler;
-                if (router_.match(&req, &handler)) {
-                    handler(req, res);
-                } else {
-                    res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
-                }
-            }
-
-            return res.build();
-        }
-
        private:
         //
         // SSL CONFIG

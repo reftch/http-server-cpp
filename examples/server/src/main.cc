@@ -1,4 +1,5 @@
-// #define HTTP_OPENSSL_SUPPORT
+#define HTTP_OPENSSL_SUPPORT
+
 #include <signal.h>
 
 #include <chrono>
@@ -6,7 +7,8 @@
 #include <sstream>
 #include <string>
 
-#include "server.h"
+// #include "server.h"
+#include "sslserver.h"
 
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
@@ -26,8 +28,8 @@ std::string getCurrentTimeJson() {
 int main() {
     static auto& log = http::Logger::getInstance();
 
-    http::Server s("0.0.0.0", 8080);
-    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    // http::Server s("0.0.0.0", 8080);
+    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
     static auto s_ptr = &s;
