@@ -177,6 +177,7 @@ namespace http {
         if (!processWebsocketHandshake(sd, req)) {
             // Handle route
             std::string body = handleRoute(req);
+
             // write response
             const char* ptr = body.c_str();
             ssize_t total_written = 0;
@@ -198,6 +199,57 @@ namespace http {
                 }
                 total_written += written;
             }
+        }
+    }
+
+    std::string Server::handleRoute(http::Request& req) {
+        Response res(req.isKeepAlive(), static_directory_);
+
+        http::request_handler handler;
+        if (router_.match(&req, &handler)) {
+            handler(req, res);
+        } else if (req.method() == "GET" || req.method() == "HEAD") {
+            handleStaticResource(req, res);
+        }
+
+        return res.build();
+    }
+
+    void Server::handleStaticResource(http::Request& req, http::Response& res) {
+        std::string path = static_directory_ + req.path();
+        struct stat file_stat;
+
+        if (stat(path.c_str(), &file_stat) == 0) {
+            std::ifstream file(path, std::ios::binary | std::ios::ate);
+            if (file) {
+                // Get file size and read
+                size_t size = file.tellg();
+                file.seekg(0, std::ios::beg);
+
+                std::string content(size, '\0');
+                file.read(content.data(), size);
+                file.close();
+
+                // set basic headers
+                res.setHeader("Content-Type", req.mimeType().value());
+                res.setHeader("Cache-Control", "public, max-age=3600");
+                res.setHeader("Content-Length", std::to_string(size));
+
+                auto last_modified = ::utils::fileMtimeToHttpDate(file_stat.st_mtime);
+                if (!last_modified.empty()) {
+                    res.setHeader("Last-Modified", last_modified);
+                }
+
+                auto etag = ::utils::computeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
+                if (!etag.empty()) {
+                    res.setHeader("ETag", etag);
+                }
+
+                // set content
+                res.setContent(content);
+            }
+        } else {
+            res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
         }
     }
 
@@ -266,63 +318,6 @@ namespace http {
 
         // update route with socket id
         return updateWsRoute(req.path(), sd);
-    }
-
-    std::string Server::handleRoute(http::Request& req) {
-        Response res(req.isKeepAlive(), static_directory_);
-
-        // check on static resource
-        if (req.mimeType().has_value()) {
-            handleStaticResource(req, res);
-        } else {
-            // Call handler if it exists
-            http::request_handler handler;
-            if (router_.match(&req, &handler)) {
-                handler(req, res);
-            } else {
-                res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
-            }
-        }
-
-        return res.build();
-    }
-
-    void Server::handleStaticResource(http::Request& req, http::Response& res) {
-        std::string path = static_directory_ + req.path();
-        struct stat file_stat;
-
-        if (stat(path.c_str(), &file_stat) == 0) {
-            std::ifstream file(path, std::ios::binary | std::ios::ate);
-            if (file) {
-                // Get file size and read
-                size_t size = file.tellg();
-                file.seekg(0, std::ios::beg);
-
-                std::string content(size, '\0');
-                file.read(content.data(), size);
-                file.close();
-
-                // set basic headers
-                res.setHeader("Content-Type", req.mimeType().value());
-                res.setHeader("Cache-Control", "public, max-age=3600");
-                res.setHeader("Content-Length", std::to_string(size));
-
-                auto last_modified = ::utils::fileMtimeToHttpDate(file_stat.st_mtime);
-                if (!last_modified.empty()) {
-                    res.setHeader("Last-Modified", last_modified);
-                }
-
-                auto etag = ::utils::computeEtag(static_cast<size_t>(file_stat.st_mtime), file_stat.st_size);
-                if (!etag.empty()) {
-                    res.setHeader("ETag", etag);
-                }
-
-                // set content
-                res.setContent(content);
-            }
-        } else {
-            res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
-        }
     }
 
 }  // namespace http

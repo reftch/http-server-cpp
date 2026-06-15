@@ -80,11 +80,17 @@ namespace http {
         }
     };
 
+    class BaseServer {
+       protected:
+        // logger
+        Logger& log = Logger::getInstance();
+    };
+
     /**
      * Represents an HTTP server instance.
      * Provides functionality to create, configure, and run an HTTP server.
      */
-    class Server {
+    class Server : public BaseServer {
        public:
         /**
          * Constructor for the server.
@@ -163,8 +169,6 @@ namespace http {
         std::set<WsRoute> wsRoutes;
 
        protected:
-        // logger
-        Logger& log = Logger::getInstance();
         std::string static_directory_ = "./assets";
         // router
         http::Router router_;

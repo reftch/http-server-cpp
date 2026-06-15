@@ -57,6 +57,10 @@ namespace http {
         [[nodiscard]]
         Result read(std::string& msg);
 
+        friend Result operator>>(WebSocket& ws, std::string& msg) { return ws.read(msg); }
+        // For sending messages - returns ssize_t like send() does
+        friend ssize_t operator<<(WebSocket& ws, const std::string& msg) { return ws.send(msg); }
+
        private:
         Frame frame;
         std::vector<uint8_t> byte_data;

@@ -121,7 +121,7 @@ namespace http {
             setHeader("Content-Type", ContentTypeToString(T));
 
             // Set content based on content type
-            if (T == ContentType::HTML) {
+            if (T == ContentType::HTML && content.ends_with(".html")) {
                 content_ = utils::readFile(static_directory_ + '/' + content);
             } else {
                 content_ = content;
@@ -131,22 +131,6 @@ namespace http {
             setHeader("Content-Length", std::to_string(content_.size()));
 
             status_ = S;
-        }
-
-        template <Status S = Status::ok>
-        void setContentByType(const std::string& content, std::string type) {
-            setHeader("Content-Type", type);
-            setHeader("Content-Length", std::to_string(content.size()));
-            setHeader("Cache-Control", "public, max-age=3600");
-            content_ = content;
-
-            status_ = S;
-        }
-
-        void setContentByType(const std::string& content, Status s = Status::ok) {
-            setHeader("Content-Length", std::to_string(content.size()));
-            content_ = content;
-            status_ = s;
         }
 
         void setContent(const std::string& content, Status s = Status::ok) {

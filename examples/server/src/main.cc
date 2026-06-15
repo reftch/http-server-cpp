@@ -6,7 +6,6 @@
 #include <sstream>
 #include <string>
 
-// #include "client.h"
 #include "server.h"
 
 std::string getCurrentTimeJson() {
@@ -50,20 +49,21 @@ int main() {
         res.setContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 
-    s.setRoute<http::WsProtocol::WS>("/ws", [](const http::Request&, http::WebSocket& res) {
+    s.setRoute<http::WsProtocol::WS>("/ws", [](const http::Request&, http::WebSocket& ws) {
         std::string msg;
-        auto result = res.read(msg);
+        auto result = ws >> msg;
         if (result != http::Result::Fail) {
             log.info("Received websocket message {}", msg);
         }
 
         // Create a shared pointer to manage the thread lifecycle
-        auto thread_ptr = std::make_shared<std::thread>([&res]() {
-            std::string time_json = "";
-            while (res.send(time_json) >= 0) {
+        auto thread_ptr = std::make_shared<std::thread>([&ws]() {
+            while (true) {
                 // Add 1 second delay
                 std::this_thread::sleep_for(std::chrono::seconds(1));
-                time_json = getCurrentTimeJson();
+                std::string time_json = getCurrentTimeJson();
+                ssize_t result = ws << time_json;
+                if (result < 0) break;
             }
         });
 
