@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <string>
 
 #include "client.h"
 #include "server.h"
@@ -25,6 +26,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
+
     http::Server s("0.0.0.0", 8080);
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 

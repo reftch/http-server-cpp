@@ -88,7 +88,7 @@ TEST_F(LoggerTest, LogToFileAndConsole) {
     file.close();
 }
 
-TEST_F(LoggerTest, LogLevels) {
+TEST_F(LoggerTest, LogLevelsDefault) {
     const std::string test_file = "./levels_test.log";
     Logger& logger = Logger::getInstance();
     logger.enableFileLogging(test_file);
@@ -109,7 +109,63 @@ TEST_F(LoggerTest, LogLevels) {
         count++;
         EXPECT_NE(line, "");
     }
+    EXPECT_EQ(count, 4);  // 4 log lines
+
+    file.close();
+}
+
+TEST_F(LoggerTest, LogLevelsTrace) {
+    const std::string test_file = "./levels_test.log";
+    Logger& logger = Logger::getInstance();
+    logger.enableFileLogging(test_file);
+
+    logger.setLevel(Level::TRACE);
+
+    logger.trace("Trace message");
+    logger.debug("Debug message");
+    logger.info("Info message");
+    logger.warning("Warning message");
+    logger.error("Error message");
+    logger.critical("Critical message");
+
+    std::ifstream file(test_file);
+    EXPECT_TRUE(file.is_open());
+
+    std::string line;
+    int count = 0;
+    while (std::getline(file, line)) {
+        count++;
+        EXPECT_NE(line, "");
+    }
     EXPECT_EQ(count, 6);  // 6 log lines
+
+    file.close();
+}
+
+TEST_F(LoggerTest, LogLevelsError) {
+    const std::string test_file = "./levels_test.log";
+    Logger& logger = Logger::getInstance();
+    logger.enableFileLogging(test_file);
+
+    logger.setLevel(Level::ERROR);
+
+    logger.trace("Trace message");
+    logger.debug("Debug message");
+    logger.info("Info message");
+    logger.warning("Warning message");
+    logger.error("Error message");
+    logger.critical("Critical message");
+
+    std::ifstream file(test_file);
+    EXPECT_TRUE(file.is_open());
+
+    std::string line;
+    int count = 0;
+    while (std::getline(file, line)) {
+        count++;
+        EXPECT_NE(line, "");
+    }
+    EXPECT_EQ(count, 2);
 
     file.close();
 }

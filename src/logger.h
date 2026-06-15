@@ -20,6 +20,11 @@
 #include <vector>
 
 namespace http {
+    /**
+     * @enum Level
+     * @brief Log levels used for categorizing log messages.
+     */
+    enum class Level { TRACE = 0, DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4, CRITICAL = 5 };
 
     /**
      * @class Logger
@@ -31,16 +36,11 @@ namespace http {
      */
     class Logger {
        private:
-        /**
-         * @enum Level
-         * @brief Log levels used for categorizing log messages.
-         */
-        enum class Level { TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL };
-
         bool file_logging_enabled_ = false; /**< Flag indicating if file logging is enabled. */
         std::ofstream log_file_;            /**< Output file stream for log file. */
         std::string log_file_path_;         /**< Path to the current log file. */
         mutable std::mutex log_mutex_;      /**< Mutex for thread-safe operations. */
+        Level current_level = Level::INFO;
 
        public:
         /**
@@ -51,6 +51,8 @@ namespace http {
             static Logger instance;
             return instance;
         }
+
+        void setLevel(Level level) { current_level = level; }
 
         /**
          * @brief Enable file logging with a specific file path.
@@ -120,7 +122,9 @@ namespace http {
          */
         template <typename... Args>
         void trace(std::string_view format, Args&&... args) {
-            log(Level::TRACE, format, std::forward<Args>(args)...);
+            if (current_level <= Level::TRACE) {
+                log(Level::TRACE, format, std::forward<Args>(args)...);
+            }
         }
 
         /**
@@ -132,7 +136,9 @@ namespace http {
          */
         template <typename... Args>
         void debug(std::string_view format, Args&&... args) {
-            log(Level::DEBUG, format, std::forward<Args>(args)...);
+            if (current_level <= Level::DEBUG) {
+                log(Level::DEBUG, format, std::forward<Args>(args)...);
+            }
         }
 
         /**
@@ -144,7 +150,9 @@ namespace http {
          */
         template <typename... Args>
         void info(std::string_view format, Args&&... args) {
-            log(Level::INFO, format, std::forward<Args>(args)...);
+            if (current_level <= Level::INFO) {
+                log(Level::INFO, format, std::forward<Args>(args)...);
+            }
         }
 
         /**
@@ -156,7 +164,9 @@ namespace http {
          */
         template <typename... Args>
         void warning(std::string_view format, Args&&... args) {
-            log(Level::WARNING, format, std::forward<Args>(args)...);
+            if (current_level <= Level::WARNING) {
+                log(Level::WARNING, format, std::forward<Args>(args)...);
+            }
         }
 
         /**
@@ -168,7 +178,9 @@ namespace http {
          */
         template <typename... Args>
         void error(std::string_view format, Args&&... args) {
-            log(Level::ERROR, format, std::forward<Args>(args)...);
+            if (current_level <= Level::ERROR) {
+                log(Level::ERROR, format, std::forward<Args>(args)...);
+            }
         }
 
         /**
@@ -180,7 +192,28 @@ namespace http {
          */
         template <typename... Args>
         void critical(std::string_view format, Args&&... args) {
-            log(Level::CRITICAL, format, std::forward<Args>(args)...);
+            if (current_level <= Level::CRITICAL) {
+                log(Level::CRITICAL, format, std::forward<Args>(args)...);
+            }
+        }
+
+        std::string toString() {
+            switch (current_level) {
+                case Level::TRACE:
+                    return "TRACE";
+                case Level::DEBUG:
+                    return "DEBUG";
+                case Level::INFO:
+                    return "INFO";
+                case Level::WARNING:
+                    return "WARNING";
+                case Level::ERROR:
+                    return "ERROR";
+                case Level::CRITICAL:
+                    return "CRITICAL";
+                default:
+                    return "UNKNOWN";
+            }
         }
 
        protected:

@@ -210,6 +210,11 @@ namespace http {
             return false;
         }
 
+        auto connection_it = headers.find("Connection");
+        if (connection_it == headers.end() && connection_it->second != "Upgrade") {
+            return false;
+        }
+
         // Direct comparison without creating temporary strings
         const std::string_view& upgrade_value = upgrade_it->second;
         if (upgrade_value.size() != 9 || (upgrade_value[0] != 'w' && upgrade_value[0] != 'W') ||
