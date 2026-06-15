@@ -62,13 +62,13 @@ namespace http {
     // HTTP Method enum
     enum class HttpMethod { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS };
 
-    using WsHandler = std::function<void(const http::Request& req, http::ws::Response& res)>;
+    using WsHandler = std::function<void(const http::Request& req, http::WebSocket& res)>;
 
     struct WsRoute {
         int32_t sockfd;
         std::string path;
         WsHandler handler;
-        ws::Protocol protocol;
+        WsProtocol protocol;
 
         // Add comparison operator for std::set
         bool operator<(const WsRoute& other) const {
@@ -126,7 +126,7 @@ namespace http {
             router_.registerHandler(std::string(toString(M)), path, handler);
         }
 
-        template <ws::Protocol P>
+        template <WsProtocol P>
         void setRoute(const std::string& path, WsHandler handler) {
             WsRoute wsRoute;
             wsRoute.path = path;
@@ -238,16 +238,6 @@ namespace http {
                     return "OPTIONS";
             }
             return "OPTIONS";  // or handle as unreachable
-        }
-
-        constexpr std::string_view toWsString(ws::Protocol protocol) {
-            switch (protocol) {
-                case ws::Protocol::WS:
-                    return "ws";
-                case ws::Protocol::WSS:
-                    return "wss";
-            }
-            return "ws";  // or handle as unreachable
         }
     };
 

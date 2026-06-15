@@ -15,14 +15,31 @@
         <img src="image.png" alt="A sample PNG image" class="centered-image">
         <div>
             Index:
-            <span id="timeDisplay">Loading...</span>
+            <span id="timeDisplay">No info</span>
+            <div>
+                <button id="connect-btn"></button>
+            </div>
         </div>
         <a href="/home">Home page</a>
     </div>
 
     <script>
-        const timeDisplay = document.getElementById('timeDisplay');
         let ws = null;
+
+        const timeDisplay = document.getElementById('timeDisplay');
+        const connectBtn = document.getElementById('connect-btn');
+        connectBtn.innerText = "Connect";
+        connectBtn.addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close(1000, "Client initiated disconnect");
+                connectBtn.innerText = "Connect";
+                timeDisplay.textContent = "No info";
+            } else {
+                initWebSocket();
+                connectBtn.innerText = "Disconnect";
+            }
+        });
+
 
         // Initialize WebSocket connection
         function initWebSocket() {
@@ -56,18 +73,17 @@
                             second: '2-digit',
                             hour12: false
                         });
-
                     }
                 };
 
                 ws.onclose = function (event) {
                     console.log('WebSocket disconnected');
                     // Attempt to reconnect after 3 seconds
-                    setTimeout(initWebSocket, 3000);
+                    // setTimeout(initWebSocket, 3000);
                 };
 
                 ws.onerror = function (error) {
-                    console.error('WebSocket error:', error);
+                    // console.error('WebSocket error:', error);
                 };
             } catch (error) {
                 console.error('Failed to initialize WebSocket:', error);
@@ -90,8 +106,9 @@
             setTimeout(() => updateServerTime(value), 1000 * 60);
         }
 
+
         // Initialize WebSocket connection
-        initWebSocket();
+        // initWebSocket();
 
         // updateServerTime(0);        
     </script>

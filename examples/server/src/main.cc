@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-#include "client.h"
+// #include "client.h"
 #include "server.h"
 
 std::string getCurrentTimeJson() {
@@ -50,10 +50,10 @@ int main() {
         res.setContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
     });
 
-    s.setRoute<http::ws::Protocol::WS>("/ws", [](const http::Request&, http::ws::Response& res) {
+    s.setRoute<http::WsProtocol::WS>("/ws", [](const http::Request&, http::WebSocket& res) {
         std::string msg;
         auto result = res.read(msg);
-        if (result != http::ws::Result::Fail) {
+        if (result != http::Result::Fail) {
             log.info("Received websocket message {}", msg);
         }
 

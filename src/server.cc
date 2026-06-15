@@ -165,8 +165,8 @@ namespace http {
         http::Request req(raw_request);
 
         // is websocket requests
-        if (ws::isWebSocketFrame(raw_request)) {
-            ws::Response res(sd, raw_request);
+        if (isWebSocketFrame(raw_request)) {
+            WebSocket res(sd, raw_request);
             auto handler = getWsHandlerBySocketId(sd);
             if (handler.has_value()) {
                 handler.value()(req, res);
