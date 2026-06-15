@@ -166,39 +166,47 @@ namespace http {
 
         // is websocket requests
         if (isWebSocketFrame(raw_request)) {
-            WebSocket res(sd, raw_request);
+            WebSocket ws(sd, raw_request);
             auto handler = getWsHandlerBySocketId(sd);
             if (handler.has_value()) {
-                handler.value()(req, res);
+                handler.value()(req, ws);
             }
             return;
         }
 
-        if (!processWebsocketHandshake(sd, req)) {
-            // Handle route
-            std::string body = handleRoute(req);
+        if (processWebsocketHandshake(sd, req)) {
+            // update route with socket id
+            updateWsRoute(req.path(), sd);
+            return;
+        }
 
-            // write response
-            const char* ptr = body.c_str();
-            ssize_t total_written = 0;
-            ssize_t size = body.size();
+        // handle request
+        std::string body = handleRoute(req);
+        // send server response
+        sendResponse(sd, body);
+    }
 
-            while (total_written < size) {
-                ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
-                if (written == -1) {
-                    // Check if it's a temporary error
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        // This is expected in non-blocking mode - just continue
-                        // But we should add a timeout mechanism for large files
-                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                        continue;
-                    } else {
-                        log.warning("Error writing response body: {}", strerror(errno));
-                        break;
-                    }
+    void Server::sendResponse(const int sd, std::string& body) {
+        // write response
+        const char* ptr = body.c_str();
+        ssize_t total_written = 0;
+        ssize_t size = body.size();
+
+        while (total_written < size) {
+            ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
+            if (written == -1) {
+                // Check if it's a temporary error
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // This is expected in non-blocking mode - just continue
+                    // But we should add a timeout mechanism for large files
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    continue;
+                } else {
+                    log.warning("Error writing response body: {}", strerror(errno));
+                    break;
                 }
-                total_written += written;
             }
+            total_written += written;
         }
     }
 
@@ -316,8 +324,7 @@ namespace http {
             return false;
         }
 
-        // update route with socket id
-        return updateWsRoute(req.path(), sd);
+        return true;
     }
 
 }  // namespace http

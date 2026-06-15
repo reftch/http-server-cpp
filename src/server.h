@@ -70,12 +70,9 @@ namespace http {
         WsHandler handler;
         WsProtocol protocol;
 
-        // Add comparison operator for std::set
+        // Comparison for std::set (if you still need it)
         bool operator<(const WsRoute& other) const {
-            // Compare by path first, then by protocol
-            if (path != other.path) {
-                return path < other.path;
-            }
+            if (path != other.path) return path < other.path;
             return protocol < other.protocol;
         }
     };
@@ -173,6 +170,15 @@ namespace http {
         // router
         http::Router router_;
 
+        bool running_ = false;       // Is server running flag
+        std::set<int> client_list_;  // client list for connections(slave sockets).
+        int32_t sockfd_;             // server file descriptor
+        const int port_;             // Port number to listen on
+        const std::string host_;     // Hostname or IP address to bind to
+
+        // Time when server started
+        std::chrono::high_resolution_clock::time_point start_time_;
+
         int setNonblockMode(int fd);
 
         /**
@@ -204,15 +210,6 @@ namespace http {
 
         void handleStaticResource(http::Request& req, http::Response& res);
 
-        bool running_ = false;       // Is server running flag
-        std::set<int> client_list_;  // client list for connections(slave sockets).
-        int32_t sockfd_;             // server file descriptor
-        const int port_;             // Port number to listen on
-        const std::string host_;     // Hostname or IP address to bind to
-
-        // Time when server started
-        std::chrono::high_resolution_clock::time_point start_time_;
-
         /**
          * Main event loop for handling incoming HTTP requests
          * @details This function implements a non-blocking I/O event loop using poll() to monitor
@@ -221,6 +218,8 @@ namespace http {
          * @note This function runs in an infinite loop until the server's running_ flag is set to false
          */
         virtual void handleRequests();
+
+        virtual void sendResponse(const int sd, std::string& body);
 
         bool processWebsocketHandshake(const int sd, http::Request& req);
 

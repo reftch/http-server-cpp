@@ -36,17 +36,17 @@ int main() {
     });
 
     s.setRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
-        res.setContent<http::ContentType::HTML>("index.html");
+        res << http::ContentType::HTML << "index.html";
     });
 
     s.setRoute<http::HttpMethod::GET>("/home", [](const http::Request& req, http::Response& res) {
         log.info("Request path: {}", req.path());
-        res.setContent<http::ContentType::HTML>("home.html");
+        res << http::ContentType::HTML << "home.html";
     });
 
     s.setRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [](const http::Request& req, http::Response& res) {
         std::string value = req.params().at("v");
-        res.setContent<http::ContentType::JSON>("{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}");
+        res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
     });
 
     s.setRoute<http::WsProtocol::WS>("/ws", [](const http::Request&, http::WebSocket& ws) {

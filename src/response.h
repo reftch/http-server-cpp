@@ -117,34 +117,57 @@ namespace http {
         std::unordered_map<std::string, std::string> headers() { return headers_; }
 
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
-        void setContent(const std::string& content) {
-            setHeader("Content-Type", ContentTypeToString(T));
-
-            // Set content based on content type
-            if (T == ContentType::HTML && content.ends_with(".html")) {
-                content_ = utils::readFile(static_directory_ + '/' + content);
-            } else {
-                content_ = content;
-            }
-
-            // Set Content-Length header using the actual content size
-            setHeader("Content-Length", std::to_string(content_.size()));
-
+        Response& setContent(const std::string& content) {
             status_ = S;
+            content_type_ = T;
+            content_ = content;
+            return *this;
         }
 
-        void setContent(const std::string& content, Status s = Status::ok) {
+        Response& setContent(const std::string& content, Status s = Status::ok) {
             content_ = content;
             status_ = s;
+            return *this;
+        }
+
+        // Overload << operator for ContentType
+        Response& operator<<(ContentType type) {
+            content_type_ = type;
+            return *this;
+        }
+
+        // Overload << operator for Status
+        Response& operator<<(Status status) {
+            status_ = status;
+            return *this;
+        }
+
+        // Overload << operator for string content
+        Response& operator<<(const std::string& content) {
+            content_ = content;
+            return *this;
+        }
+
+        // Overload << operator for const char*
+        Response& operator<<(const char* content) {
+            content_ = content;
+            return *this;
+        }
+
+        // Optional: overload for other types
+        template <typename T>
+        Response& operator<<(const T& value) {
+            content_ = std::to_string(value);
+            return *this;
         }
 
         std::string build();
 
        private:
         http::Status status_ = Status::ok;
-        std::string version_;
+        ContentType content_type_;
         std::string content_;
-        std::string content_type_;
+        std::string version_;
         std::string static_directory_;
         std::unordered_map<std::string, std::string> headers_;
 

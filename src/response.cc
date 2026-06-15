@@ -50,6 +50,21 @@ namespace http {
     std::string Response::build() {
         std::string body = statusToString();
 
+        if (content_type_ == ContentType::HTML && content_.ends_with(".html")) {
+            content_ = utils::readFile(static_directory_ + '/' + content_);
+        }
+
+        const auto& headers_ref = headers();
+        auto content_type_it = headers_ref.find("Content-Type");
+        if (content_type_it == headers_ref.end()) {
+            setHeader("Content-Type", ContentTypeToString(content_type_));
+        }
+
+        auto content_length_it = headers_ref.find("Content-Length");
+        if (content_length_it == headers_ref.end()) {
+            setHeader("Content-Length", std::to_string(content_.size()));
+        }
+
         // Add all headers (order not guaranteed, but acceptable for HTTP)
         for (const auto& header : headers_) {
             body.append(header.first);
