@@ -2,25 +2,6 @@
 
 namespace http {
 
-    ssize_t WebSocket::send(const std::string& msg) {
-        if (!isSocketAlive(frame.sockfd)) {
-            return -1;
-        }
-
-        // Creates WebSocket frame from string
-        auto response = writeFrame(msg, frame.fin, frame.opcode);
-        if (response.empty()) {
-            return -1;  // Return error if frame creation failed
-        }
-
-        // Send the frame to the socket
-        ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
-        if (sent < 0) {
-            perror("WebSocket send failed");
-        }
-        return sent;
-    }
-
     Result WebSocket::read(std::string& msg) {
         if (!readFrame(byte_data)) {
             return Result::Fail;
@@ -92,8 +73,7 @@ namespace http {
         return true;
     }
 
-    // Create a WebSocket frame for sending
-    std::vector<uint8_t> WebSocket::writeFrame(const std::string& message, bool fin, WsOpcode opcode) {
+    std::vector<uint8_t> WebSocket::writeFrame(const std::string& message, bool fin, WsOpcode opcode, bool mask) {
         std::vector<uint8_t> frame;
 
         // First byte: FIN bit + RSV bits + OPCODE
@@ -102,66 +82,110 @@ namespace http {
 
         // Second byte: MASK bit + PAYLOAD LENGTH
         std::size_t payload_length = message.length();
-        if (payload_length < 126) {
-            frame.push_back(static_cast<uint8_t>(payload_length));
-        } else if (payload_length <= 0xFFFF) {
-            frame.push_back(126);  // 2-byte extended length
-            frame.push_back(static_cast<uint8_t>((payload_length >> 8) & 0xFF));
-            frame.push_back(static_cast<uint8_t>(payload_length & 0xFF));
+
+        if (mask) {
+            frame.push_back(0x80 | (payload_length < 126 ? payload_length : (payload_length <= 0xFFFF ? 126 : 127)));
         } else {
-            frame.push_back(127);  // 8-byte extended length
-            for (int i = 7; i >= 0; --i) {
-                frame.push_back(static_cast<uint8_t>((payload_length >> (8 * i)) & 0xFF));
-            }
+            frame.push_back(payload_length < 126 ? static_cast<uint8_t>(payload_length)
+                                                 : (payload_length <= 0xFFFF ? 126 : 127));
         }
 
-        // Add payload data
-        for (char c : message) {
-            frame.push_back(static_cast<uint8_t>(c));
+        if (mask) {
+            // Generate random mask key
+            uint8_t mask_key[4];
+            for (int i = 0; i < 4; ++i) {
+                mask_key[i] = static_cast<uint8_t>(rand() % 256);
+            }
+            for (int i = 0; i < 4; ++i) {
+                frame.push_back(mask_key[i]);
+            }
+
+            // XOR payload with mask
+            for (size_t i = 0; i < message.size(); ++i) {
+                uint8_t byte = static_cast<uint8_t>(message[i]);
+                byte ^= mask_key[i % 4];
+                frame.push_back(byte);
+            }
+        } else {
+            // No mask - just append payload
+            for (char c : message) {
+                frame.push_back(static_cast<uint8_t>(c));
+            }
         }
 
         return frame;
     }
+
+    // Create a WebSocket frame for sending
+    // std::vector<uint8_t> WebSocket::writeFrame(const std::string& message, bool fin, WsOpcode opcode) {
+    //     std::vector<uint8_t> frame;
+
+    //     // First byte: FIN bit + RSV bits + OPCODE
+    //     uint8_t first_byte = (fin ? 0x80 : 0x00) | static_cast<uint8_t>(opcode);
+    //     frame.push_back(first_byte);
+
+    //     // Second byte: MASK bit + PAYLOAD LENGTH
+    //     std::size_t payload_length = message.length();
+    //     if (payload_length < 126) {
+    //         frame.push_back(static_cast<uint8_t>(payload_length));
+    //     } else if (payload_length <= 0xFFFF) {
+    //         frame.push_back(126);  // 2-byte extended length
+    //         frame.push_back(static_cast<uint8_t>((payload_length >> 8) & 0xFF));
+    //         frame.push_back(static_cast<uint8_t>(payload_length & 0xFF));
+    //     } else {
+    //         frame.push_back(127);  // 8-byte extended length
+    //         for (int i = 7; i >= 0; --i) {
+    //             frame.push_back(static_cast<uint8_t>((payload_length >> (8 * i)) & 0xFF));
+    //         }
+    //     }
+
+    //     // Add payload data
+    //     for (char c : message) {
+    //         frame.push_back(static_cast<uint8_t>(c));
+    //     }
+
+    //     return frame;
+    // }
 
     // Create a masked WebSocket frame (for client-to-server messages)
-    std::vector<uint8_t> WebSocket::writeMaskedFrame(const std::string& message, bool fin, uint8_t opcode) {
-        std::vector<uint8_t> frame;
+    // std::vector<uint8_t> WebSocket::writeMaskedFrame(const std::string& message, bool fin, WsOpcode opcode) {
+    //     std::vector<uint8_t> frame;
 
-        // First byte: FIN bit + RSV bits + OPCODE
-        uint8_t first_byte = (fin ? 0x80 : 0x00) | (opcode & 0x0F);
-        frame.push_back(first_byte);
+    //     // First byte: FIN bit + RSV bits + OPCODE
+    //     uint8_t first_byte = (fin ? 0x80 : 0x00) | static_cast<uint8_t>(opcode);
+    //     frame.push_back(first_byte);
 
-        // Second byte: MASK bit + PAYLOAD LENGTH
-        std::size_t payload_length = message.length();
-        // bool use_mask = true;  // Always mask for client messages
+    //     // Second byte: MASK bit + PAYLOAD LENGTH
+    //     std::size_t payload_length = message.length();
+    //     // bool use_mask = true;  // Always mask for client messages
 
-        if (payload_length < 126) {
-            frame.push_back(0x80 | static_cast<uint8_t>(payload_length));  // Set mask bit
-        } else if (payload_length <= 0xFFFF) {
-            frame.push_back(0x80 | 126);  // Set mask bit + 2-byte extended length
-            frame.push_back(static_cast<uint8_t>((payload_length >> 8) & 0xFF));
-            frame.push_back(static_cast<uint8_t>(payload_length & 0xFF));
-        } else {
-            frame.push_back(0x80 | 127);  // Set mask bit + 8-byte extended length
-            for (int i = 7; i >= 0; --i) {
-                frame.push_back(static_cast<uint8_t>((payload_length >> (8 * i)) & 0xFF));
-            }
-        }
+    //     if (payload_length < 126) {
+    //         frame.push_back(0x80 | static_cast<uint8_t>(payload_length));  // Set mask bit
+    //     } else if (payload_length <= 0xFFFF) {
+    //         frame.push_back(0x80 | 126);  // Set mask bit + 2-byte extended length
+    //         frame.push_back(static_cast<uint8_t>((payload_length >> 8) & 0xFF));
+    //         frame.push_back(static_cast<uint8_t>(payload_length & 0xFF));
+    //     } else {
+    //         frame.push_back(0x80 | 127);  // Set mask bit + 8-byte extended length
+    //         for (int i = 7; i >= 0; --i) {
+    //             frame.push_back(static_cast<uint8_t>((payload_length >> (8 * i)) & 0xFF));
+    //         }
+    //     }
 
-        // Generate random masking key (in practice, use proper random generation)
-        std::array<uint8_t, 4> masking_key = {0x12, 0x34, 0x56, 0x78};
-        for (const auto& key : masking_key) {
-            frame.push_back(key);
-        }
+    //     // Generate random masking key (in practice, use proper random generation)
+    //     std::array<uint8_t, 4> masking_key = {0x12, 0x34, 0x56, 0x78};
+    //     for (const auto& key : masking_key) {
+    //         frame.push_back(key);
+    //     }
 
-        // Add masked payload data
-        for (std::size_t i = 0; i < message.length(); ++i) {
-            uint8_t byte = static_cast<uint8_t>(message[i]);
-            frame.push_back(byte ^ masking_key[i % 4]);
-        }
+    //     // Add masked payload data
+    //     for (std::size_t i = 0; i < message.length(); ++i) {
+    //         uint8_t byte = static_cast<uint8_t>(message[i]);
+    //         frame.push_back(byte ^ masking_key[i % 4]);
+    //     }
 
-        return frame;
-    }
+    //     return frame;
+    // }
 
     bool isWebSocketFrame(const std::string& data) {
         if (data.length() < 2) return false;

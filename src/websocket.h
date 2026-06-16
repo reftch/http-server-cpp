@@ -1,12 +1,18 @@
 #ifndef WEBSOCKET_H_
 #define WEBSOCKET_H_
 
+#ifdef HTTP_OPENSSL_SUPPORT
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#endif
+
 #include <sys/socket.h>
 #include <unistd.h>
 
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -43,17 +49,66 @@ namespace http {
             std::string text_payload;  // For text frames only
             uint32_t sockfd;
 
+#ifdef HTTP_OPENSSL_SUPPORT
+            SSL* ssl = nullptr;
+#endif
+
             Frame() : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0) {}
             Frame(uint32_t sfd)
                 : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd) {}
+
+#ifdef HTTP_OPENSSL_SUPPORT
+            Frame(uint32_t sfd, SSL* ssl)
+                : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd), ssl(ssl) {}
+#endif
         };
 
        public:
-        explicit WebSocket(uint32_t sockfd, const std::string& raw_request)
+        WebSocket(uint32_t sockfd, const std::string& raw_request)
             : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()) {}
+#ifdef HTTP_OPENSSL_SUPPORT
+        WebSocket(uint32_t sockfd, SSL* ssl, const std::string& raw_request)
+            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()) {}
+#endif
 
-        [[nodiscard]]
-        ssize_t send(const std::string& msg);
+        ssize_t send(const std::string& msg) {
+            if (!isSocketAlive(frame.sockfd)) {
+                return -1;
+            }
+
+            // Creates WebSocket frame from string
+#ifndef HTTP_OPENSSL_SUPPORT
+            auto response = writeFrame(msg, frame.fin, frame.opcode);
+            if (response.empty()) {
+                return -1;  // Return error if frame creation failed
+            }
+            // Send the frame to the socket
+            ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
+#else
+            // auto response = writeFrame(msg, true, WsOpcode::Text);
+            auto response = writeFrame(msg, true, WsOpcode::Text);
+            if (response.empty()) {
+                return -1;  // Return error if frame creation failed
+            }
+            // Send the frame to the socket
+            ssize_t sent = SSL_write(frame.ssl, response.data(), response.size());
+            // If we get a positive value, check if connection is actually alive
+            // Verify connection is still alive by checking if we can read
+            char test_buf[1];
+            int result = SSL_peek(frame.ssl, test_buf, 1);
+            if (result == 0) {
+                std::cout << "Connection closed during peek\n";
+                return -1;
+            }
+
+#endif
+            std::cout << "Result: " << sent << '\n';
+            if (sent < 0) {
+                perror("WebSocket send failed");
+            }
+            return sent;
+        }
+
         [[nodiscard]]
         Result read(std::string& msg);
 
@@ -69,10 +124,7 @@ namespace http {
         bool readFrame(const std::vector<uint8_t>& data);
 
         // Create a WebSocket frame for sending
-        std::vector<uint8_t> writeFrame(const std::string& message, bool fin = true, WsOpcode opcode = WsOpcode::Text);
-
-        // Create a masked WebSocket frame (for client-to-server messages)
-        std::vector<uint8_t> writeMaskedFrame(const std::string& message, bool fin = true, uint8_t opcode = 1);
+        std::vector<uint8_t> writeFrame(const std::string& message, bool fin, WsOpcode opcode, bool mask = false);
 
         bool isSocketAlive(int sockfd);
     };

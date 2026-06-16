@@ -244,6 +244,34 @@ namespace http {
             }
         };
 
+        void performRequest(const int sd, const char* buffer, const ssize_t nread) override {
+            std::string raw_request(buffer, nread);
+            // Parse the request line to find method and path
+            http::Request req(raw_request);
+
+            // is websocket requests
+            if (isWebSocketFrame(raw_request)) {
+                ClientConnection& client = ssl_clients_[sd];
+                WebSocket ws(sd, client.ssl, raw_request);
+                auto handler = getWsHandlerBySocketId(sd);
+                if (handler.has_value()) {
+                    handler.value()(req, ws);
+                }
+                return;
+            }
+
+            if (processWebsocketHandshake(sd, req)) {
+                // update route with socket id
+                updateWsRoute(req.path(), sd);
+                return;
+            }
+
+            // handle request
+            std::string body = handleRoute(req);
+            // send server response
+            sendResponse(sd, body);
+        }
+
        private:
         //
         // SSL CONFIG
@@ -303,7 +331,7 @@ namespace http {
 
             ClientConnection& client = it->second;
             if (client.ssl) {
-                // SSL_shutdown(client.ssl);
+                SSL_shutdown(client.ssl);
                 SSL_free(client.ssl);
                 client.ssl = NULL;
             }
@@ -320,15 +348,43 @@ namespace http {
          * Send response
          */
         bool sendResponse(const int sd, std::string& body) override {
+            // write response
+            const char* ptr = body.c_str();
+            ssize_t total_written = 0;
+            ssize_t size = body.size();
+
             ClientConnection& client = ssl_clients_[sd];
-            SSLWrite(client, body.c_str(), body.size());
+
+            while (total_written < size) {
+                ssize_t written = SSLWrite(client, ptr + total_written, size - total_written);
+                if (written == -1) {
+                    // Check if it's a temporary error
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        // This is expected in non-blocking mode - just continue
+                        // But we should add a timeout mechanism for large files
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        continue;
+                    } else {
+                        log.warning("Error writing response body: {}", strerror(errno));
+                        break;
+                    }
+                }
+                total_written += written;
+            }
+
+            if (total_written == -1) {
+                log.error("Error writing response body: {}", strerror(errno));
+                return false;
+            }
+
+            return true;
         }
 
         /**
          * SSL read wrapper
          */
         ssize_t SSLRead(ClientConnection& client, char* buffer, size_t len) {
-            int ret = SSL_read(client.ssl, buffer, len - 1);
+            ssize_t ret = SSL_read(client.ssl, buffer, len - 1);
             if (ret > 0) {
                 buffer[ret] = '\0';
                 return ret;
@@ -346,7 +402,7 @@ namespace http {
          * SSL write wrapper
          */
         ssize_t SSLWrite(ClientConnection& client, const char* buffer, size_t len) {
-            int ret = SSL_write(client.ssl, buffer, len);
+            ssize_t ret = SSL_write(client.ssl, buffer, len);
             if (ret > 0) {
                 return ret;
             }

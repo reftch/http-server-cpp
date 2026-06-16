@@ -161,6 +161,8 @@ namespace http {
 
         void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
+        virtual bool sendResponse(const int sd, std::string& body);
+
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
@@ -218,8 +220,6 @@ namespace http {
          * @note This function runs in an infinite loop until the server's running_ flag is set to false
          */
         virtual void handleRequests();
-
-        virtual bool sendResponse(const int sd, std::string& body);
 
         bool processWebsocketHandshake(const int sd, http::Request& req);
 
