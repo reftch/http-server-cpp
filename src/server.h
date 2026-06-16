@@ -89,6 +89,7 @@ namespace http {
      */
     class Server : public BaseServer {
        public:
+               Server() : port_(8080), host_("0.0.0.0") {}
         /**
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
@@ -96,9 +97,7 @@ namespace http {
          * @param host The hostname or IP address to bind to.
          * @param port The port number to listen on.
          */
-        Server(const std::string& host, const int& port) : port_(port), host_(host) {
-            start_time_ = std::chrono::high_resolution_clock::now();
-        }
+        Server(const std::string& host, const int& port) : port_(port), host_(host) {}
 
         virtual ~Server() = default;
 
@@ -179,7 +178,7 @@ namespace http {
         const std::string host_;     // Hostname or IP address to bind to
 
         // Time when server started
-        std::chrono::high_resolution_clock::time_point start_time_;
+        std::chrono::high_resolution_clock::time_point start_time_ = std::chrono::high_resolution_clock::now();
 
         int setNonblockMode(int fd);
 

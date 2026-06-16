@@ -45,7 +45,7 @@
         function initWebSocket() {
             try {
                 // Connect to WebSocket server (assuming it's on the same origin)
-                ws = new WebSocket(`ws://${window.location.host}/ws`);
+                ws = new WebSocket(`wss://${window.location.host}/ws`);
 
                 ws.onopen = function (event) {
                     console.log('WebSocket connected');
