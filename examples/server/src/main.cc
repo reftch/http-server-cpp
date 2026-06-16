@@ -53,7 +53,7 @@ int main() {
         res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
     });
 
-    s.setRoute<http::WsProtocol::WS>("/ws", [](const http::Request&, http::WebSocket& ws) {
+    s.setRoute<http::WsProtocol::WSS>("/ws", [](const http::Request&, http::WebSocket& ws) {
         std::string msg;
         auto result = ws >> msg;
         if (result != http::Result::Fail) {

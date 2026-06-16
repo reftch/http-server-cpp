@@ -68,7 +68,9 @@ namespace http {
             : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()) {}
 #ifdef HTTP_OPENSSL_SUPPORT
         WebSocket(uint32_t sockfd, SSL* ssl, const std::string& raw_request)
-            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()) {}
+            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()) {
+            std::cout << "init " << byte_data.size() << '\n';
+        }
 #endif
 
         ssize_t send(const std::string& msg) {
@@ -102,7 +104,6 @@ namespace http {
             }
 
 #endif
-            std::cout << "Result: " << sent << '\n';
             if (sent < 0) {
                 perror("WebSocket send failed");
             }
