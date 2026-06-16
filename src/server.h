@@ -219,7 +219,7 @@ namespace http {
          */
         virtual void handleRequests();
 
-        virtual void sendResponse(const int sd, std::string& body);
+        virtual bool sendResponse(const int sd, std::string& body);
 
         bool processWebsocketHandshake(const int sd, http::Request& req);
 

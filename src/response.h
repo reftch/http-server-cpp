@@ -124,12 +124,6 @@ namespace http {
             return *this;
         }
 
-        Response& setContent(const std::string& content, Status s = Status::ok) {
-            content_ = content;
-            status_ = s;
-            return *this;
-        }
-
         // Overload << operator for ContentType
         Response& operator<<(ContentType type) {
             content_type_ = type;

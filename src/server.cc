@@ -186,7 +186,7 @@ namespace http {
         sendResponse(sd, body);
     }
 
-    void Server::sendResponse(const int sd, std::string& body) {
+    bool Server::sendResponse(const int sd, std::string& body) {
         // write response
         const char* ptr = body.c_str();
         ssize_t total_written = 0;
@@ -208,6 +208,13 @@ namespace http {
             }
             total_written += written;
         }
+
+        if (total_written == -1) {
+            log.error("Error writing response body: {}", strerror(errno));
+            return false;
+        }
+
+        return true;
     }
 
     std::string Server::handleRoute(http::Request& req) {
@@ -254,7 +261,7 @@ namespace http {
                 }
 
                 // set content
-                res.setContent(content);
+                res << content;
             }
         } else {
             res.setContent<ContentType::PLAIN_TEXT, Status::not_found>("Not Found");
@@ -318,13 +325,7 @@ namespace http {
 
         log.debug("Websocket accepted with key {}", accept_key);
 
-        ssize_t written = send(sd, response.data(), response.size(), MSG_NOSIGNAL);
-        if (written == -1) {
-            log.error("Error writing response body: {}", strerror(errno));
-            return false;
-        }
-
-        return true;
+        return sendResponse(sd, response);
     }
 
 }  // namespace http

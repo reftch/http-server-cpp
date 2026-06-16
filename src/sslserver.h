@@ -317,19 +317,11 @@ namespace http {
         }
 
         /**
-         * Perform HTTPS request
+         * Send response
          */
-        void performRequest(const int sd, const char* buffer, const ssize_t nread) override {
-            if (ssl_clients_.find(sd) == ssl_clients_.end()) {
-                return;
-            }
-
+        bool sendResponse(const int sd, std::string& body) override {
             ClientConnection& client = ssl_clients_[sd];
-            std::string raw_request(buffer, nread);
-            Request req(raw_request);
-            std::string response = handleRoute(req);
-
-            SSLWrite(client, response.c_str(), response.size());
+            SSLWrite(client, body.c_str(), body.size());
         }
 
         /**
