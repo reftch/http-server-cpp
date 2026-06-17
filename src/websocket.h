@@ -65,16 +65,29 @@ namespace http {
 
        public:
         WebSocket(uint32_t sockfd, const std::string& raw_request)
-            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()) {}
+            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {}
 #ifdef HTTP_OPENSSL_SUPPORT
         WebSocket(uint32_t sockfd, SSL* ssl, const std::string& raw_request)
-            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()) {
+            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {
             std::cout << "init " << byte_data.size() << '\n';
         }
 #endif
 
+        void close() {
+            isOpen = false;
+            ::close(frame.sockfd);
+#ifdef HTTP_OPENSSL_SUPPORT
+            if (frame.ssl) {
+                SSL_free(frame.ssl);
+                frame.ssl = nullptr;
+            }
+
+            EVP_cleanup();
+#endif
+        }
+
         ssize_t send(const std::string& msg) {
-            if (!isSocketAlive(frame.sockfd)) {
+            if (!isOpen) {
                 return -1;
             }
 
@@ -120,6 +133,7 @@ namespace http {
        private:
         Frame frame;
         std::vector<uint8_t> byte_data;
+        bool isOpen = false;
 
         // Read a single WebSocket frame from raw bytes
         bool readFrame(const std::vector<uint8_t>& data);

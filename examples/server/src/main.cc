@@ -7,9 +7,8 @@
 #include <string>
 
 #define HTTP_OPENSSL_SUPPORT
+#include "server.h"
 #include "sslserver.h"
-
-// #include "server.h"
 
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();

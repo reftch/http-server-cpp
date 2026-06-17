@@ -166,6 +166,7 @@ namespace http {
 
         // is websocket requests
         if (isWebSocketFrame(raw_request)) {
+            // log.info("Websocket message ");
             WebSocket ws(sd, raw_request);
             auto handler = getWsHandlerBySocketId(sd);
             if (handler.has_value()) {

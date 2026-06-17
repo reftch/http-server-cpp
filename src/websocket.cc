@@ -4,8 +4,12 @@
 namespace http {
 
     Result WebSocket::read(std::string& msg) {
-        std::cout << "read " << byte_data.size() << '\n';
         if (!readFrame(byte_data)) {
+            return Result::Fail;
+        }
+
+        if (frame.opcode == WsOpcode::Close) {
+            close();
             return Result::Fail;
         }
 
@@ -16,7 +20,6 @@ namespace http {
     bool WebSocket::readFrame(const std::vector<uint8_t>& data) {
         std::size_t offset = 0;
 
-        // std::cout << "read " << data.size() << '\n';
         if (data.size() < 2) {
             return false;  // Invalid frame
         }
@@ -25,6 +28,11 @@ namespace http {
         uint8_t first_byte = data[offset++];
         frame.fin = (first_byte & 0x80) != 0;
         frame.opcode = static_cast<WsOpcode>(first_byte & 0x0F);
+
+        // if (frame.opcode == WsOpcode::Close) {
+        //     return false;
+        // }
+        std::cout << "Opcode: " << static_cast<int>(frame.opcode) << '\n';
 
         // Read mask and payload length (1 byte)
         uint8_t second_byte = data[offset++];
@@ -72,7 +80,6 @@ namespace http {
         if (frame.opcode == WsOpcode::Text) {
             frame.text_payload = std::string(frame.payload_data.begin(), frame.payload_data.end());
         }
-        // std::cout << "xaxaxa " << data.size() << '\n';
 
         return true;
     }
