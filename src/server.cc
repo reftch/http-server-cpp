@@ -21,7 +21,7 @@ namespace http {
         struct sockaddr_in server_addr;
         memset(&server_addr, 0, sizeof(server_addr));
         server_addr.sin_family = AF_INET;
-        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);  // 0.0.0.0
+        server_addr.sin_addr.s_addr = inet_addr(host_.c_str());
         server_addr.sin_port = htons(port_);
         if (bind(sockfd_, (struct sockaddr*)(&server_addr), sizeof(server_addr)) == -1) {
             log.error("Bind the server address failed");

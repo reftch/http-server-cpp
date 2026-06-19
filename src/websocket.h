@@ -69,7 +69,7 @@ namespace http {
 #ifdef HTTP_OPENSSL_SUPPORT
         WebSocket(uint32_t sockfd, SSL* ssl, const std::string& raw_request)
             : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {
-            std::cout << "init " << byte_data.size() << '\n';
+            // std::cout << "init " << byte_data.size() << '\n';
         }
 #endif
 

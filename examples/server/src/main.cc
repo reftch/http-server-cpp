@@ -7,7 +7,7 @@
 #include <string>
 
 #define HTTP_OPENSSL_SUPPORT
-#include "server.h"
+// #include "server.h"
 #include "sslserver.h"
 
 std::string getCurrentTimeJson() {
