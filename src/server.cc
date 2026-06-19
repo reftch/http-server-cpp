@@ -9,7 +9,7 @@ namespace http {
             exit(1);
         }
 
-        // Set SO_REUSEADDR in socket options.
+        // Set SO_REUSEADDR in socket options
         // For UDP SO_REUSEADDR may mean some problems...
         int optval = 1;
         if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int)) == -1) {
@@ -42,6 +42,7 @@ namespace http {
         running_ = true;
 
         auto end_time = std::chrono::high_resolution_clock::now();
+        // log.info("Time : {}", end_time);
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
 
         log.info("Server started on http://{}:{} in {} ", host_, port_, duration);
@@ -146,7 +147,7 @@ namespace http {
                         if (client_fd == -1) {
                             if (errno != EWOULDBLOCK || errno != EAGAIN) {
                                 log.error("Error of calling accept");
-                                exit(6);
+                                continue;
                             }
                         }
 

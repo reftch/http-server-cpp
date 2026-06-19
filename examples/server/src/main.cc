@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 
+#define POLL_TIMEOUT -1
 #define HTTP_OPENSSL_SUPPORT
 // #include "server.h"
 #include "sslserver.h"
