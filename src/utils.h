@@ -1,6 +1,7 @@
 #ifndef HTTP_UTILS_H_
 #define HTTP_UTILS_H_
 
+#include <sys/socket.h>
 #include <sys/stat.h>
 
 #include <algorithm>
@@ -154,5 +155,6 @@ namespace utils {
     std::string sha1(const std::string& input);
     std::string base64_encode(const std::string& input);
 
+    bool isSocketAlive(int sockfd);
 }  // namespace utils
 #endif  // HTTP_UTILS_H_

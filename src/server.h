@@ -89,7 +89,7 @@ namespace http {
      */
     class Server : public BaseServer {
        public:
-               Server() : port_(8080), host_("0.0.0.0") {}
+        Server() : port_(8080), host_("0.0.0.0") {}
         /**
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
@@ -161,6 +161,8 @@ namespace http {
         void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
         virtual bool sendResponse(const int sd, std::string& body);
+
+        virtual void validateSockets();
 
        private:
         // Websocket routes

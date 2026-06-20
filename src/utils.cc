@@ -292,4 +292,15 @@ namespace utils {
         return out;
     }
 
+    bool isSocketAlive(int sockfd) {
+        int error = 0;
+        socklen_t len = sizeof(error);
+
+        if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0) {
+            return false;  // Error getting socket options
+        }
+
+        return (error == 0);  // If error is 0, socket is healthy
+    }
+
 }  // namespace utils

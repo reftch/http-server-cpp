@@ -129,6 +129,7 @@ namespace http {
                         static char buf[BUFFER_SIZE];
                         ssize_t len = recv(descriptors[i].fd, buf, BUFFER_SIZE, MSG_NOSIGNAL);
 
+                        log.info("Recv lenght {}", len);
                         if ((len == 0) && (errno != EAGAIN)) {
                             // If we got event TO READ, but actually CANNOT read, this means we should
                             // CLOSE connection. This is how POLL and EPOLL works.
@@ -154,9 +155,12 @@ namespace http {
                         // std::cout << "Client = " << inet_ntoa(client_addr.sin_addr) << std::endl;
                         setNonblockMode(client_fd);
                         client_list_.insert(client_fd);
+                        log.info("Open socket {}", client_fd);
                     }
                 }
             }
+
+            validateSockets();
         }
     }
 
@@ -328,6 +332,21 @@ namespace http {
         log.debug("Websocket accepted with key {}", accept_key);
 
         return sendResponse(sd, response);
+    }
+
+    void Server::validateSockets() {
+        std::vector<int> sockets_to_remove;
+        for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
+            int sd = *iter;
+            if (!utils::isSocketAlive(sd)) {
+                log.debug("Socket {} is closed, it will removed from pool", sd);
+                sockets_to_remove.push_back(sd);
+            }
+        }
+
+        for (int sd : sockets_to_remove) {
+            client_list_.erase(sd);
+        }
     }
 
 }  // namespace http

@@ -76,6 +76,7 @@ namespace http {
         void close() {
             isOpen = false;
             ::close(frame.sockfd);
+            std::cout << "Frame FD" << frame.sockfd << '\n';
 #ifdef HTTP_OPENSSL_SUPPORT
             if (frame.ssl) {
                 SSL_free(frame.ssl);
@@ -141,7 +142,7 @@ namespace http {
         // Create a WebSocket frame for sending
         std::vector<uint8_t> writeFrame(const std::string& message, bool fin, WsOpcode opcode, bool mask = false);
 
-        bool isSocketAlive(int sockfd);
+        // bool isSocketAlive(int sockfd);
     };
 
     constexpr std::string_view toWsString(WsProtocol protocol) {

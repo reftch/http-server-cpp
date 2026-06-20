@@ -122,7 +122,7 @@ namespace http {
         /**
          * HTTPS request handling loop
          */
-        void handleRequests() override {
+        void handleRequests1() {
             struct pollfd descriptors[POLL_SIZE];
             std::mutex mtx;
 
@@ -196,7 +196,7 @@ namespace http {
                                     int err = SSL_get_error(client.ssl, ret);
                                     if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
                                         log.warning("TLS error read FD={}", fd);
-                                        continue;
+                                        break;
                                     }
                                     log.warning("TLS handshake failed FD={}", fd);
                                     closeClient(fd);
@@ -215,6 +215,130 @@ namespace http {
                             }
                         }
                     }
+                }
+                validateSockets();
+            }
+        }
+
+        void handleRequests() override {
+            std::vector<struct pollfd> pollfds;
+            while (running_) {
+                // Clear and rebuild pollfds vector
+                pollfds.clear();
+
+                // Add server socket
+                struct pollfd server_pollfd;
+                server_pollfd.fd = sockfd_;
+                server_pollfd.events = POLLIN;
+                server_pollfd.revents = 0;
+                pollfds.push_back(server_pollfd);
+
+                std::unordered_map<int, ClientConnection>::iterator it;
+
+                for (it = ssl_clients_.begin(); it != ssl_clients_.end(); ++it) {
+                    pollfd pfd;
+
+                    pfd.fd = it->first;
+                    pfd.events = POLLIN;
+                    pfd.revents = 0;
+
+                    pollfds.push_back(pfd);
+                }
+
+                int activity = poll(&pollfds[0], pollfds.size(), POLL_TIMEOUT);
+                if (activity < 0) {
+                    if (errno == EINTR) {
+                        continue;
+                    }
+                    log.warning("poll failed");
+                    continue;
+                }
+
+                //
+                // ACCEPT NEW CLIENT
+                //
+                if (pollfds[0].revents & POLLIN) {
+                    int clientfd = accept(sockfd_, (struct sockaddr*)NULL, NULL);
+                    if (clientfd < 0) {
+                        log.warning("Accepted error");
+                        continue;
+                    }
+                    // Set non-blocking mode for client socket
+                    int flags = fcntl(clientfd, F_GETFL, 0);
+                    fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
+
+                    SSL* ssl = SSL_new(ssl_ctx_);
+                    if (!ssl) {
+                        close(clientfd);
+                        continue;
+                    }
+
+                    SSL_set_fd(ssl, clientfd);
+
+                    ClientConnection client;
+
+                    client.fd = clientfd;
+                    client.ssl = ssl;
+                    client.handshake_completed = false;
+
+                    ssl_clients_[clientfd] = client;
+                }
+
+                //
+                // HANDLE CLIENTS
+                //
+                size_t i;
+
+                std::vector<int> dead_clients;
+                for (i = 0; i < pollfds.size(); ++i) {
+                    if (!(pollfds[i].revents & POLLIN)) {
+                        continue;
+                    }
+
+                    int fd = pollfds[i].fd;
+                    if (ssl_clients_.find(fd) == ssl_clients_.end()) {
+                        continue;
+                    }
+
+                    ClientConnection& client = ssl_clients_[fd];
+
+                    //
+                    // HANDSHAKE
+                    //
+                    if (!client.handshake_completed) {
+                        int ret = SSL_accept(client.ssl);
+                        if (ret == 1) {
+                            client.handshake_completed = true;
+                            log.debug("TLS handshake completed FD={}", fd);
+                        } else {
+                            int err = SSL_get_error(client.ssl, ret);
+                            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+                                continue;
+                            }
+
+                            // log.warning("TLS handshake failed FD={} and will close", fd);
+                            dead_clients.push_back(fd);
+                            continue;
+                        }
+                    }
+
+                    //
+                    // READ REQUEST
+                    //
+                    char buffer[READ_BUFFER_SIZE];
+                    ssize_t nread = SSLRead(client, buffer, sizeof(buffer));
+                    if (nread > 0) {
+                        performRequest(fd, buffer, nread);
+                    } else if (nread < 0) {
+                        dead_clients.push_back(fd);
+                    }
+                }
+
+                //
+                // CLEANUP
+                //
+                for (i = 0; i < dead_clients.size(); ++i) {
+                    closeClient(dead_clients[i]);
                 }
             }
         }
