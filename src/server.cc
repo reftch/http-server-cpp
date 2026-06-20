@@ -347,19 +347,4 @@ namespace http {
         return sendResponse(sd, response);
     }
 
-    // void Server::validateSockets() {
-    //     std::vector<int> sockets_to_remove;
-    //     for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
-    //         int sd = *iter;
-    //         if (!utils::isSocketAlive(sd)) {
-    //             log.debug("Socket {} is closed, it will removed from pool", sd);
-    //             sockets_to_remove.push_back(sd);
-    //         }
-    //     }
-
-    //     for (int sd : sockets_to_remove) {
-    //         client_list_.erase(sd);
-    //     }
-    // }
-
 }  // namespace http

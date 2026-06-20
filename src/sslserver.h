@@ -122,106 +122,9 @@ namespace http {
         /**
          * HTTPS request handling loop
          */
-        void handleRequests1() {
-            struct pollfd descriptors[POLL_SIZE];
-            std::mutex mtx;
-
-            while (running_) {
-                // Clear and rebuild pollfds array
-                int index = 0;
-                descriptors[index].fd = sockfd_;
-                descriptors[index].events = POLLIN;
-                ++index;
-
-                std::unordered_map<int, ClientConnection>::iterator it;
-                for (it = ssl_clients_.begin(); it != ssl_clients_.end(); ++it) {
-                    struct pollfd pfd;
-                    pfd.fd = it->first;
-                    pfd.events = POLLIN;
-                    descriptors[index] = pfd;
-                    ++index;
-                }
-
-                // Plus 1 for the listen socket.
-                int poll_size = index;
-
-                int ready_fd = poll(descriptors, poll_size, POLL_TIMEOUT);
-                if (ready_fd == -1) {
-                    log.error("Error of calling poll");
-                    continue;
-                }
-
-                for (int i = 0; i < poll_size; ++i) {
-                    log.info("Poll size: {}", poll_size);
-                    if (!(descriptors[i].revents & POLLIN)) {
-                        continue;
-                    }
-
-                    int fd = descriptors[i].fd;
-                    if (i == 0) {
-                        // Master socket
-                        struct sockaddr_in client_addr;
-                        socklen_t slen = sizeof(client_addr);
-                        memset(&client_addr, 0, sizeof(client_addr));
-                        int client_fd = accept(sockfd_, (struct sockaddr*)&client_addr, &slen);
-                        if (client_fd == -1) {
-                            if (errno != EWOULDBLOCK || errno != EAGAIN) {
-                                log.error("Error of calling accept");
-                                continue;
-                            }
-                        } else {
-                            setNonblockMode(client_fd);
-                            SSL* ssl = SSL_new(ssl_ctx_);
-                            if (!ssl) {
-                                close(client_fd);
-                            } else {
-                                SSL_set_fd(ssl, client_fd);
-                                ClientConnection client;
-                                client.fd = client_fd;
-                                client.ssl = ssl;
-                                client.handshake_completed = false;
-                                ssl_clients_[client_fd] = client;
-                            }
-                        }
-                    } else {
-                        // Slave socket (SSL connection)
-                        if (ssl_clients_.find(fd) != ssl_clients_.end()) {
-                            ClientConnection& client = ssl_clients_[fd];
-                            log.info("Client {}", client.fd);
-                            if (!client.handshake_completed) {
-                                int ret = SSL_accept(client.ssl);
-                                if (ret == 1) {
-                                    client.handshake_completed = true;
-                                } else {
-                                    int err = SSL_get_error(client.ssl, ret);
-                                    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-                                        log.warning("TLS error read FD={}", fd);
-                                        break;
-                                    }
-                                    log.warning("TLS handshake failed FD={}", fd);
-                                    closeClient(fd);
-                                    continue;
-                                }
-                            } else {
-                                char buffer[READ_BUFFER_SIZE];
-                                ssize_t nread = SSLRead(client, buffer, sizeof(buffer));
-                                if (nread > 0) {
-                                    performRequest(fd, buffer, nread);
-                                } else if (nread < 0) {
-                                    log.warning("TLS try to close FD={}", fd);
-                                    // std::lock_guard<std::mutex> lock(mtx);
-                                    // closeClient(fd);
-                                }
-                            }
-                        }
-                    }
-                }
-                // validateSockets();
-            }
-        }
-
         void handleRequests() override {
             std::vector<struct pollfd> pollfds;
+
             while (running_) {
                 // Clear and rebuild pollfds vector
                 pollfds.clear();
@@ -316,7 +219,7 @@ namespace http {
                                 continue;
                             }
 
-                            // log.warning("TLS handshake failed FD={} and will close", fd);
+                            log.debug("TLS handshake failed FD={} and will close", fd);
                             dead_clients.push_back(fd);
                             continue;
                         }
@@ -432,7 +335,6 @@ namespace http {
 
             ClientConnection& client = it->second;
             if (client.ssl) {
-                SSL_shutdown(client.ssl);
                 SSL_free(client.ssl);
                 client.ssl = NULL;
             }
@@ -443,7 +345,6 @@ namespace http {
                 client.fd = -1;
             }
 
-            // log.debug("SSL id: {}", it);
             ssl_clients_.erase(it);
         }
 
