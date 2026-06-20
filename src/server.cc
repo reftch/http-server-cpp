@@ -129,7 +129,6 @@ namespace http {
                         static char buf[BUFFER_SIZE];
                         ssize_t len = recv(descriptors[i].fd, buf, BUFFER_SIZE, MSG_NOSIGNAL);
 
-                        log.info("Recv lenght {}", len);
                         if ((len == 0) && (errno != EAGAIN)) {
                             // If we got event TO READ, but actually CANNOT read, this means we should
                             // CLOSE connection. This is how POLL and EPOLL works.
@@ -137,12 +136,6 @@ namespace http {
                             close(descriptors[i].fd);
                             client_list_.erase(descriptors[i].fd);
                         } else if (len > 0) {
-                            std::cout << "SSL_read bytes = " << len << "\n";
-                            for (ssize_t i = 0; i < len; i++) {
-                                std::cout << std::hex << std::setw(2) << std::setfill('0') << (0xFF & buf[i]) << " ";
-                            }
-                            std::cout << std::dec << "\n";
-
                             performRequest(descriptors[i].fd, buf, len);
                         }
                     } else {
@@ -158,15 +151,29 @@ namespace http {
                             }
                         }
 
-                        // std::cout << "Client = " << inet_ntoa(client_addr.sin_addr) << std::endl;
                         setNonblockMode(client_fd);
                         client_list_.insert(client_fd);
-                        log.info("Open socket {}", client_fd);
+                        log.debug("Open socket {}", client_fd);
                     }
                 }
             }
 
             validateSockets();
+        }
+    }
+
+    void Server::validateSockets() {
+        std::vector<int> sockets_to_remove;
+        for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
+            int sd = *iter;
+            if (!utils::isSocketAlive(sd)) {
+                log.debug("Socket {} is closed, it will removed from pool", sd);
+                sockets_to_remove.push_back(sd);
+            }
+        }
+
+        for (int sd : sockets_to_remove) {
+            client_list_.erase(sd);
         }
     }
 
@@ -340,19 +347,19 @@ namespace http {
         return sendResponse(sd, response);
     }
 
-    void Server::validateSockets() {
-        std::vector<int> sockets_to_remove;
-        for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
-            int sd = *iter;
-            if (!utils::isSocketAlive(sd)) {
-                log.debug("Socket {} is closed, it will removed from pool", sd);
-                sockets_to_remove.push_back(sd);
-            }
-        }
+    // void Server::validateSockets() {
+    //     std::vector<int> sockets_to_remove;
+    //     for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
+    //         int sd = *iter;
+    //         if (!utils::isSocketAlive(sd)) {
+    //             log.debug("Socket {} is closed, it will removed from pool", sd);
+    //             sockets_to_remove.push_back(sd);
+    //         }
+    //     }
 
-        for (int sd : sockets_to_remove) {
-            client_list_.erase(sd);
-        }
-    }
+    //     for (int sd : sockets_to_remove) {
+    //         client_list_.erase(sd);
+    //     }
+    // }
 
 }  // namespace http

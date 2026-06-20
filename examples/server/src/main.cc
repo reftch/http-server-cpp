@@ -27,7 +27,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    log.setLevel(http::Level::DEBUG);
+    // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
     // http::Server s;

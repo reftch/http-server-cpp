@@ -210,13 +210,13 @@ namespace http {
                                 } else if (nread < 0) {
                                     log.warning("TLS try to close FD={}", fd);
                                     // std::lock_guard<std::mutex> lock(mtx);
-                                    closeClient(fd);
+                                    // closeClient(fd);
                                 }
                             }
                         }
                     }
                 }
-                validateSockets();
+                // validateSockets();
             }
         }
 
