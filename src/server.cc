@@ -137,6 +137,12 @@ namespace http {
                             close(descriptors[i].fd);
                             client_list_.erase(descriptors[i].fd);
                         } else if (len > 0) {
+                            std::cout << "SSL_read bytes = " << len << "\n";
+                            for (ssize_t i = 0; i < len; i++) {
+                                std::cout << std::hex << std::setw(2) << std::setfill('0') << (0xFF & buf[i]) << " ";
+                            }
+                            std::cout << std::dec << "\n";
+
                             performRequest(descriptors[i].fd, buf, len);
                         }
                     } else {

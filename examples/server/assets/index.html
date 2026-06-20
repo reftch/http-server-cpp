@@ -29,26 +29,33 @@
         const timeDisplay = document.getElementById('timeDisplay');
         const connectBtn = document.getElementById('connect-btn');
         connectBtn.innerText = "Connect";
-        connectBtn.addEventListener('click', () => {
+
+        connectBtn.addEventListener('click', toggleConnection);
+
+        function toggleConnection() {
             if (ws && ws.readyState === WebSocket.OPEN) {
+                console.log(ws)
                 ws.close(1000, "Client initiated disconnect");
                 connectBtn.innerText = "Connect";
                 timeDisplay.textContent = "No info";
             } else {
                 initWebSocket();
-                connectBtn.innerText = "Disconnect";
             }
-        });
-
+        }
 
         // Initialize WebSocket connection
         function initWebSocket() {
             try {
                 // Connect to WebSocket server (assuming it's on the same origin)
-                ws = new WebSocket(`wss://${window.location.host}/ws`);
+                const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+                ws = new WebSocket(
+                    `${wsScheme}://${window.location.host}/ws`
+                );
 
                 ws.onopen = function (event) {
                     console.log('WebSocket connected');
+                    connectBtn.innerText = "Discconnect";
+
                     const message = {
                         type: "websocket",
                         timestamp: Date.now()
@@ -78,6 +85,8 @@
 
                 ws.onclose = function (event) {
                     console.log('WebSocket disconnected');
+                    connectBtn.innerText = "Connect";
+                    timeDisplay.textContent = "No info";
                     // Attempt to reconnect after 3 seconds
                     // setTimeout(initWebSocket, 3000);
                 };

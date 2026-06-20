@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+#include "logger.h"
+
 namespace http {
 
     enum class Result : int { Fail = 0, Text = 1, Binary = 2 };
@@ -63,20 +65,23 @@ namespace http {
 #endif
         };
 
+        // logger
+        Logger& log = Logger::getInstance();
+
        public:
         WebSocket(uint32_t sockfd, const std::string& raw_request)
-            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {}
+            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {
+            std::cout << "Default constructor" << '\n';
+        }
 #ifdef HTTP_OPENSSL_SUPPORT
         WebSocket(uint32_t sockfd, SSL* ssl, const std::string& raw_request)
-            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {
-            // std::cout << "init " << byte_data.size() << '\n';
-        }
+            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {}
 #endif
 
         void close() {
             isOpen = false;
+            log.info("Close socket FD={}", frame.sockfd);
             ::close(frame.sockfd);
-            std::cout << "Frame FD" << frame.sockfd << '\n';
 #ifdef HTTP_OPENSSL_SUPPORT
             if (frame.ssl) {
                 SSL_free(frame.ssl);
@@ -102,7 +107,7 @@ namespace http {
             ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
 #else
             // auto response = writeFrame(msg, true, WsOpcode::Text);
-            auto response = writeFrame(msg, true, WsOpcode::Text);
+            auto response = writeFrame(msg, frame.fin, WsOpcode::Text);
             if (response.empty()) {
                 return -1;  // Return error if frame creation failed
             }
@@ -125,7 +130,19 @@ namespace http {
         }
 
         [[nodiscard]]
-        Result read(std::string& msg);
+        Result read(std::string& msg) {
+            if (!readFrame(byte_data)) {
+                return Result::Fail;
+            }
+
+            if (frame.opcode == WsOpcode::Close) {
+                close();
+                return Result::Fail;
+            }
+
+            msg = frame.text_payload;
+            return frame.opcode == WsOpcode::Text ? Result::Text : Result::Binary;
+        }
 
         friend Result operator>>(WebSocket& ws, std::string& msg) { return ws.read(msg); }
         // For sending messages - returns ssize_t like send() does
@@ -141,8 +158,6 @@ namespace http {
 
         // Create a WebSocket frame for sending
         std::vector<uint8_t> writeFrame(const std::string& message, bool fin, WsOpcode opcode, bool mask = false);
-
-        // bool isSocketAlive(int sockfd);
     };
 
     constexpr std::string_view toWsString(WsProtocol protocol) {

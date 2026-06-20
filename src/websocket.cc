@@ -3,19 +3,20 @@
 #include <string>
 namespace http {
 
-    Result WebSocket::read(std::string& msg) {
-        if (!readFrame(byte_data)) {
-            return Result::Fail;
-        }
+    // Result WebSocket::read(std::string& msg) {
+    //     std::cout << "FIRST BYTE (inside read): " << std::hex << (int)byte_data[0] << std::dec << "\n";
+    //     if (!readFrame(byte_data)) {
+    //         return Result::Fail;
+    //     }
 
-        if (frame.opcode == WsOpcode::Close) {
-            close();
-            return Result::Fail;
-        }
+    //     if (frame.opcode == WsOpcode::Close) {
+    //         close();
+    //         return Result::Fail;
+    //     }
 
-        msg = frame.text_payload;
-        return frame.opcode == WsOpcode::Text ? Result::Text : Result::Binary;
-    }
+    //     msg = frame.text_payload;
+    //     return frame.opcode == WsOpcode::Text ? Result::Text : Result::Binary;
+    // }
 
     bool WebSocket::readFrame(const std::vector<uint8_t>& data) {
         std::size_t offset = 0;
@@ -29,10 +30,10 @@ namespace http {
         frame.fin = (first_byte & 0x80) != 0;
         frame.opcode = static_cast<WsOpcode>(first_byte & 0x0F);
 
-        // if (frame.opcode == WsOpcode::Close) {
-        //     return false;
-        // }
-        std::cout << "Opcode: " << static_cast<int>(frame.opcode) << '\n';
+        if (frame.opcode == WsOpcode::Close) {
+            return false;
+        }
+        // std::cout << "Opcode: " << static_cast<int>(frame.opcode) << '\n';
 
         // Read mask and payload length (1 byte)
         uint8_t second_byte = data[offset++];
@@ -83,6 +84,110 @@ namespace http {
 
         return true;
     }
+
+    // bool WebSocket::readFrame(const std::vector<uint8_t>& data) {
+    //     std::cout << "FIRST BYTE (inside parser): " << std::hex << (int)data[0] << std::dec << "\n";
+    //     frame = {};  // 🔥 CRITICAL: reset state every call
+
+    //     std::size_t offset = 0;
+
+    //     if (data.size() < 2) {
+    //         return false;
+    //     }
+
+    //     // -------------------------
+    //     // FIN + RSV + OPCODE
+    //     // -------------------------
+    //     uint8_t first_byte = data[offset++];
+
+    //     frame.fin = (first_byte & 0x80) != 0;
+    //     uint8_t rsv = first_byte & 0x70;
+    //     frame.opcode = static_cast<WsOpcode>(first_byte & 0x0F);
+
+    //     std::cout << "First byte: " << first_byte << '\n';
+    //     std::cout << "Opcode: " << (int)frame.opcode << '\n';
+
+    //     // Optional: detect protocol issues (compression etc.)
+    //     if (rsv != 0) {
+    //         std::cout << "Warning: RSV bits set (compression?)\n";
+    //     }
+
+    //     // -------------------------
+    //     // MASK + LENGTH
+    //     // -------------------------
+    //     uint8_t second_byte = data[offset++];
+
+    //     frame.mask = (second_byte & 0x80) != 0;
+    //     uint64_t payload_length = second_byte & 0x7F;
+
+    //     // -------------------------
+    //     // EXTENDED LENGTH (16-bit)
+    //     // -------------------------
+    //     if (payload_length == 126) {
+    //         if (data.size() < offset + 2) return false;
+    //         payload_length = (static_cast<uint64_t>(data[offset]) << 8) | static_cast<uint64_t>(data[offset + 1]);
+    //         offset += 2;
+    //     }
+
+    //     // -------------------------
+    //     // EXTENDED LENGTH (64-bit)
+    //     // -------------------------
+    //     else if (payload_length == 127) {
+    //         if (data.size() < offset + 8) return false;
+
+    //         payload_length = 0;
+    //         for (int i = 0; i < 8; ++i) {
+    //             payload_length = (payload_length << 8) | static_cast<uint64_t>(data[offset + i]);
+    //         }
+
+    //         offset += 8;
+    //     }
+
+    //     frame.payload_length = payload_length;
+
+    //     // -------------------------
+    //     // MASKING KEY
+    //     // -------------------------
+    //     if (frame.mask) {
+    //         if (data.size() < offset + 4) return false;
+
+    //         for (int i = 0; i < 4; ++i) {
+    //             frame.masking_key[i] = data[offset + i];
+    //         }
+
+    //         offset += 4;
+    //     }
+
+    //     // -------------------------
+    //     // PAYLOAD
+    //     // -------------------------
+    //     if (data.size() < offset + payload_length) {
+    //         return false;
+    //     }
+
+    //     frame.payload_data.resize(payload_length);
+
+    //     for (size_t i = 0; i < payload_length; ++i) {
+    //         uint8_t byte = data[offset + i];
+
+    //         if (frame.mask) {
+    //             byte ^= frame.masking_key[i % 4];
+    //         }
+
+    //         frame.payload_data[i] = byte;
+    //     }
+
+    //     offset += payload_length;
+
+    //     // -------------------------
+    //     // TEXT CONVERSION
+    //     // -------------------------
+    //     if (frame.opcode == WsOpcode::Text) {
+    //         frame.text_payload.assign(frame.payload_data.begin(), frame.payload_data.end());
+    //     }
+
+    //     return true;
+    // }
 
     std::vector<uint8_t> WebSocket::writeFrame(const std::string& message, bool fin, WsOpcode opcode, bool mask) {
         std::vector<uint8_t> frame;
