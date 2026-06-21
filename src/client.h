@@ -338,7 +338,7 @@ namespace http {
                 }
             }
 
-            response.setContentByType(body, status);
+            response << status << body;
             return response;
         }
 
