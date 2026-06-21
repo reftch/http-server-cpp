@@ -64,10 +64,10 @@ int main() {
         auto thread_ptr = std::make_shared<std::thread>([&ws]() {
             while (true) {
                 // Add 1 second delay
-                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::this_thread::sleep_for(std::chrono::seconds(2));
                 std::string time_json = getCurrentTimeJson();
                 ssize_t result = ws << time_json;
-                // log.info("Result: {} from socket {}", result, ws.socket());
+                log.info("Result: {}", result);
                 if (result < 0) break;
             }
         });

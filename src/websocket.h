@@ -53,15 +53,14 @@ namespace http {
             std::array<uint8_t, 4> masking_key;
             std::vector<uint8_t> payload_data;
             std::string text_payload;  // For text frames only
-            int32_t sockfd;
+            int sockfd;
 
 #ifdef HTTP_OPENSSL_SUPPORT
             SSL* ssl = nullptr;
 #endif
 
             Frame() : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0) {}
-            Frame(int32_t sfd)
-                : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd) {}
+            Frame(int sfd) : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd) {}
 
 #ifdef HTTP_OPENSSL_SUPPORT
             Frame(int32_t sfd, SSL* ssl)
@@ -70,19 +69,19 @@ namespace http {
         };
 
        public:
-        WebSocket(int32_t sockfd, const std::string& raw_request)
+        WebSocket(int sockfd, const std::string& raw_request)
             : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {
             log.debug("Websocket open FD={}", sockfd);
         }
 #ifdef HTTP_OPENSSL_SUPPORT
-        WebSocket(int32_t sockfd, SSL* ssl, const std::string& raw_request)
+        WebSocket(int sockfd, SSL* ssl, const std::string& raw_request)
             : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {}
 #endif
 
         void close() {
             isOpen = false;
             log.info("Close socket FD={}", frame.sockfd);
-            ::close(frame.sockfd);
+            // ::close(frame.sockfd);
 #ifdef HTTP_OPENSSL_SUPPORT
             if (frame.ssl) {
                 SSL_free(frame.ssl);
@@ -93,12 +92,11 @@ namespace http {
 #endif
         }
 
-        // ssize_t send(const std::string& msg);
         ssize_t send(const std::string& msg) {
-            log.debug("Send message {}", msg);
-            log.debug("Is socket FD={} is alive: {}", frame.sockfd, utils::isSocketAlive(frame.sockfd));
+            int sockfd = frame.sockfd;
+            log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
 
-            if (!isOpen) {
+            if (!utils::isSocketAlive(sockfd)) {
                 log.debug("Websocket is closed");
                 return -1;
             }
@@ -110,7 +108,7 @@ namespace http {
                 return -1;  // Return error if frame creation failed
             }
             // Send the frame to the socket
-            ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
+            ssize_t sent = ::send(sockfd, response.data(), response.size(), 0);
 #else
             // auto response = writeFrame(msg, true, WsOpcode::Text);
             auto response = writeFrame(msg, frame.fin, WsOpcode::Text);
@@ -134,8 +132,6 @@ namespace http {
             }
             return sent;
         }
-
-        int socket() { return frame.sockfd; }
 
         [[nodiscard]]
         Result read(std::string& msg) {

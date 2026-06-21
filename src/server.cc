@@ -96,83 +96,195 @@ namespace http {
     }
 
     void Server::handleRequests() {
-        // Put listen socket at the beginning of all polling descriptors.
-        struct pollfd descriptors[POLL_SIZE];
-        descriptors[0].fd = sockfd_;
-        descriptors[0].events = POLLIN;
-
         while (running_) {
-            int index = 1;
-            for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
-                descriptors[index].fd = *iter;
-                descriptors[index].events = POLLIN;
-                ++index;
+            std::vector<pollfd> descriptors;
+
+            // Listen socket
+            descriptors.push_back({});
+            descriptors.back().fd = sockfd_;
+            descriptors.back().events = POLLIN;
+
+            // Client sockets
+            for (int fd : client_list_) {
+                pollfd pfd{};
+                pfd.fd = fd;
+                pfd.events = POLLIN;
+                descriptors.push_back(pfd);
             }
 
-            // Plus 1 for the listen socket.
-            int poll_size = 1 + client_list_.size();
+            int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), -1);
 
-            int ready_fd = poll(descriptors, poll_size, -1);
-            if (ready_fd == -1) {
-                log.error("Error of calling poll");
-                exit(5);
+            if (rc < 0) {
+                if (errno == EINTR) continue;
+
+                log.error("poll failed: {}", strerror(errno));
+                break;
             }
 
-            for (int i = 0; i < poll_size; i++) {
-                if (descriptors[i].revents & POLLIN) {
-                    if (i > 0) {
-                        // Slave socket
-                        static char buf[BUFFER_SIZE];
-                        ssize_t len = recv(descriptors[i].fd, buf, BUFFER_SIZE, MSG_NOSIGNAL);
+            std::vector<int> closedSockets;
 
-                        if ((len == 0) && (errno != EAGAIN)) {
-                            // If we got event TO READ, but actually CANNOT read, this means we should
-                            // CLOSE connection. This is how POLL and EPOLL works.
-                            shutdown(descriptors[i].fd, SHUT_RDWR);
-                            close(descriptors[i].fd);
-                            client_list_.erase(descriptors[i].fd);
-                        } else if (len > 0) {
-                            performRequest(descriptors[i].fd, buf, len);
-                        }
-                    } else {
-                        // Master socket
-                        struct sockaddr_in client_addr;
-                        socklen_t slen = sizeof(client_addr);
-                        memset(&client_addr, 0, sizeof(client_addr));
-                        int client_fd = accept(sockfd_, (struct sockaddr*)&client_addr, &slen);
-                        if (client_fd == -1) {
-                            if (errno != EWOULDBLOCK || errno != EAGAIN) {
-                                log.error("Error of calling accept");
-                                continue;
+            for (size_t i = 0; i < descriptors.size(); ++i) {
+                pollfd& pfd = descriptors[i];
+
+                if (pfd.revents == 0) continue;
+
+                // ==========================================
+                // LISTEN SOCKET
+                // ==========================================
+                if (i == 0) {
+                    if (pfd.revents & POLLIN) {
+                        while (true) {
+                            sockaddr_in client_addr{};
+                            socklen_t slen = sizeof(client_addr);
+
+                            int client_fd = accept(sockfd_, reinterpret_cast<sockaddr*>(&client_addr), &slen);
+
+                            if (client_fd < 0) {
+                                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                                    break;
+                                }
+
+                                log.error("accept failed: {}", strerror(errno));
+                                break;
                             }
-                        }
 
-                        setNonblockMode(client_fd);
-                        client_list_.insert(client_fd);
-                        log.debug("Open socket {}", client_fd);
+                            setNonblockMode(client_fd);
+
+                            client_list_.insert(client_fd);
+
+                            log.debug("Accepted connection fd={}", client_fd);
+                        }
+                    }
+
+                    continue;
+                }
+
+                // ==========================================
+                // CLIENT SOCKET
+                // ==========================================
+                int fd = pfd.fd;
+
+                if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                    log.debug("Closing fd={} revents={}", fd, pfd.revents);
+
+                    shutdown(fd, SHUT_RDWR);
+                    close(fd);
+
+                    closedSockets.push_back(fd);
+                    continue;
+                }
+
+                if (pfd.revents & POLLIN) {
+                    char buf[BUFFER_SIZE];
+
+                    ssize_t len = recv(fd, buf, sizeof(buf), MSG_NOSIGNAL);
+
+                    if (len > 0) {
+                        performRequest(fd, buf, len);
+                    } else if (len == 0) {
+                        log.debug("Peer closed fd={}", fd);
+
+                        shutdown(fd, SHUT_RDWR);
+                        close(fd);
+
+                        closedSockets.push_back(fd);
+                    } else {
+                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                            log.error("recv failed fd={} errno={} ({})", fd, errno, strerror(errno));
+
+                            shutdown(fd, SHUT_RDWR);
+                            close(fd);
+
+                            closedSockets.push_back(fd);
+                        }
                     }
                 }
             }
 
-            validateSockets();
-        }
-    }
-
-    void Server::validateSockets() {
-        std::vector<int> sockets_to_remove;
-        for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
-            int sd = *iter;
-            bool isAlive = utils::isSocketAlive(sd);
-            if (!isAlive) {
-                log.debug("Socket {} is died", sd);
+            for (int fd : closedSockets) {
+                client_list_.erase(fd);
             }
         }
-
-        for (int32_t sd : sockets_to_remove) {
-            log.debug("Socket {} is closed, it will removed from pool", sd);
-            client_list_.erase(sd);
-        }
     }
+
+    // void Server::handleRequests() {
+    //     // Put listen socket at the beginning of all polling descriptors.
+    //     struct pollfd descriptors[POLL_SIZE];
+    //     descriptors[0].fd = sockfd_;
+    //     descriptors[0].events = POLLIN;
+
+    //     while (running_) {
+    //         int index = 1;
+    //         for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
+    //             descriptors[index].fd = *iter;
+    //             descriptors[index].events = POLLIN;
+    //             ++index;
+    //         }
+
+    //         // Plus 1 for the listen socket.
+    //         int poll_size = 1 + client_list_.size();
+
+    //         int ready_fd = poll(descriptors, poll_size, -1);
+    //         if (ready_fd == -1) {
+    //             log.error("Error of calling poll");
+    //             exit(5);
+    //         }
+
+    //         for (int i = 0; i < poll_size; i++) {
+    //             if (descriptors[i].revents & POLLIN) {
+    //                 if (i > 0) {
+    //                     // Slave socket
+    //                     static char buf[BUFFER_SIZE];
+    //                     ssize_t len = recv(descriptors[i].fd, buf, BUFFER_SIZE, MSG_NOSIGNAL);
+
+    //                     if ((len == 0) && (errno != EAGAIN)) {
+    //                         // If we got event TO READ, but actually CANNOT read, this means we should
+    //                         // CLOSE connection. This is how POLL and EPOLL works.
+    //                         shutdown(descriptors[i].fd, SHUT_RDWR);
+    //                         close(descriptors[i].fd);
+    //                         client_list_.erase(descriptors[i].fd);
+    //                     } else if (len > 0) {
+    //                         performRequest(descriptors[i].fd, buf, len);
+    //                     }
+    //                 } else {
+    //                     // Master socket
+    //                     struct sockaddr_in client_addr;
+    //                     socklen_t slen = sizeof(client_addr);
+    //                     memset(&client_addr, 0, sizeof(client_addr));
+    //                     int client_fd = accept(sockfd_, (struct sockaddr*)&client_addr, &slen);
+    //                     if (client_fd == -1) {
+    //                         if (errno != EWOULDBLOCK || errno != EAGAIN) {
+    //                             log.error("Error of calling accept");
+    //                             continue;
+    //                         }
+    //                     }
+
+    //                     setNonblockMode(client_fd);
+    //                     client_list_.insert(client_fd);
+    //                     log.debug("Open socket {}", client_fd);
+    //                 }
+    //             }
+    //         }
+
+    //         validateSockets();
+    //     }
+    // }
+
+    // void Server::validateSockets() {
+    //     std::vector<int> sockets_to_remove;
+    //     for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
+    //         int sd = *iter;
+    //         bool isAlive = utils::isSocketAlive(sd);
+    //         if (!isAlive) {
+    //             log.debug("Socket {} is died", sd);
+    //         }
+    //     }
+
+    //     for (int32_t sd : sockets_to_remove) {
+    //         log.debug("Socket {} is closed, it will removed from pool", sd);
+    //         client_list_.erase(sd);
+    //     }
+    // }
 
     void Server::performRequest(const int sd, const char* buffer, const ssize_t nread) {
         std::string raw_request(buffer, nread);
