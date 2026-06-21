@@ -165,8 +165,6 @@ namespace http {
 
         virtual bool sendResponse(const int sd, std::string& body);
 
-        // virtual void validateSockets();
-
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
