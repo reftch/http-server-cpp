@@ -83,11 +83,7 @@ namespace http {
 
             running_ = true;
 
-            auto end_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
-
-            log.info("Server started on https://{}:{} in {} ", host_, port_, duration);
-
+            log.info("Server started on https://{}:{}", host_, port_);
             handleRequests();
 
             return 0;
@@ -336,7 +332,7 @@ namespace http {
             ClientConnection& client = it->second;
             if (client.ssl) {
                 SSL_free(client.ssl);
-                client.ssl = NULL;
+                client.ssl = nullptr;
             }
 
             log.debug("Client id: {}", client.fd);

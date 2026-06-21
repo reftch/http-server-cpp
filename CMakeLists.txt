@@ -21,7 +21,7 @@ add_compile_definitions(KEEPALIVE_MAX_COUNT=96)
 add_compile_definitions(CONNECTION_TIMEOUT_SECOND=3)
 add_compile_definitions(READ_BUFFER_SIZE=4096)
 add_compile_definitions(CLIENT_TIMEOUT_SECONDS=10)
-# add_compile_definitions(POLL_TIMEOUT=300)
+add_compile_definitions(POLL_TIMEOUT=300)
 
 # Enable clang-tidy performance checks
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)

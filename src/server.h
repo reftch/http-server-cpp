@@ -38,7 +38,6 @@
 #include <unistd.h>
 
 #include <algorithm>
-#include <chrono>
 #include <csignal>
 #include <cstring>
 #include <functional>
@@ -89,6 +88,10 @@ namespace http {
      */
     class Server : public BaseServer {
        public:
+        /**
+         * Constructor for the server.
+         * Initializes server configuration but does not start listening.
+         */
         Server() : port_(8080), host_("0.0.0.0") {}
         /**
          * Constructor for the server.
@@ -129,7 +132,7 @@ namespace http {
         }
 
         template <WsProtocol P>
-        void setRoute(const std::string& path, WsHandler handler) {
+        void setRoute(const std::string& path, const WsHandler handler) {
             WsRoute wsRoute;
             wsRoute.path = path;
             wsRoute.handler = handler;
@@ -138,7 +141,7 @@ namespace http {
             wsRoutes.insert(wsRoute);
         }
 
-        bool updateWsRoute(const std::string& path, int32_t socketFd) {
+        bool updateWsRoute(const std::string& path, const int32_t socketFd) {
             // Search for the route with matching path and protocol
             for (auto it = wsRoutes.begin(); it != wsRoutes.end(); ++it) {
                 if (it->path == path) {
@@ -149,7 +152,7 @@ namespace http {
             return false;
         }
 
-        std::optional<WsHandler> getWsHandlerBySocketId(int32_t socketFd) {
+        std::optional<WsHandler> getWsHandlerBySocketId(const int32_t socketFd) {
             for (const auto& route : wsRoutes) {
                 if (route.sockfd == socketFd) {
                     return route.handler;
@@ -178,9 +181,6 @@ namespace http {
         int32_t sockfd_;             // server file descriptor
         const int port_;             // Port number to listen on
         const std::string host_;     // Hostname or IP address to bind to
-
-        // Time when server started
-        std::chrono::high_resolution_clock::time_point start_time_ = std::chrono::high_resolution_clock::now();
 
         int setNonblockMode(int fd);
 

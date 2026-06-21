@@ -41,11 +41,7 @@ namespace http {
         // initialize the running flag
         running_ = true;
 
-        auto end_time = std::chrono::high_resolution_clock::now();
-        // log.info("Time : {}", end_time);
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time_);
-
-        log.info("Server started on http://{}:{} in {} ", host_, port_, duration);
+        log.info("Server started on https://{}:{}", host_, port_);
 
         handleRequests();
 
