@@ -6,9 +6,9 @@
 #include <sstream>
 #include <string>
 
-// #include "server.h"
-#define HTTP_OPENSSL_SUPPORT
-#include "sslserver.h"
+#include "server.h"
+// #define HTTP_OPENSSL_SUPPORT
+// #include "sslserver.h"
 
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
@@ -27,11 +27,11 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    // log.setLevel(http::Level::DEBUG);
+    log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
-    // http::Server s;
-    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    http::Server s;
+    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
     static auto s_ptr = &s;
@@ -48,7 +48,7 @@ int main() {
         res << http::ContentType::HTML << "home.html";
     });
 
-    s.setRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [](const http::Request& req, http::Response& res) {
+    s.setRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [&](const http::Request& req, http::Response& res) {
         std::string value = req.params().at("v");
         res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
     });
@@ -67,6 +67,7 @@ int main() {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 std::string time_json = getCurrentTimeJson();
                 ssize_t result = ws << time_json;
+                // log.info("Result: {} from socket {}", result, ws.socket());
                 if (result < 0) break;
             }
         });

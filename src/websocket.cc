@@ -16,6 +16,7 @@ namespace http {
         frame.opcode = static_cast<WsOpcode>(first_byte & 0x0F);
 
         if (frame.opcode == WsOpcode::Close) {
+            log.debug("Opcode is closed");
             return false;
         }
 

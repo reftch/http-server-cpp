@@ -112,7 +112,7 @@ namespace http {
             // Plus 1 for the listen socket.
             int poll_size = 1 + client_list_.size();
 
-            int ready_fd = poll(descriptors, poll_size, POLL_TIMEOUT);
+            int ready_fd = poll(descriptors, poll_size, -1);
             if (ready_fd == -1) {
                 log.error("Error of calling poll");
                 exit(5);
@@ -162,13 +162,14 @@ namespace http {
         std::vector<int> sockets_to_remove;
         for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
             int sd = *iter;
-            if (!utils::isSocketAlive(sd)) {
-                log.debug("Socket {} is closed, it will removed from pool", sd);
-                sockets_to_remove.push_back(sd);
+            bool isAlive = utils::isSocketAlive(sd);
+            if (!isAlive) {
+                log.debug("Socket {} is died", sd);
             }
         }
 
-        for (int sd : sockets_to_remove) {
+        for (int32_t sd : sockets_to_remove) {
+            log.debug("Socket {} is closed, it will removed from pool", sd);
             client_list_.erase(sd);
         }
     }
@@ -180,7 +181,6 @@ namespace http {
 
         // is websocket requests
         if (isWebSocketFrame(raw_request)) {
-            // log.info("Websocket message ");
             WebSocket ws(sd, raw_request);
             auto handler = getWsHandlerBySocketId(sd);
             if (handler.has_value()) {

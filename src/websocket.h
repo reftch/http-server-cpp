@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "logger.h"
+#include "utils.h"
 
 namespace http {
 
@@ -41,6 +42,9 @@ namespace http {
 
     class WebSocket {
        private:
+        // logger
+        Logger& log = Logger::getInstance();
+
         struct Frame {
             bool fin;
             WsOpcode opcode;
@@ -49,32 +53,29 @@ namespace http {
             std::array<uint8_t, 4> masking_key;
             std::vector<uint8_t> payload_data;
             std::string text_payload;  // For text frames only
-            uint32_t sockfd;
+            int32_t sockfd;
 
 #ifdef HTTP_OPENSSL_SUPPORT
             SSL* ssl = nullptr;
 #endif
 
             Frame() : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0) {}
-            Frame(uint32_t sfd)
+            Frame(int32_t sfd)
                 : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd) {}
 
 #ifdef HTTP_OPENSSL_SUPPORT
-            Frame(uint32_t sfd, SSL* ssl)
+            Frame(int32_t sfd, SSL* ssl)
                 : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd), ssl(ssl) {}
 #endif
         };
 
-        // logger
-        Logger& log = Logger::getInstance();
-
        public:
-        WebSocket(uint32_t sockfd, const std::string& raw_request)
+        WebSocket(int32_t sockfd, const std::string& raw_request)
             : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {
-            std::cout << "Default constructor" << '\n';
+            log.debug("Websocket open FD={}", sockfd);
         }
 #ifdef HTTP_OPENSSL_SUPPORT
-        WebSocket(uint32_t sockfd, SSL* ssl, const std::string& raw_request)
+        WebSocket(int32_t sockfd, SSL* ssl, const std::string& raw_request)
             : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {}
 #endif
 
@@ -92,8 +93,13 @@ namespace http {
 #endif
         }
 
+        // ssize_t send(const std::string& msg);
         ssize_t send(const std::string& msg) {
+            log.debug("Send message {}", msg);
+            log.debug("Is socket FD={} is alive: {}", frame.sockfd, utils::isSocketAlive(frame.sockfd));
+
             if (!isOpen) {
+                log.debug("Websocket is closed");
                 return -1;
             }
 
@@ -128,6 +134,8 @@ namespace http {
             }
             return sent;
         }
+
+        int socket() { return frame.sockfd; }
 
         [[nodiscard]]
         Result read(std::string& msg) {

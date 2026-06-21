@@ -141,20 +141,20 @@ namespace http {
             wsRoutes.insert(wsRoute);
         }
 
-        bool updateWsRoute(const std::string& path, const int32_t socketFd) {
+        bool updateWsRoute(const std::string& path, const int32_t sockfd) {
             // Search for the route with matching path and protocol
             for (auto it = wsRoutes.begin(); it != wsRoutes.end(); ++it) {
                 if (it->path == path) {
-                    const_cast<WsRoute&>(*it).sockfd = socketFd;
+                    const_cast<WsRoute&>(*it).sockfd = sockfd;
                     return true;
                 }
             }
             return false;
         }
 
-        std::optional<WsHandler> getWsHandlerBySocketId(const int32_t socketFd) {
+        std::optional<WsHandler> getWsHandlerBySocketId(const int32_t sockfd) {
             for (const auto& route : wsRoutes) {
-                if (route.sockfd == socketFd) {
+                if (route.sockfd == sockfd) {
                     return route.handler;
                 }
             }
@@ -172,15 +172,16 @@ namespace http {
         std::set<WsRoute> wsRoutes;
 
        protected:
+        // static directory
         std::string static_directory_ = "./assets";
         // router
         http::Router router_;
 
-        bool running_ = false;       // Is server running flag
-        std::set<int> client_list_;  // client list for connections(slave sockets).
-        int32_t sockfd_;             // server file descriptor
-        const int port_;             // Port number to listen on
-        const std::string host_;     // Hostname or IP address to bind to
+        bool running_ = false;           // Is server running flag
+        std::set<int32_t> client_list_;  // client list for connections(slave sockets)
+        int32_t sockfd_;                 // server file descriptor
+        const int port_;                 // Port number to listen on
+        const std::string host_;         // Hostname or IP address to bind to
 
         int setNonblockMode(int fd);
 
