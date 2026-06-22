@@ -176,6 +176,12 @@ namespace http {
             return sock;
         }
 
+        void closeSocket(int sock) {
+            if (sock >= 0) {
+                close(sock);
+            }
+        }
+
         std::string sendRequest(const std::string& method, const std::string& path) {
             int sock = createSocket();
             if (sock < 0) {
@@ -188,7 +194,7 @@ namespace http {
 
             struct hostent* server = gethostbyname(host_.c_str());
             if (!server) {
-                close(sock);
+                closeSocket(sock);
                 throw std::runtime_error("Host not found: " + host_);
             }
 
@@ -201,12 +207,12 @@ namespace http {
 
             if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 ||
                 setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
-                close(sock);
+                closeSocket(sock);
                 throw std::runtime_error("Failed to set socket timeout");
             }
 
             if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-                close(sock);
+                closeSocket(sock);
                 throw std::runtime_error("Connection failed to " + host_ + ":" + std::to_string(port_));
             }
 
@@ -252,7 +258,7 @@ namespace http {
 #endif
             } else {
                 if (send(sock, request_str.data(), request_str.size(), 0) < 0) {
-                    close(sock);
+                    closeSocket(sock);
                     throw std::runtime_error("Failed to send request");
                 }
             }
@@ -289,6 +295,8 @@ namespace http {
                 // have all the bytes been read yet?
                 if (bytes_read < READ_BUFFER_SIZE) break;
             }
+
+            closeSocket(sock);
 
             return trim(response);
         }
