@@ -177,6 +177,12 @@ namespace http {
         }
 
         void closeSocket(int sock) {
+#ifdef HTTP_OPENSSL_SUPPORT
+            if (ssl_) {
+                SSL_free(ssl_);
+                ssl_ = nullptr;
+            }
+#endif
             if (sock >= 0) {
                 close(sock);
             }
@@ -221,7 +227,7 @@ namespace http {
                 // Create SSL connection
                 ssl_ = SSL_new(ssl_ctx_);
                 if (!ssl_) {
-                    close(sock);
+                    closeSocket(sock);
                     throw std::runtime_error("Failed to create SSL connection");
                 }
 
@@ -233,7 +239,7 @@ namespace http {
                     int err = SSL_get_error(ssl_, ret);
                     ERR_print_errors_fp(stderr);
                     SSL_free(ssl_);
-                    close(sock);
+                    closeSocket(sock);
                     throw std::runtime_error("SSL handshake failed with error code: " + std::to_string(err));
                 }
             }
