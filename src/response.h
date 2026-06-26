@@ -3,12 +3,8 @@
 
 #include <unistd.h>
 
-#include <iostream>
+#include <map>
 #include <string>
-#include <unordered_map>
-#include <vector>
-
-#include "utils.h"
 
 namespace http {
 
@@ -110,11 +106,12 @@ namespace http {
         Response() = default;
         Response(bool is_keep_alive, const std::string& static_directory);
 
-        void setHeader(const std::string& key, const std::string& val) { headers_[key] = val; }
+        void setHeader(const std::string& key, const std::string& val) { headers_[std::move(key)] = std::move(val); }
 
         std::string content() { return content_; }
         http::Status status() { return status_; }
-        std::unordered_map<std::string, std::string> headers() { return headers_; }
+        const std::map<std::string, std::string>& headers() const;
+        // std::map<std::string, std::string> headers() { return headers_; }
 
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
         Response& setContent(const std::string& content) {
@@ -163,7 +160,7 @@ namespace http {
         std::string content_;
         std::string version_;
         std::string static_directory_;
-        std::unordered_map<std::string, std::string> headers_;
+        std::map<std::string, std::string> headers_;
 
         std::string statusToString();
 

@@ -1,5 +1,7 @@
 #include "response.h"
 
+#include "utils.h"
+
 namespace http {
 
     Response::Response(bool is_keep_alive, const std::string& static_directory) : static_directory_(static_directory) {
@@ -46,6 +48,8 @@ namespace http {
                 return statusToStrings::internal_server_error;
         }
     }
+
+    const std::map<std::string, std::string>& Response::headers() const { return headers_; }
 
     std::string Response::build() {
         std::string body = statusToString();

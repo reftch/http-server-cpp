@@ -30,7 +30,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
-#include <sys/poll.h>
+// #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -167,7 +167,7 @@ namespace http {
         std::string static_directory_ = "./assets";
         // router
         http::Router router_;
-        bool isHttps = false; 
+        bool isHttps = false;
 
         bool running_ = false;           // Is server running flag
         std::set<int32_t> client_list_;  // client list for connections(slave sockets)

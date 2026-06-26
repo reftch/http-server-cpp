@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <array>
+#include <charconv>
 #include <cstring>
 #include <expected>
 #include <iostream>
@@ -350,7 +352,8 @@ namespace http {
 
             std::string body = raw_response.substr(header_end + 4);
 
-            auto it = response.headers().find("Transfer-Encoding");
+            const auto& headers = response.headers();
+            auto it = headers.find("Transfer-Encoding");
             if (it != response.headers().end() && it->second == "chunked") {
                 auto chunked = parseChunkedBody(body);
                 if (!chunked) {
