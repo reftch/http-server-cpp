@@ -27,7 +27,6 @@
 #endif
 
 #include <arpa/inet.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
@@ -37,23 +36,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <csignal>
 #include <cstring>
 #include <functional>
-#include <future>
-#include <iostream>
-#include <map>
 #include <set>
 #include <string>
-#include <thread>
-#include <vector>
 
 #include "logger.h"
 #include "request.h"
 #include "response.h"
 #include "router.h"
-#include "utils.h"
+// #include "utils.h"
 #include "websocket.h"
 
 namespace http {
@@ -174,6 +167,7 @@ namespace http {
         std::string static_directory_ = "./assets";
         // router
         http::Router router_;
+        bool isHttps = false; 
 
         bool running_ = false;           // Is server running flag
         std::set<int32_t> client_list_;  // client list for connections(slave sockets)

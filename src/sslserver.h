@@ -25,6 +25,7 @@ namespace http {
          */
         SSLServer(const std::string& host, const int& port, const std::string& cert_file, const std::string& key_file)
             : Server(host, port), cert_file_(cert_file), key_file_(key_file), ssl_ctx_(nullptr) {
+            isHttps = true;     
             SSL_library_init();
             SSL_load_error_strings();
             OpenSSL_add_ssl_algorithms();

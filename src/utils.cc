@@ -1,32 +1,12 @@
+#include <cstdint>
+#include <sstream>  // Must include this for stringstream
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+
 #include "utils.h"
 
 namespace utils {
-
-    std::string getBuildDate() {
-        // Get current time
-        std::time_t now = std::time(nullptr);
-
-        // Convert to local time structure
-        std::tm* ltm = std::localtime(&now);
-
-        // Format the date (e.g., YYYY-MM-DD)
-        std::stringstream ss;
-
-        // Extract components: Day, Month, Year
-        // Note: %d is the day, %m is the month, %Y is the year
-        ss << std::put_time(ltm, "%d.%m.%Y");
-
-        return ss.str();
-    }
-
-    // Helper function for help message
-    void printHelp() {
-        std::cout << "Usage: http_server [options] <address> <port>\n\n"
-                  << "Options (Optional):\n"
-                  << "  --help         Show this help message.\n"
-                  << "  --host [addr]  Specify the IP address (default: 0.0.0.0)\n"
-                  << "  --port [num]   Specify the port number (default: 8080)\n";
-    }
 
     std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
         std::map<std::string, std::string> args;
@@ -161,9 +141,9 @@ namespace utils {
         // value like 0 could collide with a real file that legitimately has
         // mtime == 0 (epoch) and lead to misleading validators.
 
-        if (mtime < 0) {
-            return std::string();
-        }
+        // if (mtime < 0) {
+        //     return std::string();
+        // }
 
         return std::string("W/\"") + fromIntToHex(mtime) + "-" + fromIntToHex(size) + "\"";
     }

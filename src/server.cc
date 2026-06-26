@@ -41,7 +41,8 @@ namespace http {
         // initialize the running flag
         running_ = true;
 
-        log.info("Server started on https://{}:{}", host_, port_);
+        const char* scheme = isHttps ? "https" : "http";
+        log.info("Server started on {}://{}:{}", scheme, host_, port_);
 
         handleRequests();
 
@@ -112,7 +113,7 @@ namespace http {
                 descriptors.push_back(pfd);
             }
 
-            int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), -1);
+            int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), POLL_TIMEOUT);
 
             if (rc < 0) {
                 if (errno == EINTR) continue;
@@ -138,24 +139,18 @@ namespace http {
                             socklen_t slen = sizeof(client_addr);
 
                             int client_fd = accept(sockfd_, reinterpret_cast<sockaddr*>(&client_addr), &slen);
-
                             if (client_fd < 0) {
                                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                                     break;
                                 }
-
                                 log.error("accept failed: {}", strerror(errno));
                                 break;
                             }
 
                             setNonblockMode(client_fd);
-
                             client_list_.insert(client_fd);
-
-                            log.debug("Accepted connection fd={}", client_fd);
                         }
                     }
-
                     continue;
                 }
 
@@ -247,7 +242,7 @@ namespace http {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     // This is expected in non-blocking mode - just continue
                     // But we should add a timeout mechanism for large files
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    // std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     continue;
                 } else {
                     log.warning("Error writing response body: {}", strerror(errno));

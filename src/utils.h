@@ -5,37 +5,15 @@
 #include <sys/stat.h>
 
 #include <algorithm>
-#include <chrono>
+#include <charconv>
+#include <cstdlib>
 #include <ctime>  // For time functions
-#include <filesystem>
-#include <fstream>
-#include <iomanip>  // For stream manipulation (like std::put_time)
-#include <iostream>
 #include <map>
-#include <optional>
-#include <sstream>  // Must include this for stringstream
 #include <string>
+#include <string_view>
 #include <unordered_map>
-#include <vector>
 
 namespace utils {
-
-    /**
-     * @brief Retrieves the current system build date in YYYY-MM-DD format.
-     *
-     * This function returns a string representing the current build date.
-     *
-     * @return A string containing the current date in YYYY-MM-DD format.
-     */
-    std::string getBuildDate();
-
-    /**
-     * @brief Prints the application's usage instructions and available options.
-     *
-     * Displays a help message to the user with information about how to use the
-     * application and what command-line options are available.
-     */
-    void printHelp();
 
     /**
      * @brief Parses command-line arguments for host and port configuration.
@@ -116,30 +94,34 @@ namespace utils {
             return default_value;
         }
 
-        try {
-            if constexpr (std::is_same_v<T, std::string>) {
-                return std::string(value);
-            } else if constexpr (std::is_same_v<T, bool>) {
-                std::string lower_value = std::string(value);
-                std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
-                if (lower_value == "true" || lower_value == "1" || lower_value == "yes") {
-                    return true;
-                } else if (lower_value == "false" || lower_value == "0" || lower_value == "no") {
-                    return false;
-                } else {
-                    throw std::invalid_argument("Invalid boolean value");
-                }
-            } else if constexpr (std::is_same_v<T, float>) {
-                return std::stof(value);
-            } else if constexpr (std::is_same_v<T, double>) {
-                return std::stod(value);
-            } else if constexpr (std::is_same_v<T, long double>) {
-                return std::stold(value);
-            } else {
-                // For integer types
-                return static_cast<T>(std::stoll(value));
+        std::string_view sv(value);
+
+        if constexpr (std::is_same_v<T, std::string>) {
+            return std::string(value);
+        } else if constexpr (std::is_same_v<T, bool>) {
+            std::string lower(sv);
+            std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
+                return std::tolower(c);
+            });
+
+            return (lower == "true" || lower == "1" || lower == "yes" || lower == "on");
+        } else if constexpr (std::is_floating_point_v<T>) {
+            T result{};
+            auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+
+            if (ec == std::errc() && ptr == sv.data() + sv.size()) {
+                return result;
             }
-        } catch (const std::exception&) {
+            return default_value;
+        } else {
+            // integer types
+            long long temp{};
+            auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), temp);
+
+            if (ec == std::errc()) {
+                return static_cast<T>(temp);
+            }
+
             return default_value;
         }
     }

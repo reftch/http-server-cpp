@@ -11,8 +11,8 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <expected>
 #include <iostream>
-#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -76,7 +76,7 @@ namespace http {
                 try {
                     port_ = std::stoi(port_str);
                 } catch (const std::exception&) {
-                    throw std::runtime_error("Invalid port in URL: " + url);
+                    // throw std::runtime_error("Invalid port in URL: " + url);
                 }
             }
 
@@ -90,62 +90,74 @@ namespace http {
 #endif
         }
 
-        std::optional<Response> get(const std::string& path) {
-            try {
-                std::string response = sendRequest("GET", path);
-                return parseResponse(response);
-            } catch (const std::exception& e) {
-                std::cerr << "Error in GET request: " << e.what() << std::endl;
-                return std::nullopt;
+        std::expected<Response, std::string> get(const std::string& path) {
+            auto response = sendRequest("GET", path);
+            if (!response) {
+                return std::unexpected(response.error());
             }
+
+            return parseResponse(*response);
         }
 
-        std::optional<Response> post(const std::string& path, const std::string& body) {
-            try {
-                std::ostringstream request;
-                request << "POST " << path << " HTTP/1.1\r\n";
-                request << "Host: " << host_ << "\r\n";
-                request << "Content-Type: application/json\r\n";
-                request << "Content-Length: " << body.length() << "\r\n";
-                request << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
-                request << "\r\n";
-                request << body;
+        std::expected<Response, std::string> post(const std::string& path, const std::string& body) {
+            std::ostringstream request;
+            request << "POST " << path << " HTTP/1.1\r\n";
+            request << "Host: " << host_ << "\r\n";
+            request << "Content-Type: application/json\r\n";
+            request << "Content-Length: " << body.length() << "\r\n";
+            request << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
+            request << "\r\n";
+            request << body;
 
-                std::string response = sendRequest("POST", path);
-                return parseResponse(response);
-            } catch (const std::exception& e) {
-                std::cerr << "Error in POST request: " << e.what() << std::endl;
-                return std::nullopt;
+            auto response = sendRequest("POST", path);
+            if (!response) {
+                return std::unexpected(response.error());
             }
+
+            auto parsed = parseResponse(*response);
+            if (!parsed) {
+                return std::unexpected(parsed.error());
+            }
+
+            return *parsed;
         }
 
-        std::optional<Response> put(const std::string& path, const std::string& body) {
-            try {
-                std::ostringstream request;
-                request << "PUT " << path << " HTTP/1.1\r\n";
-                request << "Host: " << host_ << "\r\n";
-                request << "Content-Type: application/json\r\n";
-                request << "Content-Length: " << body.length() << "\r\n";
-                request << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
-                request << "\r\n";
-                request << body;
+        std::expected<Response, std::string> put(const std::string& path, const std::string& body) {
+            std::ostringstream request;
+            request << "PUT " << path << " HTTP/1.1\r\n";
+            request << "Host: " << host_ << "\r\n";
+            request << "Content-Type: application/json\r\n";
+            request << "Content-Length: " << body.length() << "\r\n";
+            request << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
+            request << "\r\n";
+            request << body;
 
-                std::string response = sendRequest("PUT", path);
-                return parseResponse(response);
-            } catch (const std::exception& e) {
-                std::cerr << "Error in PUT request: " << e.what() << std::endl;
-                return std::nullopt;
+            auto response = sendRequest("PUT", path);
+            if (!response) {
+                return std::unexpected(response.error());
             }
+
+            auto parsed = parseResponse(*response);
+            if (!parsed) {
+                return std::unexpected(parsed.error());
+            }
+
+            return *parsed;
         }
 
-        std::optional<Response> del(const std::string& path) {
-            try {
-                std::string response = sendRequest("DELETE", path);
-                return parseResponse(response);
-            } catch (const std::exception& e) {
-                std::cerr << "Error in DELETE request: " << e.what() << std::endl;
-                return std::nullopt;
+        std::expected<Response, std::string> del(const std::string& path) {
+            auto response = sendRequest("DELETE", path);
+
+            if (!response) {
+                return std::unexpected(response.error());
             }
+
+            auto parsed = parseResponse(*response);
+            if (!parsed) {
+                return std::unexpected(parsed.error());
+            }
+
+            return *parsed;
         }
 
        private:
@@ -185,10 +197,10 @@ namespace http {
             }
         }
 
-        std::string sendRequest(const std::string& method, const std::string& path) {
+        std::expected<std::string, std::string> sendRequest(const std::string& method, const std::string& path) {
             int sock = createSocket();
             if (sock < 0) {
-                throw std::runtime_error("Failed to create socket");
+                return std::unexpected("Failed to create socket");
             }
 
             struct sockaddr_in server_addr{};
@@ -198,12 +210,11 @@ namespace http {
             struct hostent* server = gethostbyname(host_.c_str());
             if (!server) {
                 closeSocket(sock);
-                throw std::runtime_error("Host not found: " + host_);
+                return std::unexpected("Host not found: " + host_);
             }
 
             memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
-            // Set timeout
             struct timeval tv{};
             tv.tv_sec = kTIMEOUT_SECONDS;
             tv.tv_usec = 0;
@@ -211,173 +222,177 @@ namespace http {
             if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 ||
                 setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
                 closeSocket(sock);
-                throw std::runtime_error("Failed to set socket timeout");
+                return std::unexpected("Failed to set socket timeout");
             }
 
             if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
                 closeSocket(sock);
-                throw std::runtime_error("Connection failed to " + host_ + ":" + std::to_string(port_));
+                return std::unexpected("Connection failed to " + host_ + ":" + std::to_string(port_));
             }
 
 #ifdef HTTP_OPENSSL_SUPPORT
             if (is_https_) {
-                // Create SSL connection
                 ssl_ = SSL_new(ssl_ctx_);
                 if (!ssl_) {
                     closeSocket(sock);
-                    throw std::runtime_error("Failed to create SSL connection");
+                    return std::unexpected("Failed to create SSL connection");
                 }
 
                 SSL_set_fd(ssl_, sock);
 
-                // Perform SSL handshake
                 int ret = SSL_connect(ssl_);
                 if (ret <= 0) {
                     int err = SSL_get_error(ssl_, ret);
                     ERR_print_errors_fp(stderr);
                     SSL_free(ssl_);
                     closeSocket(sock);
-                    throw std::runtime_error("SSL handshake failed with error code: " + std::to_string(err));
+                    return std::unexpected("SSL handshake failed: " + std::to_string(err));
                 }
             }
 #endif
 
-            // Prepare request
             std::ostringstream oss;
             oss << method << " " << path << " HTTP/1.1\r\n";
             oss << "Host: " << host_ << "\r\n";
             oss << "Connection: " << (keep_alive_ ? "keep-alive" : "close") << "\r\n";
             oss << "\r\n";
 
-            const std::string& request_str = oss.str();
+            std::string request_str = oss.str();
 
             if (is_https_) {
 #ifdef HTTP_OPENSSL_SUPPORT
                 if (SSL_write(ssl_, request_str.data(), request_str.size()) <= 0) {
                     SSL_free(ssl_);
                     close(sock);
-                    throw std::runtime_error("Failed to send request");
+                    return std::unexpected("Failed to send HTTPS request");
                 }
 #endif
             } else {
                 if (send(sock, request_str.data(), request_str.size(), 0) < 0) {
                     closeSocket(sock);
-                    throw std::runtime_error("Failed to send request");
+                    return std::unexpected("Failed to send request");
                 }
             }
 
-            // Read response
             return readResponse(sock);
         }
 
-        std::string readResponse(int sock) {
+        std::expected<std::string, std::string> readResponse(int sock) {
             std::string response;
             std::array<char, READ_BUFFER_SIZE> buffer{};
 
             while (true) {
                 int bytes_read = 0;
+
                 if (is_https_) {
 #ifdef HTTP_OPENSSL_SUPPORT
                     bytes_read = SSL_read(ssl_, buffer.data(), static_cast<int>(buffer.size()));
+
                     if (bytes_read <= 0) {
                         int err = SSL_get_error(ssl_, bytes_read);
-                        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) continue;
-                        break;
+
+                        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+                            continue;
+                        }
+
+                        return std::unexpected("SSL read failed with error: " + std::to_string(err));
                     }
 #endif
                 } else {
                     bytes_read = ::recv(sock, buffer.data(), buffer.size(), 0);
+
                     if (bytes_read < 0) {
                         if (errno == EINTR) continue;
-                        break;
+
+                        return std::unexpected("recv failed: " + std::to_string(errno));
                     }
+
                     if (bytes_read == 0) break;
                 }
 
                 response.append(buffer.data(), static_cast<std::size_t>(bytes_read));
-                // have all the bytes been read yet?
+
+                // heuristic end-of-stream
                 if (bytes_read < READ_BUFFER_SIZE) break;
             }
 
             closeSocket(sock);
 
-            return trim(response);
+            return response;
         }
 
-        Response parseResponse(const std::string& raw_response) {
+        std::expected<Response, std::string> parseResponse(const std::string& raw_response) {
             Response response;
 
-            // Find the end of headers (after \r\n\r\n)
             size_t header_end = raw_response.find("\r\n\r\n");
             if (header_end == std::string::npos) {
-                return response;
+                return std::unexpected("Invalid HTTP response: missing header terminator");
             }
 
-            // Parse status line (first line)
             Status status = parseStatus(raw_response);
 
-            // Parse headers
             std::string header_section = raw_response.substr(0, header_end);
             std::istringstream iss(header_section);
             std::string line;
 
             while (std::getline(iss, line)) {
-                if (line.empty()) break;  // End of headers
+                if (line.empty()) break;
 
                 size_t colon_pos = line.find(':');
-                if (colon_pos != std::string::npos) {
-                    std::string key = line.substr(0, colon_pos);
-                    std::string value = line.substr(colon_pos + 1);
+                if (colon_pos == std::string::npos) continue;
 
-                    // Trim whitespace
-                    key = trim(key);
-                    value = trim(value);
+                std::string key = trim(line.substr(0, colon_pos));
+                std::string value = trim(line.substr(colon_pos + 1));
 
-                    response.setHeader(key, value);
-                }
+                response.setHeader(key, value);
             }
 
-            // Extract body (after headers)
-            std::string body = raw_response.substr(header_end + 4);  // +4 for \r\n\r\n
+            std::string body = raw_response.substr(header_end + 4);
 
-            // Check if it's chunked encoding
-            std::string transfer_encoding = response.headers()["Transfer-Encoding"];
-            if (!transfer_encoding.empty()) {
-                std::string transfer_encoding = response.headers().at("Transfer-Encoding");
-                if (transfer_encoding == "chunked") {
-                    body = parseChunkedBody(body);
+            auto it = response.headers().find("Transfer-Encoding");
+            if (it != response.headers().end() && it->second == "chunked") {
+                auto chunked = parseChunkedBody(body);
+                if (!chunked) {
+                    return std::unexpected(chunked.error());
                 }
+
+                body = *chunked;
             }
 
             response << status << body;
+
             return response;
         }
 
-        std::string parseChunkedBody(const std::string& chunked_body) {
+        std::expected<std::string, std::string> parseChunkedBody(const std::string& chunked_body) {
             std::string result;
             size_t pos = 0;
 
-            while (pos < chunked_body.length()) {
-                // Read chunk size (hexadecimal)
-                size_t chunk_size_end = chunked_body.find('\r', pos);
-                if (chunk_size_end == std::string::npos) break;
+            while (pos < chunked_body.size()) {
+                size_t line_end = chunked_body.find("\r\n", pos);
+                if (line_end == std::string::npos) {
+                    return std::unexpected("Invalid chunked encoding: missing size line");
+                }
 
-                std::string chunk_size_str = chunked_body.substr(pos, chunk_size_end - pos);
-                size_t chunk_size = std::stoi(chunk_size_str, nullptr, 16);
+                std::string size_str = chunked_body.substr(pos, line_end - pos);
 
-                pos = chunk_size_end + 2;  // Skip \r\n
+                size_t chunk_size = 0;
+                if (!parseHexSize(size_str, chunk_size)) {
+                    return std::unexpected("Invalid chunk size");
+                }
+
+                pos = line_end + 2;
 
                 if (chunk_size == 0) {
-                    break;  // End of chunks
-                }
-
-                // Extract chunk data
-                if (pos + chunk_size <= chunked_body.length()) {
-                    result += chunked_body.substr(pos, chunk_size);
-                    pos += chunk_size + 2;  // Skip \r\n after chunk
-                } else {
                     break;
                 }
+
+                if (pos + chunk_size > chunked_body.size()) {
+                    return std::unexpected("Truncated chunk body");
+                }
+
+                result.append(chunked_body, pos, chunk_size);
+                pos += chunk_size + 2;  // skip \r\n
             }
 
             return result;
@@ -445,6 +460,25 @@ namespace http {
 
             size_t end = str.find_last_not_of(" \t\r\n");
             return str.substr(start, end - start + 1);
+        }
+
+        static bool parseHexSize(const std::string& s, size_t& out) {
+            out = 0;
+
+            for (char c : s) {
+                out <<= 4;
+
+                if (c >= '0' && c <= '9')
+                    out += c - '0';
+                else if (c >= 'a' && c <= 'f')
+                    out += c - 'a' + 10;
+                else if (c >= 'A' && c <= 'F')
+                    out += c - 'A' + 10;
+                else
+                    return false;
+            }
+
+            return true;
         }
 
 #ifdef HTTP_OPENSSL_SUPPORT
