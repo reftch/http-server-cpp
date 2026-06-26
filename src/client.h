@@ -15,6 +15,7 @@
 #include <cstring>
 #include <expected>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 
