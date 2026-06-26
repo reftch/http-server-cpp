@@ -10,7 +10,6 @@
 #define LOGGER_H_
 
 #include <ctime>
-
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -264,7 +263,6 @@ namespace http {
             return result;
         }
 
-
         /**
          * @brief Internal logging method that handles message formatting and output.
          * @param level Log level for the message.
@@ -314,7 +312,6 @@ namespace http {
                 log_file_.flush();
             }
         }
-
     };
 
 }  // namespace http

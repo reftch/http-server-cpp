@@ -14,7 +14,6 @@
 #include <expected>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 
 // SSL include
@@ -23,6 +22,7 @@
 #include <openssl/ssl.h>
 #endif
 
+#include "logger.h"
 #include "response.h"
 
 namespace http {
@@ -39,7 +39,7 @@ namespace http {
             // Find protocol (http:// or https://)
             size_t protocol_end = url.find("://");
             if (protocol_end == std::string::npos) {
-                throw std::runtime_error("Invalid URL format: " + url);
+                protocol = "http";
             }
 
             protocol = url.substr(0, protocol_end);
@@ -73,10 +73,9 @@ namespace http {
             if (port_str.empty()) {
                 port_ = is_https_ ? 443 : 80;
             } else {
-                try {
-                    port_ = std::stoi(port_str);
-                } catch (const std::exception&) {
-                    // throw std::runtime_error("Invalid port in URL: " + url);
+                auto port = parsePort(port_str);
+                if (port.has_value()) {
+                    port_ = port.value();
                 }
             }
 
@@ -84,7 +83,7 @@ namespace http {
 #ifdef HTTP_OPENSSL_SUPPORT
             if (is_https_) {
                 if (!initializeSSL()) {
-                    throw std::runtime_error("Failed to initialize SSL context");
+                    log.debug("Failed to initialize SSL context");
                 }
             }
 #endif
@@ -170,6 +169,8 @@ namespace http {
 
         const int kTIMEOUT_SECONDS = CLIENT_TIMEOUT_SECONDS;
 
+        // logger
+        Logger& log = Logger::getInstance();
 #ifdef HTTP_OPENSSL_SUPPORT
         bool use_custom_ca_ = true;
         // SSL context for HTTPS
@@ -180,7 +181,7 @@ namespace http {
         int createSocket() {
             int sock = socket(AF_INET, SOCK_STREAM, 0);
             if (sock < 0) {
-                throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
+                log.debug("Failed to create socket {}", std::string(strerror(errno)));
             }
             return sock;
         }
@@ -452,6 +453,18 @@ namespace http {
             return Status::ok;
         }
 
+        static std::optional<int> parsePort(std::string_view port_str) {
+            int value;
+
+            auto res = std::from_chars(port_str.data(), port_str.data() + port_str.size(), value);
+
+            if (res.ec != std::errc{} || res.ptr != port_str.data() + port_str.size()) {
+                return std::nullopt;
+            }
+
+            return value;
+        }
+
         static std::string trim(const std::string& str) {
             size_t start = str.find_first_not_of(" \t\r\n");
             if (start == std::string::npos) {
@@ -557,8 +570,7 @@ namespace http {
                 char err_buf[256];
                 ERR_error_string_n(err, err_buf, sizeof(err_buf));
 
-                throw std::runtime_error("Failed to load CA certificate from '" + cert_file +
-                                         "': " + std::string(err_buf));
+                log.debug("Failed to load CA certificate from '{}: {}", cert_file, std::string(err_buf));
             }
 
             // Set verification mode to verify peer
