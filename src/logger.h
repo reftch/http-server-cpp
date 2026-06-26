@@ -9,7 +9,6 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
-#include <chrono>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -245,7 +244,7 @@ namespace http {
          * @return Formatted message string.
          */
         template <typename... Args>
-        std::string Format(const std::string& fmt, Args... args) {
+        std::string formatArguments(const std::string& fmt, Args... args) {
             std::string result = fmt;
             std::vector<std::string> args_vector{[&args]() {
                 std::ostringstream oss;
@@ -299,7 +298,7 @@ namespace http {
             std::string timestamp = formatTime(time_info);
 
             std::string format_string(format.data(), format.size());
-            std::string message = Format(format_string, std::forward<Args>(args)...);
+            std::string message = formatArguments(format_string, std::forward<Args>(args)...);
             std::string full_message = timestamp + level_str + message + '\n';
 
             // Console logging

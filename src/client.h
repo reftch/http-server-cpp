@@ -10,15 +10,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <chrono>
 #include <cstring>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <thread>
 
 // SSL include
 #ifdef HTTP_OPENSSL_SUPPORT
