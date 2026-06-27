@@ -7,9 +7,9 @@
 #include <string>
 #include <thread>
 
-#include "server.h"
-// #define HTTP_OPENSSL_SUPPORT
-// #include "sslserver.h"
+// #include "server.h"
+#define HTTP_OPENSSL_SUPPORT
+#include "sslserver.h"
 
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
@@ -31,8 +31,9 @@ int main() {
     // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
-    http::Server s;
-    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    // http::Server s;
+
+    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
     static auto s_ptr = &s;
