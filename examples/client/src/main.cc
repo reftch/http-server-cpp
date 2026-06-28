@@ -1,5 +1,4 @@
 #define HTTP_OPENSSL_SUPPORT
-
 #include "client.h"
 
 int main() {

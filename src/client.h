@@ -116,7 +116,6 @@ namespace http {
         std::string host_;
         int port_;
         bool keep_alive_ = true;
-        const int kTIMEOUT_SECONDS = CLIENT_TIMEOUT_SECONDS;
 
         Logger& log = Logger::getInstance();
 
@@ -321,7 +320,7 @@ namespace http {
             memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
             struct timeval tv{};
-            tv.tv_sec = kTIMEOUT_SECONDS;
+            tv.tv_sec = CLIENT_TIMEOUT_SECONDS;
             tv.tv_usec = 0;
 
             if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 ||
