@@ -96,10 +96,10 @@ namespace http {
             int sockfd = frame.sockfd;
             log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
 
-            if (!utils::isSocketAlive(sockfd)) {
-                log.debug("Websocket is closed");
-                return -1;
-            }
+            // if (!utils::isSocketAlive(sockfd)) {
+            //     log.debug("Websocket is closed");
+            //     return -1;
+            // }
 
             // Creates WebSocket frame from string
 #ifndef HTTP_OPENSSL_SUPPORT

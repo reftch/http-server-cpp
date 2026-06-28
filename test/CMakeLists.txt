@@ -1,5 +1,7 @@
 find_package(OpenSSL REQUIRED)
 
+add_compile_definitions(CONNECTION_TIMEOUT_SECOND=100)
+
 # Create a combined tests executable
 add_executable (tests
     logger_test.cc
