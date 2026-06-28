@@ -3,6 +3,7 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 
 #include "server_test.h"

@@ -1,6 +1,7 @@
 
 add_library(http-server STATIC
   client.h
+  client.cc
   logger.h
   request.cc
   request.h

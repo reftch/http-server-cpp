@@ -30,7 +30,6 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
-// #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -46,7 +45,6 @@
 #include "request.h"
 #include "response.h"
 #include "router.h"
-// #include "utils.h"
 #include "websocket.h"
 
 namespace http {

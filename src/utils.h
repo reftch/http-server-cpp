@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 
 #include <algorithm>
-#include <charconv>
 #include <cstdlib>
 #include <ctime>  // For time functions
 #include <map>
@@ -97,31 +96,84 @@ namespace utils {
         std::string_view sv(value);
 
         if constexpr (std::is_same_v<T, std::string>) {
-            return std::string(value);
+            return std::string(sv);
         } else if constexpr (std::is_same_v<T, bool>) {
+            // Handle empty string case first
+            if (sv.empty()) {
+                return default_value;
+            }
+
             std::string lower(sv);
+
+            // Convert to lowercase
             std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
-                return std::tolower(c);
+                return static_cast<char>(std::tolower(c));
             });
 
-            return (lower == "true" || lower == "1" || lower == "yes" || lower == "on");
-        } else if constexpr (std::is_floating_point_v<T>) {
-            T result{};
-            auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+            // Check exact matches
+            bool result = lower == "true" || lower == "1" || lower == "yes" || lower == "on";
 
-            if (ec == std::errc() && ptr == sv.data() + sv.size()) {
+            // If it matched any pattern, return the parsed value
+            // If it didn't match, we should return default_value
+            if (result || lower == "false" || lower == "0" || lower == "no" || lower == "off") {
                 return result;
+            } else {
+                // Invalid boolean value - return default
+                return default_value;
             }
-            return default_value;
+        } else if constexpr (std::is_integral_v<T>) {
+            T result{};
+
+            if (sv.empty()) {
+                return default_value;
+            }
+
+            bool negative = false;
+            size_t pos = 0;
+
+            if constexpr (std::is_signed_v<T>) {
+                if (sv[0] == '-') {
+                    negative = true;
+                    pos = 1;
+                }
+            }
+
+            for (; pos < sv.size(); ++pos) {
+                const char c = sv[pos];
+
+                if (c < '0' || c > '9') {
+                    return default_value;
+                }
+
+                result = static_cast<T>(result * 10 + (c - '0'));
+            }
+
+            if constexpr (std::is_signed_v<T>) {
+                if (negative) {
+                    result = -result;
+                }
+            }
+
+            return result;
+        } else if constexpr (std::is_floating_point_v<T>) {
+            char* end = nullptr;
+
+            T result{};
+
+            if constexpr (std::is_same_v<T, float>) {
+                result = std::strtof(value, &end);
+            } else if constexpr (std::is_same_v<T, double>) {
+                result = std::strtod(value, &end);
+            } else {
+                result = static_cast<T>(std::strtold(value, &end));
+            }
+
+            if (end != value + sv.size()) {
+                return default_value;
+            }
+
+            return result;
         } else {
-            // integer types
-            long long temp{};
-            auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), temp);
-
-            if (ec == std::errc()) {
-                return static_cast<T>(temp);
-            }
-
             return default_value;
         }
     }
@@ -138,5 +190,10 @@ namespace utils {
     std::string base64_encode(const std::string& input);
 
     bool isSocketAlive(int sockfd);
+
+    std::string trim(const std::string& str);
+
+    bool parseHexSize(const std::string& s, size_t& out);
+
 }  // namespace utils
 #endif  // HTTP_UTILS_H_

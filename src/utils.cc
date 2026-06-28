@@ -1,10 +1,10 @@
+#include "utils.h"
+
 #include <cstdint>
-#include <sstream>  // Must include this for stringstream
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-
-#include "utils.h"
+#include <sstream>  // Must include this for stringstream
 
 namespace utils {
 
@@ -281,6 +281,35 @@ namespace utils {
         }
 
         return (error == 0);  // If error is 0, socket is healthy
+    }
+
+    std::string trim(const std::string& str) {
+        size_t start = str.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) {
+            return "";
+        }
+
+        size_t end = str.find_last_not_of(" \t\r\n");
+        return str.substr(start, end - start + 1);
+    }
+
+    bool parseHexSize(const std::string& s, size_t& out) {
+        out = 0;
+
+        for (char c : s) {
+            out <<= 4;
+
+            if (c >= '0' && c <= '9')
+                out += c - '0';
+            else if (c >= 'a' && c <= 'f')
+                out += c - 'a' + 10;
+            else if (c >= 'A' && c <= 'F')
+                out += c - 'A' + 10;
+            else
+                return false;
+        }
+
+        return true;
     }
 
 }  // namespace utils
