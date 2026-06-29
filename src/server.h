@@ -147,10 +147,10 @@ namespace http {
             return false;
         }
 
-        std::optional<WsHandler> getWsHandlerBySocketId(const int32_t sockfd) {
+        std::optional<WsRoute> getWsRouteBySocketId(const int32_t sockfd) {
             for (const auto& route : wsRoutes) {
                 if (route.sockfd == sockfd) {
-                    return route.handler;
+                    return route;
                 }
             }
             return std::nullopt;

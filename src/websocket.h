@@ -36,8 +36,6 @@ namespace http {
         Pong = 0xA,
     };
 
-    bool isWebSocketFrame(const std::string& data);
-
     struct Frame {
         bool fin;
         WsOpcode opcode;
@@ -78,7 +76,8 @@ namespace http {
 
         void close() {
             isOpen = false;
-            // ::close(frame.sockfd);
+            log.debug("Websocket {} will closed", frame.sockfd);
+            ::close(frame.sockfd);
 #ifdef HTTP_OPENSSL_SUPPORT
             if (frame.ssl) {
                 SSL_free(frame.ssl);
@@ -91,10 +90,10 @@ namespace http {
 
         ssize_t send(const std::string& msg) {
             int sockfd = frame.sockfd;
-            log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
+            // log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
 
-            if (!utils::isSocketAlive(sockfd)) {
-                log.debug("Websocket is closed");
+            if (frame.opcode == WsOpcode::Close) {
+                close();
                 return -1;
             }
 
@@ -104,6 +103,12 @@ namespace http {
             if (response.empty()) {
                 return -1;  // Return error if frame creation failed
             }
+
+            if (frame.opcode == WsOpcode::Close) {
+                close();
+                return -1;
+            }
+
             // Send the frame to the socket
             ssize_t sent = ::send(sockfd, response.data(), response.size(), 0);
 #else
@@ -160,6 +165,26 @@ namespace http {
         // Create a WebSocket frame for sending
         std::vector<uint8_t> writeFrame(const std::string& message, bool fin, WsOpcode opcode, bool mask = false);
     };
+
+    std::optional<WsOpcode> getWebSocketFrame(const std::string& data);
+
+    constexpr std::string_view toWsOpcodeString(WsOpcode opcode) {
+        switch (opcode) {
+            case WsOpcode::Continuation:
+                return "Continuation";
+            case WsOpcode::Text:
+                return "Text";
+            case WsOpcode::Binary:
+                return "Binary";
+            case WsOpcode::Close:
+                return "Close";
+            case WsOpcode::Ping:
+                return "Ping";
+            case WsOpcode::Pong:
+                return "Pong";
+        }
+        return "Unknown";  // This should never be reached for valid enum values
+    }
 
     constexpr std::string_view toWsString(WsProtocol protocol) {
         switch (protocol) {

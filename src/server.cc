@@ -1,5 +1,9 @@
 #include "server.h"
 
+#include <unistd.h>
+
+#include "websocket.h"
+
 namespace http {
 
     int Server::start() {
@@ -208,21 +212,28 @@ namespace http {
         http::Request req(raw_request);
 
         // is websocket requests
-        if (isWebSocketFrame(raw_request)) {
-            WebSocket ws(sd, raw_request);
-            auto handler = getWsHandlerBySocketId(sd);
-            if (handler.has_value()) {
-                handler.value()(req, ws);
+        auto opcode = getWebSocketFrame(raw_request);
+        if (opcode.has_value()) {
+            log.debug("Websocket status: {}", toWsOpcodeString(opcode.value()));
+            auto route = getWsRouteBySocketId(sd);
+            if (route.has_value()) {
+                if (opcode.value() == WsOpcode::Close) {
+                    return;
+                }
+
+                WebSocket ws(sd, raw_request);
+                route->handler(req, ws);
             }
             return;
         }
 
+        // HTTP websocket handshake
         if (processWebsocketHandshake(sd, req)) {
             updateWsRoute(req.path(), sd);
             return;
         }
 
-        // handle request
+        // handle HTTP request
         std::string body = handleRoute(req);
         // send server response
         sendResponse(sd, body);

@@ -113,27 +113,23 @@ namespace http {
         return frame;
     }
 
-    bool isWebSocketFrame(const std::string& data) {
-        if (data.length() < 2) return false;
+    std::optional<WsOpcode> getWebSocketFrame(const std::string& data) {
+        if (data.length() < 2) return std::nullopt;
 
         const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data.data());
         uint8_t first_byte = bytes[0];
         uint8_t opcode = first_byte & 0x0F;
         bool fin = (first_byte & 0x80) != 0;
 
-        // Valid WebSocket opcodes:
-        // 0x0 - continuation frame
-        // 0x1 - text frame
-        // 0x2 - binary frame
-        // 0x8 - connection close
-        // 0x9 - ping
-        // 0xA - pong
-
-        // Valid WebSocket opcodes: 0x0-0xA
-        if (opcode > 0xA) return false;
+        // Check if opcode is valid
+        if (opcode > 0xA) return std::nullopt;
 
         // Basic frame structure validation
-        return fin && opcode <= 0xA;
+        if (fin && opcode <= 0xA) {
+            return static_cast<WsOpcode>(opcode);
+        }
+
+        return std::nullopt;
     }
 
 }  // namespace http
