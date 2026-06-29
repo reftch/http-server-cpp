@@ -27,7 +27,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    log.setLevel(http::Level::DEBUG);
+    // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
     http::Server s;
@@ -53,7 +53,7 @@ int main() {
         res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
     });
 
-    s.setRoute<http::WsProtocol::WSS>("/ws", [](const http::Request&, http::WebSocket& ws) {
+    s.setRoute("/ws", [](const http::Request&, http::WebSocket& ws) {
         std::string msg;
         auto result = ws >> msg;
         if (result != http::Result::Fail) {
@@ -65,8 +65,6 @@ int main() {
 
         // Start the background thread
         std::thread([ws_ptr]() {
-            log.info("Starting websocket loop");
-
             while (true) {
                 auto time_json = getCurrentTimeJson();
                 // Send message through websocket
@@ -79,7 +77,6 @@ int main() {
                 // Sleep for 1 seconds
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-            log.info("WebSocket loop stopped");
         }).detach();
     });
 

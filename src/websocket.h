@@ -15,17 +15,10 @@
 #include <vector>
 
 #include "logger.h"
-#include "utils.h"
 
 namespace http {
 
     enum class Result : int { Fail = 0, Text = 1, Binary = 2 };
-
-    // For WebSocket protocols
-    enum class WsProtocol {
-        WS,
-        WSS,  // WebSocket Secure
-    };
 
     enum class WsOpcode : uint8_t {
         Continuation = 0x0,
@@ -184,16 +177,6 @@ namespace http {
                 return "Pong";
         }
         return "Unknown";  // This should never be reached for valid enum values
-    }
-
-    constexpr std::string_view toWsString(WsProtocol protocol) {
-        switch (protocol) {
-            case WsProtocol::WS:
-                return "ws";
-            case WsProtocol::WSS:
-                return "wss";
-        }
-        return "ws";  // or handle as unreachable
     }
 
 }  // namespace http

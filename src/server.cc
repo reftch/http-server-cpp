@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include "utils.h"
 #include "websocket.h"
 
 namespace http {

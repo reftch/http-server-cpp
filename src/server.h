@@ -62,12 +62,11 @@ namespace http {
         int32_t sockfd;
         std::string path;
         WsHandler handler;
-        WsProtocol protocol;
 
         // Comparison for std::set (if you still need it)
         bool operator<(const WsRoute& other) const {
             if (path != other.path) return path < other.path;
-            return protocol < other.protocol;
+            return sockfd < other.sockfd;
         }
     };
 
@@ -126,13 +125,11 @@ namespace http {
             router_.registerHandler(std::string(toString(M)), path, handler);
         }
 
-        template <WsProtocol P>
         void setRoute(const std::string& path, const WsHandler handler) {
             WsRoute wsRoute;
             wsRoute.path = path;
             wsRoute.handler = handler;
             wsRoute.sockfd = -1;
-            wsRoute.protocol = P;
             wsRoutes.insert(wsRoute);
         }
 
@@ -195,14 +192,6 @@ namespace http {
 
         /**
          * Handles HTTP route matching and request processing
-         * @param ctx Reference to the HTTP request context containing method, path, and other request data
-         * @return String containing the HTTP response body
-         * @details This function processes the HTTP request by:
-         *          1. Checking if the request has a specific MIME type
-         *          2. If no MIME type is specified, using the global router to match the request
-         *          3. If MIME type is specified, treating it as a file request and reading from assets directory
-         *          4. Returning appropriate HTTP response based on the processing outcome
-         * @note This function is typically called from perform_request() to generate responses for client requests
          */
         virtual std::string handleRoute(http::Request& req);
 
