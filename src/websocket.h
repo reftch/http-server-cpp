@@ -40,33 +40,31 @@ namespace http {
 
     bool isWebSocketFrame(const std::string& data);
 
+    struct Frame {
+        bool fin;
+        WsOpcode opcode;
+        bool mask;
+        std::size_t payload_length;
+        std::array<uint8_t, 4> masking_key;
+        std::vector<uint8_t> payload_data;
+        std::string text_payload;  // For text frames only
+        int sockfd;
+
+        Frame() : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0) {}
+        Frame(int sfd) : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd) {}
+
+#ifdef HTTP_OPENSSL_SUPPORT
+        SSL* ssl = nullptr;
+
+        Frame(int32_t sfd, SSL* ssl)
+            : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd), ssl(ssl) {}
+#endif
+    };
+
     class WebSocket {
        private:
         // logger
         Logger& log = Logger::getInstance();
-
-        struct Frame {
-            bool fin;
-            WsOpcode opcode;
-            bool mask;
-            std::size_t payload_length;
-            std::array<uint8_t, 4> masking_key;
-            std::vector<uint8_t> payload_data;
-            std::string text_payload;  // For text frames only
-            int sockfd;
-
-#ifdef HTTP_OPENSSL_SUPPORT
-            SSL* ssl = nullptr;
-#endif
-
-            Frame() : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0) {}
-            Frame(int sfd) : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd) {}
-
-#ifdef HTTP_OPENSSL_SUPPORT
-            Frame(int32_t sfd, SSL* ssl)
-                : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd), ssl(ssl) {}
-#endif
-        };
 
        public:
         WebSocket(int sockfd, const std::string& raw_request)
@@ -77,6 +75,8 @@ namespace http {
         WebSocket(int sockfd, SSL* ssl, const std::string& raw_request)
             : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {}
 #endif
+
+        Frame getFrame() { return frame; }
 
         void close() {
             isOpen = false;

@@ -56,11 +56,13 @@ int main() {
 
     s.setRoute<http::WsProtocol::WSS>("/ws", [](const http::Request&, http::WebSocket& ws) {
         std::string msg;
+
         auto result = ws >> msg;
         if (result != http::Result::Fail) {
             log.info("Received websocket message {}", msg);
         }
 
+        // static auto wss = &ws;
         // Create a shared pointer to manage the thread lifecycle
         auto thread_ptr = std::make_shared<std::thread>([&ws]() {
             while (true) {
@@ -68,6 +70,8 @@ int main() {
                 std::this_thread::sleep_for(std::chrono::seconds(2));
                 std::string time_json = getCurrentTimeJson();
                 ssize_t result = ws << time_json;
+                // ssize_t result = wss->send(time_json);
+
                 log.info("Result: {}", result);
                 if (result < 0) break;
             }
