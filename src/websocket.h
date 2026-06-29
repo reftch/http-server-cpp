@@ -9,10 +9,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <array>
 #include <cstring>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -80,7 +78,6 @@ namespace http {
 
         void close() {
             isOpen = false;
-            log.info("Close socket FD={}", frame.sockfd);
             // ::close(frame.sockfd);
 #ifdef HTTP_OPENSSL_SUPPORT
             if (frame.ssl) {
@@ -96,10 +93,10 @@ namespace http {
             int sockfd = frame.sockfd;
             log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
 
-            // if (!utils::isSocketAlive(sockfd)) {
-            //     log.debug("Websocket is closed");
-            //     return -1;
-            // }
+            if (!utils::isSocketAlive(sockfd)) {
+                log.debug("Websocket is closed");
+                return -1;
+            }
 
             // Creates WebSocket frame from string
 #ifndef HTTP_OPENSSL_SUPPORT

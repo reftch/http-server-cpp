@@ -218,7 +218,6 @@ namespace http {
         }
 
         if (processWebsocketHandshake(sd, req)) {
-            // update route with socket id
             updateWsRoute(req.path(), sd);
             return;
         }

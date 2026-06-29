@@ -6,9 +6,9 @@
 #include <string>
 #include <thread>
 
-#include "server.h"
-// #define HTTP_OPENSSL_SUPPORT
-// #include "sslserver.h"
+// #include "server.h"
+#define HTTP_OPENSSL_SUPPORT
+#include "sslserver.h"
 
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
@@ -27,12 +27,12 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    log.setLevel(http::Level::DEBUG);
+    // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
-    http::Server s;
+    // http::Server s;
 
-    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
     // Register signal handler with capture
     static auto s_ptr = &s;
@@ -56,29 +56,32 @@ int main() {
 
     s.setRoute<http::WsProtocol::WSS>("/ws", [](const http::Request&, http::WebSocket& ws) {
         std::string msg;
-
         auto result = ws >> msg;
         if (result != http::Result::Fail) {
             log.info("Received websocket message {}", msg);
         }
 
-        // static auto wss = &ws;
-        // Create a shared pointer to manage the thread lifecycle
-        auto thread_ptr = std::make_shared<std::thread>([&ws]() {
+        // Store ws in a shared_ptr to keep it alive
+        auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
+
+        // Start the background thread
+        std::thread([ws_ptr]() {
+            log.info("Starting websocket loop");
+
             while (true) {
-                // Add 1 second delay
-                std::this_thread::sleep_for(std::chrono::seconds(2));
-                std::string time_json = getCurrentTimeJson();
-                ssize_t result = ws << time_json;
-                // ssize_t result = wss->send(time_json);
+                auto time_json = getCurrentTimeJson();
+                // Send message through websocket
+                auto result = *ws_ptr << time_json;
+                if (result < 0) {
+                    log.error("WebSocket send failed");
+                    break;
+                }
 
-                log.info("Result: {}", result);
-                if (result < 0) break;
+                // Sleep for 1 seconds
+                std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-        });
-
-        // Detach the thread to let it run independently
-        thread_ptr->detach();
+            log.info("WebSocket loop stopped");
+        }).detach();
     });
 
     s.start();
