@@ -56,12 +56,13 @@ namespace http {
     // HTTP Method enum
     enum class HttpMethod { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS };
 
-    using WsHandler = std::function<void(const http::Request& req, http::WebSocket& res)>;
+    using WsHandler = std::function<void(http::WebSocket& res)>;
 
     struct WsRoute {
         int32_t sockfd;
         std::string path;
         WsHandler handler;
+        std::unordered_map<std::string, std::string> query;
 
         // Comparison for std::set (if you still need it)
         bool operator<(const WsRoute& other) const {
@@ -133,11 +134,13 @@ namespace http {
             wsRoutes.insert(wsRoute);
         }
 
-        bool updateWsRoute(const std::string& path, const int32_t sockfd) {
+        bool updateWsRoute(const std::string& path, const std::unordered_map<std::string, std::string>& query,
+                           const int32_t sockfd) {
             // Search for the route with matching path and protocol
             for (auto it = wsRoutes.begin(); it != wsRoutes.end(); ++it) {
                 if (it->path == path) {
                     const_cast<WsRoute&>(*it).sockfd = sockfd;
+                    const_cast<WsRoute&>(*it).query = query;
                     return true;
                 }
             }

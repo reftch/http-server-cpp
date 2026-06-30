@@ -209,6 +209,7 @@ namespace http {
 
     void Server::performRequest(const int sd, const char* buffer, const ssize_t nread) {
         std::string raw_request(buffer, nread);
+
         // Parse the request line to find method and path
         http::Request req(raw_request);
 
@@ -222,15 +223,16 @@ namespace http {
                     return;
                 }
 
-                WebSocket ws(sd, raw_request);
-                route->handler(req, ws);
+                WebSocket ws(sd, raw_request, route->query);
+                route->handler(ws);
             }
             return;
         }
 
         // HTTP websocket handshake
         if (processWebsocketHandshake(sd, req)) {
-            updateWsRoute(req.path(), sd);
+            log.info("Norm path: {}", req.normalize_path());
+            updateWsRoute(req.normalize_path(), req.query(), sd);
             return;
         }
 

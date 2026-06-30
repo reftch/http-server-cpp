@@ -48,8 +48,6 @@ namespace http {
          */
         static std::vector<std::string> splitPath(const std::string& path);
 
-        void parseQueryString(const std::string& query_string, http::Request* req) const;
-
        public:
         /**
          * @brief Registers a request handler for a specific method and path

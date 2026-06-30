@@ -1,14 +1,11 @@
 #ifndef HTTP_REQUEST_H_
 #define HTTP_REQUEST_H_
 
-#include <iostream>
-#include <map>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <unordered_map>
 
-#include "response.h"
+// #include "response.h"
 
 namespace http {
 
@@ -19,6 +16,8 @@ namespace http {
 
         const std::string& method() const { return method_; }
         const std::string& path() const { return path_; }
+        const std::string& normalize_path() const { return normalize_path_; }
+        const std::string& query_string() const { return query_string_; }
         const std::string& version() const { return version_; }
         const std::string& body() const { return body_; }
         const std::unordered_map<std::string_view, std::string_view>& headers() const { return headers_; }
@@ -48,6 +47,8 @@ namespace http {
        private:
         std::string method_;
         std::string path_;
+        std::string normalize_path_;
+        std::string query_string_;
         std::string version_;
         std::string mime_type_;
         std::string body_;
@@ -58,6 +59,7 @@ namespace http {
 
         void parseRequestLine(std::string_view line);
         void parseHeaders(std::string_view raw_request, size_t& pos);
+        void parseQueryString(const std::string& query_string);
     };
 
 }  // namespace http
