@@ -66,8 +66,9 @@ namespace http {
 
         *out_handler = it->second;
 
-        // Parse query parameters
-        for (const auto& param : req->query()) {
+        // copy query parameters
+        const auto& params = req->query();
+        for (auto&& param : params) {
             req->setQuery(param.first, param.second);
         }
 
