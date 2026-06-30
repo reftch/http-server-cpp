@@ -1,7 +1,5 @@
 #include "router.h"
 
-#include "utils.h"
-
 namespace http {
 
     int Router::registerHandler(const std::string& method, const std::string& path, request_handler handler) {
@@ -68,8 +66,11 @@ namespace http {
 
         *out_handler = it->second;
 
-        // Parse query parameters
-        parseQueryString(query_string, req);
+        // copy query parameters
+        const auto& params = req->query();
+        for (auto&& param : params) {
+            req->setQuery(param.first, param.second);
+        }
 
         return true;
     }
@@ -91,38 +92,6 @@ namespace http {
             parts.push_back(current);
         }
         return parts;
-    }
-
-    void Router::parseQueryString(const std::string& query_string, http::Request* req) const {
-        if (query_string.empty()) {
-            return;
-        }
-
-        size_t start = 0;
-        while (start < query_string.length()) {
-            size_t ampersand_pos = query_string.find('&', start);
-            if (ampersand_pos == std::string::npos) {
-                ampersand_pos = query_string.length();
-            }
-
-            size_t equals_pos = query_string.find('=', start);
-            std::string key, value;
-
-            if (equals_pos != std::string::npos && equals_pos < ampersand_pos) {
-                key = query_string.substr(start, equals_pos - start);
-                value = query_string.substr(equals_pos + 1, ampersand_pos - equals_pos - 1);
-            } else {
-                key = query_string.substr(start, ampersand_pos - start);
-                value = "";
-            }
-
-            // URL decode and store
-            key = ::utils::urlDecode(key);
-            value = ::utils::urlDecode(value);
-            req->setQuery(key, value);
-
-            start = ampersand_pos + 1;
-        }
     }
 
 }  // namespace http

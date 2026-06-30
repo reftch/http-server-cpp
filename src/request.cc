@@ -1,7 +1,6 @@
 #include "request.h"
 
-#include "response.h"
-#include "router.h"
+#include "utils.h"
 
 namespace http {
 
@@ -32,6 +31,17 @@ namespace http {
         mime_type_ = getMimeType(path_);
         params_.clear();
         query_.clear();
+
+        // parse query string
+        std::string query_string;
+        size_t query_pos = path_.find('?');
+        if (query_pos != std::string::npos) {
+            normalize_path_ = path_.substr(0, query_pos);
+            query_string_ = path_.substr(query_pos + 1);
+            parseQueryString(query_string_);
+        } else {
+            normalize_path_ = path_;
+        }
     }
 
     void Request::parseHeaders(std::string_view raw_request, size_t& pos) {
@@ -57,6 +67,38 @@ namespace http {
             }
 
             pos = end + 2;
+        }
+    }
+
+    void Request::parseQueryString(const std::string& query_string) {
+        if (query_string.empty()) {
+            return;
+        }
+
+        size_t start = 0;
+        while (start < query_string.length()) {
+            size_t ampersand_pos = query_string.find('&', start);
+            if (ampersand_pos == std::string::npos) {
+                ampersand_pos = query_string.length();
+            }
+
+            size_t equals_pos = query_string.find('=', start);
+            std::string key, value;
+
+            if (equals_pos != std::string::npos && equals_pos < ampersand_pos) {
+                key = query_string.substr(start, equals_pos - start);
+                value = query_string.substr(equals_pos + 1, ampersand_pos - equals_pos - 1);
+            } else {
+                key = query_string.substr(start, ampersand_pos - start);
+                value = "";
+            }
+
+            // URL decode and store
+            key = ::utils::urlDecode(key);
+            value = ::utils::urlDecode(value);
+            query_[key] = value;
+
+            start = ampersand_pos + 1;
         }
     }
 

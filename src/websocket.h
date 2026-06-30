@@ -12,6 +12,7 @@
 #include <array>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "logger.h"
@@ -56,16 +57,18 @@ namespace http {
         Logger& log = Logger::getInstance();
 
        public:
-        WebSocket(int sockfd, const std::string& raw_request)
-            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {
+        WebSocket(int sockfd, const std::string& raw_request, const std::unordered_map<std::string, std::string> query)
+            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), query_(query), isOpen(true) {
             log.debug("Websocket open FD={}", sockfd);
         }
 #ifdef HTTP_OPENSSL_SUPPORT
-        WebSocket(int sockfd, SSL* ssl, const std::string& raw_request)
-            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), isOpen(true) {}
+        WebSocket(int sockfd, SSL* ssl, const std::string& raw_request,
+                  const std::unordered_map<std::string, std::string> query)
+            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), query_(query), isOpen(true) {}
 #endif
 
         Frame getFrame() { return frame; }
+        const std::unordered_map<std::string, std::string>& query() const { return query_; }
 
         void close() {
             isOpen = false;
@@ -150,6 +153,7 @@ namespace http {
        private:
         Frame frame;
         std::vector<uint8_t> byte_data;
+        std::unordered_map<std::string, std::string> query_;
         bool isOpen = false;
 
         // Read a single WebSocket frame from raw bytes

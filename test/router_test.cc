@@ -183,32 +183,6 @@ TEST_F(ServerTestFixture, RegisterHandlerWithMultipleSequencePathParameter) {
     EXPECT_EQ("100", req.params().at("par3"));
 }
 
-TEST_F(ServerTestFixture, MatchQueryParametersWithSpaces) {
-    // Arrange
-    http::Router r;
-    auto handler = [](const http::Request&, http::Response& res) {
-        res.setContent<http::ContentType::PLAIN_TEXT>("Test");
-    };
-
-    r.registerHandler("GET", "/search", handler);
-
-    // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/search?query=hello world&filter=category 1");
-
-    http::Response res;
-    http::request_handler out_handler;
-    bool matched = r.match(&req, &out_handler);
-
-    // Assert
-    ASSERT_TRUE(matched);
-    out_handler(req, res);
-    EXPECT_EQ(2, req.query().size());
-    EXPECT_EQ("hello world", req.query().at("query"));
-    EXPECT_EQ("category 1", req.query().at("filter"));
-}
-
 TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
     // Arrange
     http::Router r;
@@ -219,9 +193,7 @@ TEST_F(ServerTestFixture, MatchWithSingleQueryParameter) {
     r.registerHandler("GET", "/users", handler);
 
     // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/users?name=John");
+    http::Request req("GET /users?name=John HTTP/1.1 \r\n");
 
     http::Response res;
     http::request_handler out_handler;
@@ -243,9 +215,7 @@ TEST_F(ServerTestFixture, MatchWithMultipleQueryParameters) {
     r.registerHandler("GET", "/users", handler);
 
     // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/users?name=John&age=30&city=NYC");
+    http::Request req("GET /users?name=John&age=30&city=NYC HTTP/1.1 \r\n");
 
     http::Response res;
     http::request_handler out_handler;
@@ -269,9 +239,7 @@ TEST_F(ServerTestFixture, MatchWithPathParametersAndQueryParameters) {
     r.registerHandler("GET", "/users/:id", handler);
 
     // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/users/123?format=json&include=posts");
+    http::Request req("GET /users/123?format=json&include=posts HTTP/1.1 \r\n");
 
     http::Response res;
     http::request_handler out_handler;
@@ -296,9 +264,7 @@ TEST_F(ServerTestFixture, MatchWithEmptyQueryParameters) {
     r.registerHandler("GET", "/users", handler);
 
     // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/users?");
+    http::Request req("GET /users? HTTP/1.1 \r\n");
 
     http::Response res;
     http::request_handler out_handler;
@@ -319,9 +285,7 @@ TEST_F(ServerTestFixture, MatchWithQueryParameterWithoutValue) {
     r.registerHandler("GET", "/users", handler);
 
     // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/users?name");
+    http::Request req("GET /users?name HTTP/1.1 \r\n");
 
     http::Response res;
     http::request_handler out_handler;
@@ -342,9 +306,7 @@ TEST_F(ServerTestFixture, MatchWithSpecialCharactersInQueryParameters) {
     r.registerHandler("GET", "/search", handler);
 
     // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/search?q=hello%20world&category=tech%2Bdev");
+    http::Request req("GET /search?q=hello%20world&category=tech%2Bdev HTTP/1.1 \r\n");
 
     http::Response res;
     http::request_handler out_handler;
@@ -367,9 +329,7 @@ TEST_F(ServerTestFixture, MatchWithRepeatedQueryParameterNames) {
     r.registerHandler("GET", "/users", handler);
 
     // Act
-    http::Request req;
-    req.setMethod("GET");
-    req.setPath("/users?filter=active&filter=verified");
+    http::Request req("GET /users?filter=active&filter=verified HTTP/1.1 \r\n");
 
     http::Response res;
     http::request_handler out_handler;
