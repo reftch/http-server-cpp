@@ -33,10 +33,8 @@ int main() {
     http::Server s;
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
 
-    // Register signal handler with capture
-    static auto s_ptr = &s;
-    signal(SIGINT, [](int) {
-        s_ptr->stop();
+    s.setDefaultHeaders({
+        {"Connection", "keep-alive"},
     });
 
     s.setRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {

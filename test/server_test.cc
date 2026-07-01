@@ -1,10 +1,8 @@
 #include "server.h"
 
 #include <memory>
-#include <regex>
 #include <string>
 #include <thread>
-#include <unordered_map>
 
 #include "server_test.h"
 
@@ -19,6 +17,16 @@ TEST_F(ServerTestFixture, ConstructorSetsState) {
     // Assert that the server object was initialized correctly
     EXPECT_EQ(test_host, server_->host());
     EXPECT_EQ(test_port, server_->port());
+    EXPECT_FALSE(server_->is_running());
+}
+
+TEST_F(ServerTestFixture, SetDefaultHeaders) {
+    server_->setDefaultHeaders({
+        {"Connection", "keep-alive"},
+        {"User-Agent", "my-app/1.0"},
+    });
+
+    // Assert that the server object was initialized correctly
     EXPECT_FALSE(server_->is_running());
 }
 
