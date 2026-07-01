@@ -83,7 +83,7 @@ int main() {
     });
 
     // Post request for CORS
-    s.setPostRoutingHandler([&](const http::Request&, http::Response& res) {
+    s.setPostRoute([&](const http::Request&, http::Response& res) {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");

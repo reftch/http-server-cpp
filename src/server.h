@@ -39,8 +39,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <csignal>
-#include <cstring>
 #include <functional>
 #include <set>
 #include <string>
@@ -126,9 +124,9 @@ namespace http {
             router_.registerHandler(std::string(toString(M)), path, handler);
         }
 
-        void setPreRoutingHandler(request_handler handler) { pre_routing_handler_ = std::move(handler); };
+        void setPreRoute(request_handler handler) { pre_routing_handler_ = std::move(handler); };
 
-        void setPostRoutingHandler(request_handler handler) { post_routing_handler_ = std::move(handler); };
+        void setPostRoute(request_handler handler) { post_routing_handler_ = std::move(handler); };
 
         void setRoute(const std::string& path, const WsHandler handler) {
             WsRoute wsRoute;
