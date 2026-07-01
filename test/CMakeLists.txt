@@ -4,11 +4,11 @@ add_compile_definitions(CONNECTION_TIMEOUT_SECOND=100)
 
 # Create a combined tests executable
 add_executable (tests
+    getenv_test.cc
     logger_test.cc
     server_test.cc
     router_test.cc
     request_test.cc
-    getenv_test.cc
 )
 
 include(FetchContent)

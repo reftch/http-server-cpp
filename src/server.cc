@@ -213,7 +213,7 @@ namespace http {
 
         // Parse the request line to find method and path
         http::Request req(raw_request);
-        Response res;
+        Response res(default_headers_);
 
         if (pre_routing_handler_) {
             pre_routing_handler_(req, res);

@@ -6,6 +6,8 @@
 #include <map>
 #include <string>
 
+#include "logger.h"
+
 namespace http {
 
     enum class ContentType {
@@ -104,6 +106,12 @@ namespace http {
     class Response {
        public:
         Response() { setHeader("Connection", "keep-alive"); };
+
+        Response(const std::vector<std::pair<std::string, std::string>>& default_headers) {
+            for (const auto& header : default_headers) {
+                setHeader(header.first, header.second);
+            }
+        }
 
         void setHeader(const std::string& key, const std::string& val) { headers_[std::move(key)] = std::move(val); }
 

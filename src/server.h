@@ -158,6 +158,13 @@ namespace http {
             return std::nullopt;
         }
 
+        void setDefaultHeaders(std::initializer_list<std::pair<const char*, const char*>> headers) {
+            default_headers_.clear();
+            for (const auto& header : headers) {
+                default_headers_.emplace_back(header.first, header.second);
+            }
+        }
+
         void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
         virtual bool sendResponse(const int sd, std::string& body);
@@ -180,6 +187,8 @@ namespace http {
         const std::string host_;                // Hostname or IP address to bind to
         request_handler pre_routing_handler_;   // Pre-Routing handler
         request_handler post_routing_handler_;  // Post-Routing handler
+        std::vector<std::pair<std::string, std::string>> default_headers_;
+
         int setNonblockMode(int fd);
 
         /**
