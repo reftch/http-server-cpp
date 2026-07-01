@@ -126,6 +126,10 @@ namespace http {
             router_.registerHandler(std::string(toString(M)), path, handler);
         }
 
+        void setPreRoutingHandler(request_handler handler) { pre_routing_handler_ = std::move(handler); };
+
+        void setPostRoutingHandler(request_handler handler) { post_routing_handler_ = std::move(handler); };
+
         void setRoute(const std::string& path, const WsHandler handler) {
             WsRoute wsRoute;
             wsRoute.path = path;
@@ -171,12 +175,13 @@ namespace http {
         http::Router router_;
         bool isHttps = false;
 
-        bool running_ = false;           // Is server running flag
-        std::set<int32_t> client_list_;  // client list for connections(slave sockets)
-        int32_t sockfd_ = -1;            // server file descriptor
-        const int port_;                 // Port number to listen on
-        const std::string host_;         // Hostname or IP address to bind to
-
+        bool running_ = false;                  // Is server running flag
+        std::set<int32_t> client_list_;         // client list for connections(slave sockets)
+        int32_t sockfd_ = -1;                   // server file descriptor
+        const int port_;                        // Port number to listen on
+        const std::string host_;                // Hostname or IP address to bind to
+        request_handler pre_routing_handler_;   // Pre-Routing handler
+        request_handler post_routing_handler_;  // Post-Routing handler
         int setNonblockMode(int fd);
 
         /**
@@ -196,7 +201,7 @@ namespace http {
         /**
          * Handles HTTP route matching and request processing
          */
-        virtual std::string handleRoute(http::Request& req);
+        virtual std::string handleRoute(http::Request& req, http::Response& res);
 
         void handleStaticResource(http::Request& req, http::Response& res);
 
