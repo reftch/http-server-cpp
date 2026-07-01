@@ -103,8 +103,7 @@ namespace http {
 
     class Response {
        public:
-        Response() = default;
-        Response(bool is_keep_alive, const std::string& static_directory);
+        Response() { setHeader("Connection", "keep-alive"); };
 
         void setHeader(const std::string& key, const std::string& val) { headers_[std::move(key)] = std::move(val); }
 
@@ -153,6 +152,8 @@ namespace http {
         }
 
         std::string build();
+
+        void setStaticDirectory(const std::string static_directory) { static_directory_ = static_directory; }
 
        private:
         http::Status status_ = Status::ok;

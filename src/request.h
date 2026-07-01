@@ -5,8 +5,6 @@
 #include <string>
 #include <unordered_map>
 
-// #include "response.h"
-
 namespace http {
 
     class Request {

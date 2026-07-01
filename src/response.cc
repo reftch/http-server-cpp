@@ -4,12 +4,6 @@
 
 namespace http {
 
-    Response::Response(bool is_keep_alive, const std::string& static_directory) : static_directory_(static_directory) {
-        if (is_keep_alive) {
-            setHeader("Connection", "keep-alive");
-        }
-    }
-
     std::string Response::statusToString() {
         switch (status_) {
             case Status::ok:

@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <memory>
 #include <array>
 #include <charconv>
 #include <cstring>

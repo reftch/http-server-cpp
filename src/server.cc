@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include "response.h"
 #include "utils.h"
 #include "websocket.h"
 
@@ -212,6 +213,11 @@ namespace http {
 
         // Parse the request line to find method and path
         http::Request req(raw_request);
+        Response res;
+
+        if (pre_routing_handler_) {
+            pre_routing_handler_(req, res);
+        }
 
         // is websocket requests
         auto opcode = getWebSocketFrame(raw_request);
@@ -237,7 +243,7 @@ namespace http {
         }
 
         // handle HTTP request
-        std::string body = handleRoute(req);
+        std::string body = handleRoute(req, res);
         // send server response
         sendResponse(sd, body);
     }
@@ -273,14 +279,17 @@ namespace http {
         return true;
     }
 
-    std::string Server::handleRoute(http::Request& req) {
-        Response res(req.isKeepAlive(), static_directory_);
-
+    std::string Server::handleRoute(http::Request& req, http::Response& res) {
+        res.setStaticDirectory(static_directory_);
         http::request_handler handler;
         if (router_.match(&req, &handler)) {
             handler(req, res);
         } else if (req.method() == "GET" || req.method() == "HEAD") {
             handleStaticResource(req, res);
+        }
+
+        if (post_routing_handler_) {
+            post_routing_handler_(req, res);
         }
 
         return res.build();
