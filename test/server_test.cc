@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 
+#include "client.h"
 #include "server_test.h"
 
 using namespace http;
@@ -12,47 +13,134 @@ using namespace http;
 // Test Fixture Setup
 // ====================================================================
 
-// Test Suite for checking initial state and configuration
-TEST_F(ServerTestFixture, ConstructorSetsState) {
-    // Assert that the server object was initialized correctly
-    EXPECT_EQ(test_host, server_->host());
-    EXPECT_EQ(test_port, server_->port());
-    EXPECT_FALSE(server_->is_running());
-}
+TEST_F(ServerTestFixture, SetHostAndPort) {
+    // Create server with host and port in constructor
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081;
 
-TEST_F(ServerTestFixture, SetDefaultHeaders) {
-    server_->setDefaultHeaders({
-        {"Connection", "keep-alive"},
-        {"User-Agent", "my-app/1.0"},
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set up route
+    server->setRoute<http::HttpMethod::GET>("/endpoint", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "test";
     });
 
-    // Assert that the server object was initialized correctly
-    EXPECT_FALSE(server_->is_running());
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        server->start();
+    });
+
+    // Wait for server to start
+    auto start_time = std::chrono::steady_clock::now();
+    const auto timeout = std::chrono::seconds(5);
+
+    while (!server->is_running()) {
+        if (std::chrono::steady_clock::now() - start_time > timeout) {
+            FAIL() << "Server failed to start within timeout";
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request to specific host/port
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+    auto res = cli.get("/endpoint");
+
+    EXPECT_EQ(static_cast<int>(res->status()), 200);
+    EXPECT_EQ(res->content(), "test");
+    EXPECT_EQ(res->headers().at("Content-Type"), "text/plain; charset=utf-8");
+
+    // Stop server
+    server->stop();
+    server_thread.join();
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
 }
 
-void stop_server_thread(std::unique_ptr<Server>& server_ptr) {
-    std::cout << "thread reading server host: " << server_ptr->host() << std::endl;
-    // Pause the execution of this specific thread for the 1 second
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+TEST_F(ServerTestFixture, DefaultHostAndPort) {
+    // Create server with default settings
+    auto server = std::make_unique<Server>();
 
-    // check running state
-    EXPECT_TRUE(server_ptr->is_running());
-    server_ptr->stop();
+    // Set up route
+    server->setRoute<http::HttpMethod::GET>("/endpoint", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "test";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        server->start();
+    });
+
+    // Wait for server to start
+    auto start_time = std::chrono::steady_clock::now();
+    const auto timeout = std::chrono::seconds(5);
+
+    while (!server->is_running()) {
+        if (std::chrono::steady_clock::now() - start_time > timeout) {
+            FAIL() << "Server failed to start within timeout";
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    EXPECT_TRUE(server->is_running());
+
+    // Test default host and port (assuming defaults are 0.0.0.0:8080)
+    const std::string default_host = "0.0.0.0";
+    const int default_port = 8080;
+
+    EXPECT_EQ(server->host(), default_host);
+    EXPECT_EQ(server->port(), default_port);
+
+    // Create client and make request
+    auto cli = Client("http://" + default_host + ":" + std::to_string(default_port));
+    auto res = cli.get("/endpoint");
+
+    EXPECT_EQ(static_cast<int>(res->status()), 200);
+    EXPECT_EQ(res->content(), "test");
+    EXPECT_EQ(res->headers().at("Content-Type"), "text/plain; charset=utf-8");
+
+    // Stop server
+    server->stop();
+    server_thread.join();
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
 }
 
-// Test Suite for testing server control flow
-TEST_F(ServerTestFixture, StartAndStopControlsState) {
-    std::thread t(stop_server_thread, std::ref(server_));
+TEST_F(ServerTestFixture, StartAndMakeRequest) {
+    // Create server
+    auto server = std::make_unique<Server>();
 
-    // start the server
-    int start_result = server_->start();
-    EXPECT_EQ(0, start_result);  // expect success
+    // Set up route
+    server->setRoute<http::HttpMethod::GET>("/endpoint", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "test";
+    });
 
-    // The main thread will pause here until the worker_thread completes its execution
-    t.join();
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
 
-    // check stopped state
-    EXPECT_FALSE(server_->is_running());
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request
+    auto cli = Client("http://0.0.0.0:8080");
+    auto res = cli.get("/endpoint");
+
+    EXPECT_EQ(static_cast<int>(res->status()), 200);
+    EXPECT_EQ(res->content(), "test");
+    EXPECT_EQ(res->headers().at("Content-Type"), "text/plain; charset=utf-8");
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
 }
 
 // ====================================================================
