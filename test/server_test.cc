@@ -31,16 +31,18 @@ TEST_F(ServerTestFixture, SetHostAndPort) {
     });
 
     // Wait for server to start
-    auto start_time = std::chrono::steady_clock::now();
-    const auto timeout = std::chrono::seconds(5);
+    // auto start_time = std::chrono::steady_clock::now();
+    // const auto timeout = std::chrono::seconds(5);
 
-    while (!server->is_running()) {
-        if (std::chrono::steady_clock::now() - start_time > timeout) {
-            FAIL() << "Server failed to start within timeout";
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+    // while (!server->is_running()) {
+    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
+    //         FAIL() << "Server failed to start within timeout";
+    //     }
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // }
 
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
     EXPECT_TRUE(server->is_running());
 
     // Create client and make request to specific host/port
@@ -74,15 +76,18 @@ TEST_F(ServerTestFixture, DefaultHostAndPort) {
     });
 
     // Wait for server to start
-    auto start_time = std::chrono::steady_clock::now();
-    const auto timeout = std::chrono::seconds(5);
+    // auto start_time = std::chrono::steady_clock::now();
+    // const auto timeout = std::chrono::seconds(5);
 
-    while (!server->is_running()) {
-        if (std::chrono::steady_clock::now() - start_time > timeout) {
-            FAIL() << "Server failed to start within timeout";
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+    // while (!server->is_running()) {
+    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
+    //         FAIL() << "Server failed to start within timeout";
+    //     }
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // }
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
 
     EXPECT_TRUE(server->is_running());
 
@@ -162,17 +167,19 @@ TEST_F(ServerTestFixture, SetDefaultHeaders) {
         server->start();
     });
 
+    // // Wait for server to start
+    // auto start_time = std::chrono::steady_clock::now();
+    // const auto timeout = std::chrono::seconds(5);
+
+    // while (!server->is_running()) {
+    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
+    //         FAIL() << "Server failed to start within timeout";
+    //     }
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // }
+
     // Wait for server to start
-    auto start_time = std::chrono::steady_clock::now();
-    const auto timeout = std::chrono::seconds(5);
-
-    while (!server->is_running()) {
-        if (std::chrono::steady_clock::now() - start_time > timeout) {
-            FAIL() << "Server failed to start within timeout";
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
     EXPECT_TRUE(server->is_running());
 
     // Create client and make request
@@ -216,16 +223,18 @@ TEST_F(ServerTestFixture, SetDefaultHeadersEmpty) {
     });
 
     // Wait for server to start
-    auto start_time = std::chrono::steady_clock::now();
-    const auto timeout = std::chrono::seconds(5);
+    // auto start_time = std::chrono::steady_clock::now();
+    // const auto timeout = std::chrono::seconds(5);
 
-    while (!server->is_running()) {
-        if (std::chrono::steady_clock::now() - start_time > timeout) {
-            FAIL() << "Server failed to start within timeout";
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+    // while (!server->is_running()) {
+    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
+    //         FAIL() << "Server failed to start within timeout";
+    //     }
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // }
 
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
     EXPECT_TRUE(server->is_running());
 
     // Create client and make request
