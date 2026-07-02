@@ -30,8 +30,8 @@ int main() {
     // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
-    http::Server s;
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    http::Server s;
 
     s.setDefaultHeaders({
         {"Connection", "keep-alive"},
