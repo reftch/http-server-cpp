@@ -69,8 +69,6 @@ namespace http {
 #endif
     }
 
-    std::mutex client_list_mutex_;
-
     void Server::stop() {
         std::cout << "\n";
 

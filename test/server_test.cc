@@ -288,6 +288,112 @@ TEST_F(ServerTestFixture, PostRouteHandlesRealPost) {
     stopServer(server, server_thread);
 }
 
+TEST_F(ServerTestFixture, PreRouteHandlesRequestBeforeOtherHandlers) {
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8086;
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set pre-route handler that modifies response
+    server->setPreRoute([&](const http::Request&, http::Response& res) {
+        res.setHeader("X-PreRoute-Header", "pre-route-value");
+        res << http::ContentType::PLAIN_TEXT << "Pre-route processed";
+    });
+
+    // Set regular route handler using proper syntax
+    server->setRoute<http::HttpMethod::GET>("/test", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "Regular route handled";
+    });
+
+    // Start server
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
+
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start";
+
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+
+    auto get_res = cli.get("/test");
+
+    EXPECT_EQ(static_cast<int>(get_res->status()), 200);
+    EXPECT_EQ(get_res->content(), "Regular route handled");
+    EXPECT_EQ(get_res->headers().at("X-PreRoute-Header"), "pre-route-value");
+
+    stopServer(server, server_thread);
+}
+
+TEST_F(ServerTestFixture, PreRouteModifiesRequestBeforeProcessing) {
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8087;
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set pre-route handler that adds custom header
+    server->setPreRoute([&](const http::Request& req, http::Response& res) {
+        // Modify request (if supported by your framework)
+        res.setHeader("X-PreRoute-Processed", "true");
+        res.setHeader("X-Original-Method", req.method());
+    });
+
+    // Set route handler using proper syntax
+    server->setRoute<http::HttpMethod::POST>("/api/test", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::JSON << R"({"message": "API endpoint reached"})";
+    });
+
+    // Start server
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
+
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start";
+
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+
+    auto post_res = cli.post("/api/test", "test data");
+
+    EXPECT_EQ(static_cast<int>(post_res->status()), 200);
+    EXPECT_EQ(post_res->headers().at("X-PreRoute-Processed"), "true");
+    EXPECT_EQ(post_res->headers().at("X-Original-Method"), "POST");
+
+    stopServer(server, server_thread);
+}
+
+TEST_F(ServerTestFixture, PreRouteHandlesMultipleRequests) {
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8089;
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set pre-route handler that increments a counter
+    static int pre_route_counter = 0;
+    server->setPreRoute([&](const http::Request&, http::Response& res) {
+        pre_route_counter++;
+        res.setHeader("X-Request-Count", std::to_string(pre_route_counter));
+        res << http::ContentType::PLAIN_TEXT << "Processed by pre-route";
+    });
+
+    // Set route handler using proper syntax
+    server->setRoute<http::HttpMethod::GET>("/counter", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "Counter test endpoint";
+    });
+
+    // Start server
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
+
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start";
+
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+
+    // Make multiple requests
+    for (int i = 0; i < 3; ++i) {
+        auto get_res = cli.get("/counter");
+        EXPECT_EQ(static_cast<int>(get_res->status()), 200);
+        EXPECT_EQ(get_res->headers().at("X-Request-Count"), std::to_string(i + 1));
+    }
+
+    stopServer(server, server_thread);
+}
+
 // ====================================================================
 // Main Entry Point
 // ====================================================================

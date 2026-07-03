@@ -172,6 +172,7 @@ namespace http {
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
+        std::mutex client_list_mutex_;
 
        protected:
         // static directory
