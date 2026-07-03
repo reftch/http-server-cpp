@@ -1,4 +1,5 @@
 find_package(OpenSSL REQUIRED)
+message(STATUS "OpenSSL version: ${OPENSSL_VERSION}")
 
 add_executable(client src/main.cc)
 

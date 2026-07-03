@@ -72,32 +72,32 @@ namespace http {
     void Server::stop() {
         std::cout << "\n";
 
-        // set the running flag to false to break the while loop in start()
-        running_ = false;
-
         // close all active client connections
         for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
             int sd = *iter;
-            if (sd != -1) {
-                log.info("closing client connection FD: {}", sd);
-                close(sd);
+            if (utils::isSocketAlive(sd)) {
+                log.debug("closing client connection FD: {}", sd);
+                // close(sd);
             }
         }
 
         // close all websocket connections
         for (auto iter = wsRoutes.begin(); iter != wsRoutes.end(); iter++) {
             auto wsRoute = *iter;
-            if (wsRoute.sockfd != -1) {
+            if (utils::isSocketAlive(wsRoute.sockfd)) {
                 log.info("closing websocket connection FD: {}", wsRoute.sockfd);
                 close(wsRoute.sockfd);
             }
         }
 
         // close the listening socket (the main server socket)
-        if (sockfd_ != -1) {
+        if (utils::isSocketAlive(sockfd_)) {
             log.info("closing master connection socket FD: {}", sockfd_);
             close(sockfd_);
         }
+
+        // set the running flag to false to break the while loop in start()
+        running_ = false;
 
         log.info("Server stopped successfully");
     }

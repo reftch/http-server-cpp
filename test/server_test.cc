@@ -14,9 +14,9 @@ using namespace http;
 // ====================================================================
 
 TEST_F(ServerTestFixture, SetHostAndPort) {
-    // Create server with host and port in constructor
+    // Use a unique port for each test to avoid conflicts
     const std::string test_host = "127.0.0.1";
-    const int test_port = 8081;
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
 
     auto server = std::make_unique<Server>(test_host, test_port);
 
@@ -31,17 +31,6 @@ TEST_F(ServerTestFixture, SetHostAndPort) {
     });
 
     // Wait for server to start
-    // auto start_time = std::chrono::steady_clock::now();
-    // const auto timeout = std::chrono::seconds(5);
-
-    // while (!server->is_running()) {
-    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
-    //         FAIL() << "Server failed to start within timeout";
-    //     }
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    // }
-
-    // Wait for server to start
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
     EXPECT_TRUE(server->is_running());
 
@@ -54,8 +43,7 @@ TEST_F(ServerTestFixture, SetHostAndPort) {
     EXPECT_EQ(res->headers().at("Content-Type"), "text/plain; charset=utf-8");
 
     // Stop server
-    server->stop();
-    server_thread.join();
+    stopServer(server, server_thread);
 
     // Verify server is stopped
     EXPECT_FALSE(server->is_running());
@@ -74,17 +62,6 @@ TEST_F(ServerTestFixture, DefaultHostAndPort) {
     std::thread server_thread([&server]() {
         server->start();
     });
-
-    // Wait for server to start
-    // auto start_time = std::chrono::steady_clock::now();
-    // const auto timeout = std::chrono::seconds(5);
-
-    // while (!server->is_running()) {
-    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
-    //         FAIL() << "Server failed to start within timeout";
-    //     }
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    // }
 
     // Wait for server to start
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
@@ -107,8 +84,7 @@ TEST_F(ServerTestFixture, DefaultHostAndPort) {
     EXPECT_EQ(res->headers().at("Content-Type"), "text/plain; charset=utf-8");
 
     // Stop server
-    server->stop();
-    server_thread.join();
+    stopServer(server, server_thread);
 
     // Verify server is stopped
     EXPECT_FALSE(server->is_running());
@@ -116,10 +92,12 @@ TEST_F(ServerTestFixture, DefaultHostAndPort) {
 
 TEST_F(ServerTestFixture, StartAndMakeRequest) {
     // Create server
-    auto server = std::make_unique<Server>();
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
+    auto server = std::make_unique<Server>(test_host, test_port);
 
     // Set up route
-    server->setRoute<http::HttpMethod::GET>("/endpoint", [](const http::Request&, http::Response& res) {
+    server->setRoute<http::HttpMethod::GET>("/endpoint2", [](const http::Request&, http::Response& res) {
         res << http::ContentType::PLAIN_TEXT << "test";
     });
 
@@ -134,8 +112,8 @@ TEST_F(ServerTestFixture, StartAndMakeRequest) {
     EXPECT_TRUE(server->is_running());
 
     // Create client and make request
-    auto cli = Client("http://0.0.0.0:8080");
-    auto res = cli.get("/endpoint");
+    auto cli = std::make_unique<Client>("http://" + test_host + ":" + std::to_string(test_port));
+    auto res = cli->get("/endpoint2");
 
     EXPECT_EQ(static_cast<int>(res->status()), 200);
     EXPECT_EQ(res->content(), "test");
@@ -167,17 +145,6 @@ TEST_F(ServerTestFixture, SetDefaultHeaders) {
         server->start();
     });
 
-    // // Wait for server to start
-    // auto start_time = std::chrono::steady_clock::now();
-    // const auto timeout = std::chrono::seconds(5);
-
-    // while (!server->is_running()) {
-    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
-    //         FAIL() << "Server failed to start within timeout";
-    //     }
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    // }
-
     // Wait for server to start
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
     EXPECT_TRUE(server->is_running());
@@ -196,8 +163,7 @@ TEST_F(ServerTestFixture, SetDefaultHeaders) {
     EXPECT_EQ(res->headers().at("X-Custom-Header"), "test-value");
 
     // Stop server
-    server->stop();
-    server_thread.join();
+    stopServer(server, server_thread);
 
     // Verify server is stopped
     EXPECT_FALSE(server->is_running());
@@ -223,17 +189,6 @@ TEST_F(ServerTestFixture, SetDefaultHeadersEmpty) {
     });
 
     // Wait for server to start
-    // auto start_time = std::chrono::steady_clock::now();
-    // const auto timeout = std::chrono::seconds(5);
-
-    // while (!server->is_running()) {
-    //     if (std::chrono::steady_clock::now() - start_time > timeout) {
-    //         FAIL() << "Server failed to start within timeout";
-    //     }
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    // }
-
-    // Wait for server to start
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
     EXPECT_TRUE(server->is_running());
 
@@ -249,8 +204,7 @@ TEST_F(ServerTestFixture, SetDefaultHeadersEmpty) {
     // The exact behavior depends on your implementation
 
     // Stop server
-    server->stop();
-    server_thread.join();
+    stopServer(server, server_thread);
 
     // Verify server is stopped
     EXPECT_FALSE(server->is_running());
