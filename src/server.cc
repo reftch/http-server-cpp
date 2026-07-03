@@ -69,15 +69,26 @@ namespace http {
 #endif
     }
 
+    std::mutex client_list_mutex_;
+
     void Server::stop() {
         std::cout << "\n";
 
-        // close all active client connections
-        for (auto iter = client_list_.begin(); iter != client_list_.end(); iter++) {
-            int sd = *iter;
-            if (utils::isSocketAlive(sd)) {
-                log.debug("closing client connection FD: {}", sd);
-                // close(sd);
+        // Close all active client connections
+        {
+            std::lock_guard<std::mutex> lock(client_list_mutex_);
+            auto client_list_copy = client_list_;  // Make a copy to avoid iterator invalidation issues
+            client_list_.clear();                  // Clear the original list
+
+            for (int sd : client_list_copy) {
+                if (sd > 0 && utils::isSocketAlive(sd)) {
+                    log.debug("closing client connection FD: {}", sd);
+                    if (close(sd) == -1) {
+                        if (errno != EBADF) {
+                            log.error("Failed to close socket: {}", strerror(errno));
+                        }
+                    }
+                }
             }
         }
 
@@ -86,14 +97,18 @@ namespace http {
             auto wsRoute = *iter;
             if (utils::isSocketAlive(wsRoute.sockfd)) {
                 log.info("closing websocket connection FD: {}", wsRoute.sockfd);
-                close(wsRoute.sockfd);
+                if (close(wsRoute.sockfd) == -1) {
+                    log.error("Failed to close socket: {}", strerror(errno));
+                }
             }
         }
 
         // close the listening socket (the main server socket)
         if (utils::isSocketAlive(sockfd_)) {
             log.info("closing master connection socket FD: {}", sockfd_);
-            close(sockfd_);
+            if (close(sockfd_) == -1) {
+                log.error("Failed to close socket: {}", strerror(errno));
+            }
         }
 
         // set the running flag to false to break the while loop in start()
