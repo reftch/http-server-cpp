@@ -112,8 +112,8 @@ TEST_F(ServerTestFixture, StartAndMakeRequest) {
     EXPECT_TRUE(server->is_running());
 
     // Create client and make request
-    auto cli = std::make_unique<Client>("http://" + test_host + ":" + std::to_string(test_port));
-    auto res = cli->get("/endpoint2");
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+    auto res = cli.get("/endpoint2");
 
     EXPECT_EQ(static_cast<int>(res->status()), 200);
     EXPECT_EQ(res->content(), "test");
