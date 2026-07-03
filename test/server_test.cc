@@ -394,6 +394,205 @@ TEST_F(ServerTestFixture, PreRouteHandlesMultipleRequests) {
     stopServer(server, server_thread);
 }
 
+TEST_F(ServerTestFixture, SetAssetDirectory) {
+    // Use a unique port for each test to avoid conflicts
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
+
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set asset directory
+    const std::string test_asset_dir = "./test_assets";
+
+    // Create test directory and file
+    std::filesystem::create_directories(test_asset_dir);
+    std::ofstream test_file(test_asset_dir + "/test.txt");
+    test_file << "asset content";
+    test_file.close();
+
+    server->setAssetDirectory(test_asset_dir);
+
+    // Set up route for asset endpoint
+    server->setRoute<http::HttpMethod::GET>("/assets/test.txt", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "asset content";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        server->start();
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request to asset endpoint
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+    auto res = cli.get("/assets/test.txt");
+
+    EXPECT_EQ(static_cast<int>(res->status()), 200);
+    EXPECT_EQ(res->content(), "asset content");
+    EXPECT_EQ(res->headers().at("Content-Type"), "text/plain; charset=utf-8");
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+
+    // Clean up test directory
+    std::filesystem::remove_all(test_asset_dir);
+}
+
+TEST_F(ServerTestFixture, SetAssetDirectoryWithNonExistentPath) {
+    // Use a unique port for each test to avoid conflicts
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
+
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set non-existent asset directory
+    const std::string non_existent_dir = "./non_existent_assets";
+
+    // This should not crash the server
+    server->setAssetDirectory(non_existent_dir);
+
+    // Set up a simple route
+    server->setRoute<http::HttpMethod::GET>("/test", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "test";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        server->start();
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+    auto res = cli.get("/test");
+
+    EXPECT_EQ(static_cast<int>(res->status()), 200);
+    EXPECT_EQ(res->content(), "test");
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+}
+
+TEST_F(ServerTestFixture, SetAssetDirectoryWithEmptyPath) {
+    // Use a unique port for each test to avoid conflicts
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
+
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set empty asset directory
+    const std::string empty_dir = "";
+
+    server->setAssetDirectory(empty_dir);
+
+    // Set up a simple route
+    server->setRoute<http::HttpMethod::GET>("/test", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "test";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        server->start();
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+    auto res = cli.get("/test");
+
+    EXPECT_EQ(static_cast<int>(res->status()), 200);
+    EXPECT_EQ(res->content(), "test");
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+}
+
+TEST_F(ServerTestFixture, SetAssetDirectoryMultipleCalls) {
+    // Use a unique port for each test to avoid conflicts
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
+
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set asset directory multiple times
+    const std::string dir1 = "./assets1";
+    const std::string dir2 = "./assets2";
+
+    // Create directories and files
+    std::filesystem::create_directories(dir1);
+    std::filesystem::create_directories(dir2);
+
+    std::ofstream file1(dir1 + "/file1.txt");
+    file1 << "content1";
+    file1.close();
+
+    std::ofstream file2(dir2 + "/file2.txt");
+    file2 << "content2";
+    file2.close();
+
+    server->setAssetDirectory(dir1);
+    server->setAssetDirectory(dir2);
+
+    // Set up routes for both files
+    server->setRoute<http::HttpMethod::GET>("/assets/file1.txt", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "content1";
+    });
+
+    server->setRoute<http::HttpMethod::GET>("/assets/file2.txt", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "content2";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        server->start();
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make requests
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+
+    // Test first file
+    auto res1 = cli.get("/assets/file1.txt");
+    EXPECT_EQ(static_cast<int>(res1->status()), 200);
+    EXPECT_EQ(res1->content(), "content1");
+
+    // Test second file
+    auto res2 = cli.get("/assets/file2.txt");
+    EXPECT_EQ(static_cast<int>(res2->status()), 200);
+    EXPECT_EQ(res2->content(), "content2");
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+
+    // Clean up test directories
+    std::filesystem::remove_all(dir1);
+    std::filesystem::remove_all(dir2);
+}
+
 // ====================================================================
 // Main Entry Point
 // ====================================================================

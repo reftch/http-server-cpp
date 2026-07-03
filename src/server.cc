@@ -15,6 +15,8 @@ namespace http {
             exit(1);
         }
 
+        log.debug("Server socket created sucessfully");
+
         // Set SO_REUSEADDR in socket options
         // For UDP SO_REUSEADDR may mean some problems...
         int optval = 1;
@@ -22,6 +24,8 @@ namespace http {
             log.error("Setting to allow multiple connection failed");
             exit(2);
         }
+
+        log.debug("Server set to allow multiple connection sucessfully");
 
         // Link socket with address.
         struct sockaddr_in server_addr;
@@ -33,6 +37,8 @@ namespace http {
             log.error("Bind the server address failed");
             exit(3);
         }
+
+        log.debug("Server binded to the host {} and port {} sucessfully", host_, port_);
 
         // Set listen socket to unblocking mode.
         setNonblockMode(sockfd_);
