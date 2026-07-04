@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <filesystem>
 
 #include "client.h"
 #include "response.h"
@@ -313,7 +314,7 @@ TEST_F(ServerTestFixture, StartAndMakeRequestPerformance) {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-    std::cout << "Time taken for 100 requests: " << duration.count() << " microseconds" << std::endl;
+    GTEST_LOG_(INFO) <<  "Time taken for 100 requests: " << duration.count() << " microseconds";
 
     // Performance assertion - should complete within reasonable time
     EXPECT_LT(duration.count(), 1000000);  // Less than 1 second
