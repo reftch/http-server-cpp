@@ -216,6 +216,7 @@ namespace http {
         http::Request req(raw_request);
         Response res(default_headers_);
 
+        // Pre-routing handler
         if (pre_routing_handler_) {
             pre_routing_handler_(req, res);
         }
@@ -289,6 +290,7 @@ namespace http {
             handleStaticResource(req, res);
         }
 
+        // Post-routing handler
         if (post_routing_handler_) {
             post_routing_handler_(req, res);
         }
