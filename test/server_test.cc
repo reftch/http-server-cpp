@@ -1,10 +1,12 @@
 #include "server.h"
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <thread>
 
 #include "client.h"
+#include "response.h"
 #include "server_test.h"
 
 using namespace http;
@@ -118,6 +120,203 @@ TEST_F(ServerTestFixture, StartAndMakeRequest) {
     EXPECT_EQ(static_cast<int>(res->status()), 200);
     EXPECT_EQ(res->content(), "test");
     EXPECT_EQ(res->headers().at("Content-Type"), "text/plain; charset=utf-8");
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+}
+
+TEST_F(ServerTestFixture, StartAndMakeManyRequest) {
+    // Create server
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set up route
+    server->setRoute<http::HttpMethod::GET>("/endpoint2", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::PLAIN_TEXT << "test";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+    // make 1000 requests
+    for (ssize_t i = 0; i < 1000; i++) {
+        auto res = cli.get("/endpoint2");
+        EXPECT_EQ(static_cast<int>(res->status()), 200);
+        EXPECT_EQ(res->content(), "test");
+    }
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+}
+
+TEST_F(ServerTestFixture, StartAndMakeRequestWithParameters) {
+    // Create server
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);  // Add process ID offset
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set up route
+    server->setRoute<http::HttpMethod::GET>("/api/v1/inc/:p", [](const http::Request& req, http::Response& res) {
+        std::string value = req.params().at("p");
+        res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+    // make 1000 requests
+    for (ssize_t i = 0; i < 10; i++) {
+        auto res = cli.get("/api/v1/inc/" + std::to_string(i));
+        EXPECT_EQ(static_cast<int>(res->status()), 200);
+        EXPECT_EQ(res->headers().at("Content-Type"), "application/json");
+
+        // Verify response body content
+        std::string expected_body = "{\"value\":\"" + std::to_string(i + 1) + "\"}";
+        EXPECT_EQ(res->content(), expected_body);
+    }
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+}
+
+// Test for query parameters
+TEST_F(ServerTestFixture, StartAndMakeRequestWithQueryParameters) {
+    // Create server
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set up route with query parameters
+    server->setRoute<http::HttpMethod::GET>("/api/v1/calculate", [](const http::Request& req, http::Response& res) {
+        int a = 0, b = 0;
+        try {
+            a = std::stoi(req.query().at("a"));
+            b = std::stoi(req.query().at("b"));
+        } catch (const std::exception&) {
+            // Handle missing or invalid parameters
+            res << http::Status::bad_request << http::ContentType::PLAIN_TEXT << "Invalid parameters";
+            return;
+        }
+
+        int sum = a + b;
+        res << http::ContentType::JSON << "{\"result\":" + std::to_string(sum) + "}";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request with query parameters
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+
+    // Test various query parameter combinations
+    struct TestCase {
+        std::string query_string;
+        int expected_result;
+        int expected_status;
+    };
+
+    std::vector<TestCase> test_cases = {
+        {"?a=5&b=3", 8, 200}, {"?a=10&b=20", 30, 200}, {"?a=-5&b=15", 10, 200}, {"?a=0&b=0", 0, 200}};
+
+    for (const auto& test_case : test_cases) {
+        auto res = cli.get("/api/v1/calculate" + test_case.query_string);
+        EXPECT_EQ(static_cast<int>(res->status()), test_case.expected_status);
+
+        if (test_case.expected_status == 200) {
+            EXPECT_EQ(res->headers().at("Content-Type"), "application/json");
+            std::string expected_body = "{\"result\":" + std::to_string(test_case.expected_result) + "}";
+            EXPECT_EQ(res->content(), expected_body);
+        }
+    }
+
+    // Stop server
+    stopServer(server, server_thread);
+
+    // Verify server is stopped
+    EXPECT_FALSE(server->is_running());
+}
+
+// Performance test with timing
+TEST_F(ServerTestFixture, StartAndMakeRequestPerformance) {
+    // Create server
+    const std::string test_host = "127.0.0.1";
+    const int test_port = 8081 + (getpid() % 1000);
+    auto server = std::make_unique<Server>(test_host, test_port);
+
+    // Set up route
+    server->setRoute<http::HttpMethod::GET>("/api/v1/inc/:p", [](const http::Request& req, http::Response& res) {
+        std::string value = req.params().at("p");
+        res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
+    });
+
+    // Start server in separate thread
+    std::thread server_thread([&server]() {
+        startServer(server);
+    });
+
+    // Wait for server to start
+    ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
+
+    EXPECT_TRUE(server->is_running());
+
+    // Create client and make request
+    auto cli = Client("http://" + test_host + ":" + std::to_string(test_port));
+
+    // Measure performance of 100 requests
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (ssize_t i = 0; i < 100; i++) {
+        auto res = cli.get("/api/v1/inc/" + std::to_string(i));
+        EXPECT_EQ(static_cast<int>(res->status()), 200);
+        EXPECT_EQ(res->headers().at("Content-Type"), "application/json");
+
+        // Verify response body content
+        std::string expected_body = "{\"value\":\"" + std::to_string(i + 1) + "\"}";
+        EXPECT_EQ(res->content(), expected_body);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    std::cout << "Time taken for 100 requests: " << duration.count() << " microseconds" << std::endl;
+
+    // Performance assertion - should complete within reasonable time
+    EXPECT_LT(duration.count(), 1000000);  // Less than 1 second
 
     // Stop server
     stopServer(server, server_thread);
