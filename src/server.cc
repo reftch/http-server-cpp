@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <chrono>
 
 #include "response.h"
 #include "utils.h"
@@ -54,8 +55,11 @@ namespace http {
         // initialize the running flag
         running_ = true;
 
+        auto end_ = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_ - start_);
+
         const char* scheme = isHttps ? "https" : "http";
-        log.info("Server started on {}://{}:{}", scheme, host_, port_);
+        log.info("Server started on {}://{}:{} in {}", scheme, host_, port_, duration);
 
         handleRequests();
 

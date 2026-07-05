@@ -1,10 +1,10 @@
 #include "server.h"
 
 #include <chrono>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <thread>
-#include <filesystem>
 
 #include "client.h"
 #include "response.h"
@@ -301,7 +301,8 @@ TEST_F(ServerTestFixture, StartAndMakeRequestPerformance) {
     // Measure performance of 100 requests
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (ssize_t i = 0; i < 100; i++) {
+    const int NUM = 100;
+    for (ssize_t i = 0; i < NUM; i++) {
         auto res = cli.get("/api/v1/inc/" + std::to_string(i));
         EXPECT_EQ(static_cast<int>(res->status()), 200);
         EXPECT_EQ(res->headers().at("Content-Type"), "application/json");
@@ -314,7 +315,7 @@ TEST_F(ServerTestFixture, StartAndMakeRequestPerformance) {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-    GTEST_LOG_(INFO) <<  "Time taken for 100 requests: " << duration.count() << " microseconds";
+    GTEST_LOG_(INFO) << "Time taken for " << NUM << " requests: " << duration.count() << " microseconds";
 
     // Performance assertion - should complete within reasonable time
     EXPECT_LT(duration.count(), 1000000);  // Less than 1 second

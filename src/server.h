@@ -172,6 +172,7 @@ namespace http {
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
+        std::chrono::time_point<std::chrono::high_resolution_clock> start_ = std::chrono::high_resolution_clock::now();
 
        protected:
         // static directory

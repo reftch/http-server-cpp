@@ -44,6 +44,6 @@ if(BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-if(BUILD_EXAMPLES) 
+if(BUILD_EXAMPLES)  
     add_subdirectory(examples)
 endif()
