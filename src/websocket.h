@@ -85,9 +85,6 @@ namespace http {
         }
 
         ssize_t send(const std::string& msg) {
-            // int sockfd = frame.sockfd;
-            //  log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
-
             if (frame.opcode == WsOpcode::Close) {
                 close();
                 return -1;
