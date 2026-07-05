@@ -2,26 +2,42 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "debug",
-      "description": "Default settings",
-      "hidden": false,
+      "name": "base",
+      "hidden": true,
       "generator": "Unix Makefiles",
-      "binaryDir": "${workspaceFolder}/build",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+        "CMAKE_BUILD_PARALLEL_LEVEL": "0"
       }
     },
     {
-      "name": "relase",
-      "description": "Relase settings",
-      "hidden": false,
-      "generator": "Unix Makefiles",
-      "binaryDir": "${workspaceFolder}/build",
+      "name": "debug",
+      "displayName": "Debug",
+      "inherits": "base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "jobs": 0
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "jobs": 0
     }
   ]
 }
