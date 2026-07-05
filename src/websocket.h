@@ -19,7 +19,7 @@
 
 namespace http {
 
-    enum class Result : int { Fail = 0, Text = 1, Binary = 2 };
+    enum class Result : int { Fail = 0, Text = 1, Binary = 2, Ping = 3, Pong = 4 };
 
     enum class WsOpcode : uint8_t {
         Continuation = 0x0,
@@ -144,7 +144,18 @@ namespace http {
             }
 
             msg = frame.text_payload;
-            return frame.opcode == WsOpcode::Text ? Result::Text : Result::Binary;
+            switch (frame.opcode) {
+                case WsOpcode::Text:
+                    return Result::Text;
+                case WsOpcode::Binary:
+                    return Result::Binary;
+                case WsOpcode::Ping:
+                    return Result::Ping;  // Add this line
+                case WsOpcode::Pong:
+                    return Result::Pong;  // Add this line
+                default:
+                    return Result::Fail;
+            }
         }
 
         friend Result operator>>(WebSocket& ws, std::string& msg) { return ws.read(msg); }
