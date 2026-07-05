@@ -9,6 +9,7 @@ add_executable (tests
     server_test.cc
     router_test.cc
     request_test.cc
+    websocket_test.cc
 )
 
 include(FetchContent)

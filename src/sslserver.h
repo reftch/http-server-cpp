@@ -5,8 +5,9 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
-#include <mutex>
-#include <unordered_map>
+// #include <string>
+// #include <mutex>
+// #include <unordered_map>
 
 #include "server.h"
 
@@ -25,7 +26,7 @@ namespace http {
          */
         SSLServer(const std::string& host, const int& port, const std::string& cert_file, const std::string& key_file)
             : Server(host, port), cert_file_(cert_file), key_file_(key_file), ssl_ctx_(nullptr) {
-            isHttps = true;     
+            isHttps = true;
             SSL_library_init();
             SSL_load_error_strings();
             OpenSSL_add_ssl_algorithms();
@@ -84,7 +85,10 @@ namespace http {
 
             running_ = true;
 
-            log.info("Server started on https://{}:{}", host_, port_);
+            auto end_ = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_ - start_);
+
+            log.info("Server started on https://{}:{} in {}", host_, port_, duration);
             handleRequests();
 
             return 0;
@@ -247,26 +251,39 @@ namespace http {
             std::string raw_request(buffer, nread);
             // Parse the request line to find method and path
             http::Request req(raw_request);
+            Response res(default_headers_);
+
+            // Pre-routing handler
+            if (pre_routing_handler_) {
+                pre_routing_handler_(req, res);
+            }
 
             // is websocket requests
-            if (isWebSocketFrame(raw_request)) {
-                ClientConnection& client = ssl_clients_[sd];
-                WebSocket ws(sd, client.ssl, raw_request);
-                auto handler = getWsHandlerBySocketId(sd);
-                if (handler.has_value()) {
-                    handler.value()(req, ws);
+            auto opcode = getWebSocketFrame(raw_request);
+            if (opcode.has_value()) {
+                log.debug("Websocket status: {}", toWsOpcodeString(opcode.value()));
+                auto route = getWsRouteBySocketId(sd);
+                if (route.has_value()) {
+                    if (opcode.value() == WsOpcode::Close) {
+                        return;
+                    }
+
+                    ClientConnection& client = ssl_clients_[sd];
+                    WebSocket ws(sd, client.ssl, raw_request, route->query);
+                    route->handler(ws);
                 }
                 return;
             }
 
+            // HTTP websocket handshake
             if (processWebsocketHandshake(sd, req)) {
-                // update route with socket id
-                updateWsRoute(req.path(), sd);
+                log.info("Norm path: {}", req.normalize_path());
+                updateWsRoute(req.normalize_path(), req.query(), sd);
                 return;
             }
 
             // handle request
-            std::string body = handleRoute(req);
+            std::string body = handleRoute(req, res);
             // send server response
             sendResponse(sd, body);
         }
@@ -414,5 +431,5 @@ namespace http {
 
 }  // namespace http
 
-#endif  // SSL_SERVER_H_
+#endif
 #endif

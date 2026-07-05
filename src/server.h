@@ -172,7 +172,6 @@ namespace http {
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
-        std::chrono::time_point<std::chrono::high_resolution_clock> start_ = std::chrono::high_resolution_clock::now();
 
        protected:
         // static directory
@@ -189,6 +188,7 @@ namespace http {
         request_handler pre_routing_handler_;   // Pre-Routing handler
         request_handler post_routing_handler_;  // Post-Routing handler
         std::vector<std::pair<std::string, std::string>> default_headers_;
+        std::chrono::time_point<std::chrono::high_resolution_clock> start_ = std::chrono::high_resolution_clock::now();
 
         int setNonblockMode(int fd);
 

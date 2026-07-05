@@ -1,7 +1,6 @@
 #ifndef SERVER_TEST_HPP
 #define SERVER_TEST_HPP
 
-#include <mutex>
 #include <thread>
 
 #include "gtest/gtest.h"

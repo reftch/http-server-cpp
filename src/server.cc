@@ -57,9 +57,7 @@ namespace http {
 
         auto end_ = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_ - start_);
-
-        const char* scheme = isHttps ? "https" : "http";
-        log.info("Server started on {}://{}:{} in {}", scheme, host_, port_, duration);
+        log.info("Server started on http://{}:{} in {}", host_, port_, duration);
 
         handleRequests();
 

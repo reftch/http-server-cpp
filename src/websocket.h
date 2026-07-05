@@ -85,8 +85,8 @@ namespace http {
         }
 
         ssize_t send(const std::string& msg) {
-            int sockfd = frame.sockfd;
-            // log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
+            // int sockfd = frame.sockfd;
+            //  log.debug("Is socket FD={} is alive: {}", sockfd, utils::isSocketAlive(sockfd));
 
             if (frame.opcode == WsOpcode::Close) {
                 close();
@@ -106,10 +106,11 @@ namespace http {
             }
 
             // Send the frame to the socket
-            ssize_t sent = ::send(sockfd, response.data(), response.size(), 0);
+            ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
 #else
             // auto response = writeFrame(msg, true, WsOpcode::Text);
-            auto response = writeFrame(msg, frame.fin, WsOpcode::Text);
+            auto response = writeFrame(msg, frame.fin, frame.opcode);
+            // auto response = writeFrame(msg, frame.fin, WsOpcode::Text);
             if (response.empty()) {
                 return -1;  // Return error if frame creation failed
             }
