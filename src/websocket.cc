@@ -1,6 +1,8 @@
 #include "websocket.h"
 
+#include <optional>
 #include <string>
+
 namespace http {
 
     bool WebSocket::readFrame(const std::vector<uint8_t>& data) {
