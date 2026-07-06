@@ -1,6 +1,5 @@
 #include "websocket.h"
 
-#include <optional>
 #include <string>
 
 namespace http {
