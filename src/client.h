@@ -10,11 +10,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <memory>
 #include <array>
 #include <charconv>
 #include <cstring>
 #include <expected>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -456,12 +456,13 @@ namespace http {
     class Client {
        private:
         std::unique_ptr<BaseClient> client_;
+        Logger& log = Logger::getInstance();
 
        public:
         Client(const std::string& url) {
             auto result = ClientFactory::createClient(url);
             if (!result) {
-                throw std::runtime_error("Failed to create client: " + result.error());
+                log.info("Failed to create client: {}", result.error());
             }
             client_ = std::move(result.value());
         }
