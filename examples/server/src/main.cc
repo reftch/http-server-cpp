@@ -1,9 +1,11 @@
 #include <chrono>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <thread>
 
+#include "response.h"
 #include "server.h"
 // #define HTTP_OPENSSL_SUPPORT
 // #include "sslserver.h"
@@ -49,6 +51,26 @@ int main() {
         res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
     });
 
+    // SSE handler
+    s.setRoute<http::HttpMethod::GET>("/events", [&](const http::Request&, http::Response& res) {
+        // Send initial response to establish connection
+        res << http::ContentType::SSE << "data: connected\n\n";
+        res.sendChunk();
+
+        // Create a thread that will send events
+        std::thread([res_ptr = std::make_shared<http::Response>(std::move(res))]() {
+            auto result = true;
+            while (result) {
+                // prepare message
+                *res_ptr << "data: " + getCurrentTimeJson() + "\n\n";
+                // Send SSE format
+                result = res_ptr->sendChunk();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        }).detach();
+    });
+
+    // Websocket handler
     s.setRoute("/ws", [](http::WebSocket& ws) {
         log.info("Token: {}", ws.query().at("token"));
 

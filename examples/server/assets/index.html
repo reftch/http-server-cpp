@@ -18,7 +18,12 @@
             Index:
             <span id="timeDisplay">No info</span>
             <div>
-                <button id="connect-btn"></button>
+                <div>
+                    <button id="connect-btn"></button>
+                </div>
+                <div>
+                    <button id="sse-btn"></button>
+                </div>
             </div>
         </div>
         <a href="/home">Home page</a>
@@ -29,18 +34,86 @@
 
         const timeDisplay = document.getElementById('timeDisplay');
         const connectBtn = document.getElementById('connect-btn');
-        connectBtn.innerText = "Connect";
+        connectBtn.innerText = "Connect WS";
+
+        const sseBtn = document.getElementById('sse-btn');
+        sseBtn.innerText = "Connect SSE";
 
         connectBtn.addEventListener('click', toggleConnection);
+        sseBtn.addEventListener('click', toggleSSEConnection);
+
+        let eventSource = null;
+
+        function getDate(str) {
+            const data = JSON.parse(event.data);
+
+            // console.log('WebSocket message:', data);
+            // if (data.type === 'time_update') {
+            return new Date(str).toLocaleString('de-DE', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+                timeZone: 'UTC'
+            });
+        }
 
         function toggleConnection() {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 console.log(ws)
                 ws.close(1000, "Client initiated disconnect");
-                connectBtn.innerText = "Connect";
+                connectBtn.innerText = "Connect WS";
                 timeDisplay.textContent = "No info";
             } else {
                 initWebSocket();
+            }
+        }
+
+        function toggleSSEConnection() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                console.log("SSE connection closed");
+                sseBtn.innerText = "Connect SSE";
+                timeDisplay.textContent = "No info";
+            } else {
+                sseConnection();
+            }
+        }
+
+        function sseConnection() {
+            eventSource = new EventSource("/events");
+
+            eventSource.onopen = () => {
+                console.log("SSE connection opened");
+                sseBtn.innerText = "Disconnect SSE";
+            };
+
+            eventSource.onmessage = (event) => {
+                // console.log("Received:", event.data);
+                if (event.data && event.data !== 'connected') {
+                    const data = JSON.parse(event.data);
+                    timeDisplay.textContent = getDate(data.time);
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                console.error("SSE error:", error);
+            };
+
+            eventSource.addEventListener("time", e => {
+                console.log(JSON.parse(e.data));
+            });
+        }
+
+        function disconnectSSE() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                console.log("SSE connection closed");
             }
         }
 
@@ -55,7 +128,7 @@
 
                 ws.onopen = function (event) {
                     console.log('WebSocket connected');
-                    connectBtn.innerText = "Disconnect";
+                    connectBtn.innerText = "Disconnect WS";
 
                     const message = {
                         type: "websocket",
@@ -69,25 +142,13 @@
                     // Handle incoming messages
                     if (event.data) {
                         const data = JSON.parse(event.data);
-
-                        // console.log('WebSocket message:', data);
-                        // if (data.type === 'time_update') {
-                        timeDisplay.textContent = new Date(data.time).toLocaleString('de-DE', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: false,
-                            timeZone: 'UTC'
-                        });
+                        timeDisplay.textContent = getDate(data.time);
                     }
                 };
 
                 ws.onclose = function (event) {
                     console.log('WebSocket disconnected');
-                    connectBtn.innerText = "Connect";
+                    connectBtn.innerText = "Connect WS";
                     timeDisplay.textContent = "No info";
                     // Attempt to reconnect after 3 seconds
                     // setTimeout(initWebSocket, 3000);

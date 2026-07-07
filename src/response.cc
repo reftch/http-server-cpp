@@ -45,7 +45,7 @@ namespace http {
 
     const std::map<std::string, std::string>& Response::headers() const { return headers_; }
 
-    std::string Response::build() {
+    std::string Response::build(bool chunked) {
         std::string body = statusToString();
 
         if (content_type_ == ContentType::HTML && content_.ends_with(".html")) {
@@ -56,11 +56,16 @@ namespace http {
         auto content_type_it = headers_ref.find("Content-Type");
         if (content_type_it == headers_ref.end()) {
             setHeader("Content-Type", ContentTypeToString(content_type_));
+            if (content_type_ == ContentType::SSE) {
+                setHeader("Cache-Control", "no-cache");
+            }
         }
 
-        auto content_length_it = headers_ref.find("Content-Length");
-        if (content_length_it == headers_ref.end()) {
-            setHeader("Content-Length", std::to_string(content_.size()));
+        if (!chunked) {
+            auto content_length_it = headers_ref.find("Content-Length");
+            if (content_length_it == headers_ref.end()) {
+                setHeader("Content-Length", std::to_string(content_.size()));
+            }
         }
 
         // Add all headers (order not guaranteed, but acceptable for HTTP)
@@ -73,6 +78,8 @@ namespace http {
 
         body.append(miscStrings::crlf);
         body.append(content_);
+
+        // std::cout << "sending: " << body << std::endl;
 
         return body;
     }
