@@ -1,8 +1,10 @@
 #ifndef HTTP_RESPONSE_H_
 #define HTTP_RESPONSE_H_
 
+#include <sys/socket.h>
 #include <unistd.h>
 
+#include <functional>
 #include <map>
 #include <string>
 
@@ -28,6 +30,7 @@ namespace http {
         WOFF2,
         TTF,
         EOT,
+        SSE,
         UNKNOWN
     };
 
@@ -113,12 +116,18 @@ namespace http {
             }
         }
 
+        Response(const std::vector<std::pair<std::string, std::string>>& default_headers, const int sockfd) {
+            for (const auto& header : default_headers) {
+                setHeader(header.first, header.second);
+            }
+            sockfd_ = sockfd;
+        }
+
         void setHeader(const std::string& key, const std::string& val) { headers_[std::move(key)] = std::move(val); }
 
         std::string content() { return content_; }
         http::Status status() { return status_; }
         const std::map<std::string, std::string>& headers() const;
-        // std::map<std::string, std::string> headers() { return headers_; }
 
         template <ContentType T = ContentType::PLAIN_TEXT, Status S = Status::ok>
         Response& setContent(const std::string& content) {
@@ -159,7 +168,14 @@ namespace http {
             return *this;
         }
 
-        std::string build();
+        std::string build(bool chunked = false);
+
+        bool sendChunk() {
+            std::string data = build(true);
+            ssize_t written = ::send(sockfd_, data.data(), data.size(), MSG_NOSIGNAL);
+
+            return written == (ssize_t)data.size();
+        }
 
         void setStaticDirectory(const std::string static_directory) { static_directory_ = static_directory; }
 
@@ -170,6 +186,8 @@ namespace http {
         std::string version_;
         std::string static_directory_;
         std::map<std::string, std::string> headers_;
+        int sockfd_;
+        Logger& log = Logger::getInstance();
 
         std::string statusToString();
 
@@ -209,6 +227,8 @@ namespace http {
                     return "application/vnd.ms-fontobject";
                 case ContentType::XML:
                     return "application/xml";
+                case ContentType::SSE:
+                    return "text/event-stream";
                 case ContentType::UNKNOWN:
                     return "application/octet-stream";
             }

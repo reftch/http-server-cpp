@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <chrono>
+#include <thread>
 
 #include "response.h"
 #include "utils.h"
@@ -217,7 +218,7 @@ namespace http {
 
         // Parse the request line to find method and path
         http::Request req(raw_request);
-        Response res(default_headers_);
+        Response res(default_headers_, sd);
 
         // Pre-routing handler
         if (pre_routing_handler_) {
@@ -267,6 +268,7 @@ namespace http {
                     // This is expected in non-blocking mode - just continue
                     // But we should add a timeout mechanism for large files
                     // std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     continue;
                 } else {
                     log.warning("Error writing response body: {}", strerror(errno));
