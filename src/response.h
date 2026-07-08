@@ -162,40 +162,37 @@ namespace http {
 
         // Overload << operator for string content
         Response& operator<<(const std::string& content) {
-            content_ = content;
+            content_ += content;
             return *this;
         }
 
         // Overload << operator for const char*
         Response& operator<<(const char* content) {
-            content_ = content;
+            content_ += content;
             return *this;
         }
 
         // Optional: overload for other types
         template <typename T>
         Response& operator<<(const T& value) {
-            content_ = std::to_string(value);
+            content_ += std::to_string(value);
             return *this;
         }
 
         std::string build(bool chunked = false);
 
-#ifndef HTTP_OPENSSL_SUPPORT
         bool sendChunk() {
-            std::string data = build(true);
-            ssize_t written = ::send(sockfd_, data.data(), data.size(), MSG_NOSIGNAL);
+            const auto data = build(true);
+            const auto expected_bytes = static_cast<ssize_t>(data.size());
 
-            return written == (ssize_t)data.size();
-        }
+#ifdef HTTP_OPENSSL_SUPPORT
+            const auto written = SSL_write(ssl, data.data(), data.size());
 #else
-        bool sendChunk() {
-            std::string data = build(true);
-            ssize_t written = SSL_write(ssl, data.data(), data.size());
-
-            return written == (ssize_t)data.size();
-        }
+            const auto written = ::send(sockfd_, data.data(), data.size(), MSG_NOSIGNAL);
 #endif
+
+            return written == expected_bytes;
+        }
 
         void setStaticDirectory(const std::string static_directory) { static_directory_ = static_directory; }
 
