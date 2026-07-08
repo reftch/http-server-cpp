@@ -7,6 +7,11 @@
 #include <map>
 #include <string>
 
+#ifdef HTTP_OPENSSL_SUPPORT
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#endif
+
 #include "logger.h"
 
 namespace http {
@@ -122,6 +127,13 @@ namespace http {
             sockfd_ = sockfd;
         }
 
+#ifdef HTTP_OPENSSL_SUPPORT
+        Response(const std::vector<std::pair<std::string, std::string>>& default_headers, SSL* ssl) : ssl(ssl) {
+            for (const auto& header : default_headers) {
+                setHeader(header.first, header.second);
+            }
+        }
+#endif
         void setHeader(const std::string& key, const std::string& val) { headers_[std::move(key)] = std::move(val); }
 
         std::string content() { return content_; }
@@ -169,12 +181,21 @@ namespace http {
 
         std::string build(bool chunked = false);
 
+#ifndef HTTP_OPENSSL_SUPPORT
         bool sendChunk() {
             std::string data = build(true);
             ssize_t written = ::send(sockfd_, data.data(), data.size(), MSG_NOSIGNAL);
 
             return written == (ssize_t)data.size();
         }
+#else
+        bool sendChunk() {
+            std::string data = build(true);
+            ssize_t written = SSL_write(ssl, data.data(), data.size());
+
+            return written == (ssize_t)data.size();
+        }
+#endif
 
         void setStaticDirectory(const std::string static_directory) { static_directory_ = static_directory; }
 
@@ -187,6 +208,10 @@ namespace http {
         std::map<std::string, std::string> headers_;
         int sockfd_;
         Logger& log = Logger::getInstance();
+
+#ifdef HTTP_OPENSSL_SUPPORT
+        SSL* ssl = nullptr;
+#endif
 
         std::string statusToString();
 
