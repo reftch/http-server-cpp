@@ -497,7 +497,6 @@ TEST_F(ServerTestFixture, PreRouteHandlesRequestBeforeOtherHandlers) {
     // Set pre-route handler that modifies response
     server->setPreRoute([&](const http::Request&, http::Response& res) {
         res.setHeader("X-PreRoute-Header", "pre-route-value");
-        res << http::ContentType::PLAIN_TEXT << "Pre-route processed";
     });
 
     // Set regular route handler using proper syntax

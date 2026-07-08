@@ -5,7 +5,7 @@
 #include <string>
 #include <thread>
 
-#include "response.h"
+// #include "response.h"
 #include "server.h"
 // #define HTTP_OPENSSL_SUPPORT
 // #include "sslserver.h"
@@ -54,7 +54,7 @@ int main() {
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/events", [&](const http::Request&, http::Response& res) {
         // Send initial response to establish connection
-        res << http::ContentType::SSE << "data: connected\n\n";
+        res << http::ContentType::SSE << "data: connected" << "\n\n";
         res.sendChunk();
 
         // Create a thread that will send events
@@ -62,7 +62,7 @@ int main() {
             auto result = true;
             while (result) {
                 // prepare message
-                *res_ptr << "data: " + getCurrentTimeJson() + "\n\n";
+                *res_ptr << "data: " << getCurrentTimeJson() << "\n\n";
                 // Send SSE format
                 result = res_ptr->sendChunk();
                 std::this_thread::sleep_for(std::chrono::seconds(1));

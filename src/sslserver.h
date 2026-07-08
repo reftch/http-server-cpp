@@ -251,7 +251,10 @@ namespace http {
             std::string raw_request(buffer, nread);
             // Parse the request line to find method and path
             http::Request req(raw_request);
-            Response res(default_headers_);
+
+            // create response
+            ClientConnection& client = ssl_clients_[sd];
+            Response res(default_headers_, client.ssl);
 
             // Pre-routing handler
             if (pre_routing_handler_) {
