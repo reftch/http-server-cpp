@@ -37,13 +37,44 @@ namespace http {
 
     enum class Protocol { HTTP, HTTPS };
 
+    /**
+     * @brief Base class for HTTP clients providing common functionality
+     *
+     * This class defines the interface for HTTP clients and provides
+     * shared functionality like response parsing and socket management.
+     */
     class BaseClient {
        public:
         virtual ~BaseClient() = default;
 
+        /**
+         * @brief Send a GET request to the specified path
+         * @param path The URL path to request
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> get(const std::string& path);
+
+        /**
+         * @brief Send a POST request with body data
+         * @param path The URL path to request
+         * @param body The request body content
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> post(const std::string& path, const std::string& body);
+
+        /**
+         * @brief Send a PUT request with body data
+         * @param path The URL path to request
+         * @param body The request body content
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> put(const std::string& path, const std::string& body);
+
+        /**
+         * @brief Send a DELETE request to the specified path
+         * @param path The URL path to request
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> del(const std::string& path);
 
        protected:
@@ -52,9 +83,19 @@ namespace http {
         bool keep_alive_ = true;
         Logger& log = Logger::getInstance();
 
+        /**
+         * @brief Virtual method to send HTTP request
+         * @param method The HTTP method (GET, POST, etc.)
+         * @param path The URL path
+         * @return Expected response string or error string
+         */
         virtual std::expected<std::string, std::string> sendRequest(const std::string& method,
                                                                     const std::string& path) = 0;
 
+        /**
+         * @brief Create a new socket for connection
+         * @return Socket file descriptor or -1 on failure
+         */
         int createSocket() {
             int sock = socket(AF_INET, SOCK_STREAM, 0);
             if (sock < 0) {
@@ -63,19 +104,52 @@ namespace http {
             return sock;
         }
 
+        /**
+         * @brief Close the given socket
+         * @param sock The socket file descriptor to close
+         */
         void closeSocket(int sock) {
             if (sock >= 0) {
                 close(sock);
             }
         }
 
+        /**
+         * @brief Parse HTTP status code from raw response
+         * @param raw_response The complete HTTP response string
+         * @return Parsed Status enum value
+         */
         http::Status parseStatus(const std::string& raw_response);
+
+        /**
+         * @brief Parse complete HTTP response from raw data
+         * @param raw_response The complete HTTP response string
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> parseResponse(const std::string& raw_response);
+
+        /**
+         * @brief Parse chunked transfer encoding body
+         * @param chunked_body The chunked body content
+         * @return Expected parsed body string or error string
+         */
         std::expected<std::string, std::string> parseChunkedBody(const std::string& chunked_body);
     };
 
+    /**
+     * @brief HTTP client implementation for plain HTTP connections
+     *
+     * This class handles HTTP requests over TCP sockets with support for
+     * keep-alive connections and timeout management.
+     */
     class HttpClient : public BaseClient {
        private:
+        /**
+         * @brief Send HTTP request over TCP socket
+         * @param method The HTTP method to use
+         * @param path The URL path to request
+         * @return Expected response string or error string
+         */
         std::expected<std::string, std::string> sendRequest(const std::string& method,
                                                             const std::string& path) override {
             int sock = createSocket();
@@ -126,6 +200,11 @@ namespace http {
             return readResponse(sock);
         }
 
+        /**
+         * @brief Read response from socket
+         * @param sock The socket file descriptor
+         * @return Expected response string or error string
+         */
         std::expected<std::string, std::string> readResponse(int sock) {
             std::string response;
             std::array<char, READ_BUFFER_SIZE> buffer{};
@@ -152,6 +231,11 @@ namespace http {
         }
 
        public:
+        /**
+         * @brief Construct HTTP client with host and port
+         * @param host The target host name or IP address
+         * @param port The target port number
+         */
         HttpClient(const std::string& host, int port) {
             host_ = host;
             port_ = port;
@@ -159,6 +243,12 @@ namespace http {
     };
 
 #ifdef HTTP_OPENSSL_SUPPORT
+    /**
+     * @brief HTTPS client implementation for secure connections
+     *
+     * This class handles HTTPS requests using OpenSSL for TLS/SSL encryption.
+     * It supports certificate validation and custom CA certificates.
+     */
     class HttpsClient : public BaseClient {
        private:
         bool use_custom_ca_ = true;
@@ -168,6 +258,10 @@ namespace http {
         SSL_CTX* ssl_ctx_;
         SSL* ssl_;
 
+        /**
+         * @brief Close socket and cleanup SSL resources
+         * @param sock The socket file descriptor to close
+         */
         void closeSocket(int sock) {
             if (ssl_) {
                 SSL_free(ssl_);
@@ -178,6 +272,10 @@ namespace http {
             }
         }
 
+        /**
+         * @brief Initialize OpenSSL context for secure connections
+         * @return True on success, false on failure
+         */
         bool initializeSSL() {
             SSL_library_init();
             SSL_load_error_strings();
@@ -216,6 +314,9 @@ namespace http {
             return true;
         }
 
+        /**
+         * @brief Cleanup all OpenSSL resources
+         */
         void cleanupSSL() {
             if (ssl_) {
                 SSL_shutdown(ssl_);
@@ -231,6 +332,12 @@ namespace http {
             EVP_cleanup();
         }
 
+        /**
+         * @brief Send HTTPS request over secure connection
+         * @param method The HTTP method to use
+         * @param path The URL path to request
+         * @return Expected response string or error string
+         */
         std::expected<std::string, std::string> sendRequest(const std::string& method,
                                                             const std::string& path) override {
             int sock = createSocket();
@@ -307,6 +414,11 @@ namespace http {
             return readResponse(sock);
         }
 
+        /**
+         * @brief Read response from secure socket
+         * @param sock The socket file descriptor
+         * @return Expected response string or error string
+         */
         std::expected<std::string, std::string> readResponse(int sock) {
             std::string response;
             std::array<char, READ_BUFFER_SIZE> buffer{};
@@ -335,6 +447,11 @@ namespace http {
         }
 
        public:
+        /**
+         * @brief Construct HTTPS client with host and port
+         * @param host The target host name or IP address
+         * @param port The target port number
+         */
         HttpsClient(const std::string& host, int port) {
             host_ = host;
             port_ = port;
@@ -342,8 +459,15 @@ namespace http {
             ssl_ = nullptr;
         }
 
+        /**
+         * @brief Destructor to cleanup SSL resources
+         */
         ~HttpsClient() { cleanupSSL(); }
 
+        /**
+         * @brief Set custom CA certificate file for validation
+         * @param cert_file Path to the CA certificate file
+         */
         void setCert(const std::string& cert_file) {
             ca_cert_file_ = cert_file;
             use_custom_ca_ = true;
@@ -375,8 +499,19 @@ namespace http {
 
 #endif
 
+    /**
+     * @brief Factory class for creating HTTP/HTTPS clients
+     *
+     * This factory parses URLs and creates appropriate client instances
+     * based on the protocol (HTTP or HTTPS) specified in the URL.
+     */
     class ClientFactory {
        public:
+        /**
+         * @brief Create client instance based on URL protocol
+         * @param url The full URL to parse and create client for
+         * @return Expected unique pointer to BaseClient or error string
+         */
         static std::expected<std::unique_ptr<BaseClient>, std::string> createClient(const std::string& url) {
             // Parse URL
             std::string protocol;
@@ -439,6 +574,11 @@ namespace http {
         }
 
        private:
+        /**
+         * @brief Parse port number from string
+         * @param port_str The port string to parse
+         * @return Optional parsed port number or nullopt on error
+         */
         static std::optional<int> parsePort(std::string_view port_str) {
             int value;
 
@@ -452,13 +592,22 @@ namespace http {
         }
     };
 
-    // Updated Client class that uses the factory
+    /**
+     * @brief High-level client wrapper that uses the factory to create appropriate clients
+     *
+     * This class provides a simplified interface for making HTTP requests by
+     * automatically creating the correct client type based on the URL.
+     */
     class Client {
        private:
         std::unique_ptr<BaseClient> client_;
         Logger& log = Logger::getInstance();
 
        public:
+        /**
+         * @brief Construct client from URL
+         * @param url The target URL to connect to
+         */
         Client(const std::string& url) {
             auto result = ClientFactory::createClient(url);
             if (!result) {
@@ -467,16 +616,38 @@ namespace http {
             client_ = std::move(result.value());
         }
 
+        /**
+         * @brief Send GET request
+         * @param path The URL path to request
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> get(const std::string& path) { return client_->get(path); }
 
+        /**
+         * @brief Send POST request with body data
+         * @param path The URL path to request
+         * @param body The request body content
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> post(const std::string& path, const std::string& body) {
             return client_->post(path, body);
         }
 
+        /**
+         * @brief Send PUT request with body data
+         * @param path The URL path to request
+         * @param body The request body content
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> put(const std::string& path, const std::string& body) {
             return client_->put(path, body);
         }
 
+        /**
+         * @brief Send DELETE request
+         * @param path The URL path to request
+         * @return Expected Response object or error string
+         */
         std::expected<Response, std::string> del(const std::string& path) { return client_->del(path); }
     };
 
