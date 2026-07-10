@@ -20,8 +20,19 @@
 
 namespace http {
 
+    /**
+     * @brief Enum representing the result of WebSocket operations
+     *
+     * This enum is used to indicate the type of data received from a WebSocket connection
+     * or the success/failure of operations.
+     */
     enum class Result : int { Fail = 0, Text = 1, Binary = 2, Ping = 3, Pong = 4 };
 
+    /**
+     * @brief Enum representing WebSocket opcodes
+     *
+     * WebSocket opcodes define the type of frame being sent or received.
+     */
     enum class WsOpcode : uint8_t {
         Continuation = 0x0,
         Text = 0x1,
@@ -31,6 +42,12 @@ namespace http {
         Pong = 0xA,
     };
 
+    /**
+     * @brief Structure representing a WebSocket frame
+     *
+     * This structure holds all the information about a WebSocket frame including
+     * control flags, opcode, payload length, masking key, and payload data.
+     */
     struct Frame {
         bool fin;
         WsOpcode opcode;
@@ -52,25 +69,62 @@ namespace http {
 #endif
     };
 
+    /**
+     * @brief WebSocket class for handling WebSocket connections
+     *
+     * This class provides methods for creating, reading, and writing WebSocket frames,
+     * as well as managing the connection lifecycle.
+     */
     class WebSocket {
        private:
         // logger
         Logger& log = Logger::getInstance();
 
        public:
+        /**
+         * @brief Construct a new WebSocket object
+         *
+         * @param sockfd Socket file descriptor for the connection
+         * @param raw_request Raw HTTP request string
+         * @param query Query parameters from the connection
+         */
         WebSocket(int sockfd, const std::string& raw_request, const std::unordered_map<std::string, std::string> query)
             : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), query_(query), isOpen(true) {
             log.debug("Websocket open FD={}", sockfd);
         }
 #ifdef HTTP_OPENSSL_SUPPORT
+        /**
+         * @brief Construct a new WebSocket object with SSL support
+         *
+         * @param sockfd Socket file descriptor for the connection
+         * @param ssl SSL context for encrypted connection
+         * @param raw_request Raw HTTP request string
+         * @param query Query parameters from the connection
+         */
         WebSocket(int sockfd, SSL* ssl, const std::string& raw_request,
                   const std::unordered_map<std::string, std::string> query)
             : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), query_(query), isOpen(true) {}
 #endif
 
+        /**
+         * @brief Get the current WebSocket frame
+         *
+         * @return Frame object representing the current frame state
+         */
         Frame getFrame() { return frame; }
+
+        /**
+         * @brief Get query parameters
+         *
+         * @return Reference to the query parameter map
+         */
         const std::unordered_map<std::string, std::string>& query() const { return query_; }
 
+        /**
+         * @brief Close the WebSocket connection
+         *
+         * This method closes the underlying socket and cleans up SSL resources if needed.
+         */
         void close() {
             isOpen = false;
             log.debug("Websocket {} will closed", frame.sockfd);
@@ -85,6 +139,12 @@ namespace http {
 #endif
         }
 
+        /**
+         * @brief Send a message through the WebSocket connection
+         *
+         * @param msg Message to send
+         * @return Number of bytes sent, or -1 on error
+         */
         ssize_t send(const std::string& msg) {
             if (frame.opcode == WsOpcode::Close) {
                 close();
@@ -130,6 +190,12 @@ namespace http {
             return sent;
         }
 
+        /**
+         * @brief Read a message from the WebSocket connection
+         *
+         * @param msg Reference to string to store the received message
+         * @return Result indicating the type of data received or failure
+         */
         [[nodiscard]]
         Result read(std::string& msg) {
             if (!readFrame(byte_data)) {
@@ -156,7 +222,22 @@ namespace http {
             }
         }
 
+        /**
+         * @brief Operator for reading from WebSocket
+         *
+         * @param ws WebSocket object to read from
+         * @param msg Reference to string to store the message
+         * @return Result of the read operation
+         */
         friend Result operator>>(WebSocket& ws, std::string& msg) { return ws.read(msg); }
+
+        /**
+         * @brief Operator for writing to WebSocket
+         *
+         * @param ws WebSocket object to write to
+         * @param msg Message to send
+         * @return Number of bytes sent
+         */
         // For sending messages - returns ssize_t like send() does
         friend ssize_t operator<<(WebSocket& ws, const std::string& msg) { return ws.send(msg); }
 
@@ -166,15 +247,40 @@ namespace http {
         std::unordered_map<std::string, std::string> query_;
         bool isOpen = false;
 
-        // Read a single WebSocket frame from raw bytes
+        /**
+         * @brief Read a single WebSocket frame from raw bytes
+         *
+         * @param data Raw bytes to parse into a frame
+         * @return true if parsing was successful, false otherwise
+         */
         bool readFrame(const std::vector<uint8_t>& data);
 
-        // Create a WebSocket frame for sending
+        /**
+         * @brief Create a WebSocket frame for sending
+         *
+         * @param message Message to include in the frame
+         * @param fin Final frame flag
+         * @param opcode Opcode for the frame
+         * @param mask Whether to apply masking
+         * @return Vector of bytes representing the complete frame
+         */
         std::vector<uint8_t> writeFrame(const std::string& message, bool fin, WsOpcode opcode, bool mask = false);
     };
 
+    /**
+     * @brief Get WebSocket frame type from raw data
+     *
+     * @param data Raw data to analyze
+     * @return Optional containing the detected opcode, or nullopt if invalid
+     */
     std::optional<WsOpcode> getWebSocketFrame(const std::string& data);
 
+    /**
+     * @brief Convert WebSocket opcode to string representation
+     *
+     * @param opcode Opcode to convert
+     * @return String representation of the opcode
+     */
     constexpr std::string_view toWsOpcodeString(WsOpcode opcode) {
         switch (opcode) {
             case WsOpcode::Continuation:

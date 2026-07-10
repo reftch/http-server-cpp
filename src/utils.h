@@ -40,7 +40,8 @@ namespace utils {
      * @brief Converts an unordered map to a JSON string.
      *
      * This function takes a map of string key-value pairs and converts it into
-     * a JSON-formatted string representation.
+     * a JSON-formatted string representation. The resulting string is suitable for
+     * use in HTTP responses or logs.
      *
      * @param params The unordered map to convert to JSON.
      * @return A string containing the JSON representation of the input map.
@@ -51,6 +52,7 @@ namespace utils {
      * @brief Reads the contents of a file into a string.
      *
      * Opens a file at the specified path and reads its entire content into a string.
+     * If the file cannot be opened or read, an empty string is returned.
      *
      * @param path The file path to read from.
      * @return A string containing the file's contents.
@@ -61,7 +63,7 @@ namespace utils {
      * @brief Decodes a URL-encoded string.
      *
      * This function performs URL decoding on an encoded string, converting
-     * percent-encoded characters back to their original form.
+     * percent-encoded characters back to their original form (e.g., "%20" -> " ").
      *
      * @param encoded The URL-encoded string to decode.
      * @return A decoded string.
@@ -74,6 +76,8 @@ namespace utils {
      * This template function fetches the value of an environment variable by key,
      * converting it to the specified type. If the environment variable is not set
      * or conversion fails, it returns the provided default value.
+     *
+     * Supported types: std::string, int, float, double, long, bool.
      *
      * @tparam T The type to convert the environment variable value to.
      * @param key The name of the environment variable to retrieve.
@@ -178,22 +182,105 @@ namespace utils {
         }
     }
 
+    /**
+     * @brief Gets the last modification time of a file.
+     *
+     * Retrieves the mtime (modification time) of a given file path using `stat()`.
+     * If the file does not exist or cannot be accessed, returns 0.
+     *
+     * @param path The file path to check.
+     * @return The modification time as a `time_t`, or 0 if failed.
+     */
     time_t getMtime(const std::string& path);
 
+    /**
+     * @brief Converts a file's mtime into an HTTP-date formatted string.
+     *
+     * This function takes a modification time (as returned by `getMtime`) and formats
+     * it according to the RFC 7231 specification for HTTP date headers.
+     *
+     * @param mtime The modification time as a `time_t`.
+     * @return An HTTP-date formatted string, e.g., "Wed, 21 Oct 2023 07:28:00 GMT".
+     */
     std::string fileMtimeToHttpDate(time_t mtime);
 
+    /**
+     * @brief Computes an ETag for a file based on its modification time and size.
+     *
+     * Generates a unique ETag value for caching purposes, combining the raw mtime
+     * and file size in hexadecimal format.
+     *
+     * @param mtime_raw Raw modification time of the file.
+     * @param size Size of the file in bytes.
+     * @return A computed ETag string suitable for HTTP response headers.
+     */
     std::string computeEtag(size_t mtime_raw, size_t size);
 
+    /**
+     * @brief Converts an integer to a hexadecimal string representation.
+     *
+     * Converts a number into its lowercase hex string equivalent.
+     *
+     * @param n The number to convert.
+     * @return Hexadecimal string representation of `n`.
+     */
     std::string fromIntToHex(size_t n);
 
+    /**
+     * @brief Computes the SHA-1 hash of a given input string.
+     *
+     * Calculates the SHA-1 cryptographic hash of the input and returns it as a
+     * hexadecimal string.
+     *
+     * @param input The input string to hash.
+     * @return The SHA-1 hash in lowercase hex format.
+     */
     std::string sha1(const std::string& input);
+
+    /**
+     * @brief Encodes a string using Base64 encoding.
+     *
+     * Encodes the input string using standard Base64 algorithm and returns
+     * the encoded version.
+     *
+     * @param input The input string to encode.
+     * @return Base64-encoded string.
+     */
     std::string base64_encode(const std::string& input);
 
+    /**
+     * @brief Checks if a socket is still alive.
+     *
+     * Performs a basic check on whether a socket descriptor is valid and
+     * appears to be connected or usable. It uses `getsockopt` with `SO_ERROR`.
+     *
+     * @param sockfd The socket file descriptor to test.
+     * @return True if the socket is alive, false otherwise.
+     */
     bool isSocketAlive(int sockfd);
 
+    /**
+     * @brief Trims whitespace from both ends of a string.
+     *
+     * Removes leading and trailing spaces, tabs, or newlines from a string.
+     *
+     * @param str The input string to trim.
+     * @return Trimmed string with leading/trailing whitespace removed.
+     */
     std::string trim(const std::string& str);
 
+    /**
+     * @brief Parses a hexadecimal size string into a numeric value.
+     *
+     * Converts a string that represents a hex number (e.g., "100") into its
+     * decimal equivalent. Useful for parsing sizes from HTTP headers like Transfer-Encoding.
+     *
+     * @param s The input hex string to parse.
+     * @param out Output reference where the parsed size will be stored.
+     * @return True if parsing succeeded, false otherwise.
+     */
     bool parseHexSize(const std::string& s, size_t& out);
 
 }  // namespace utils
+
 #endif  // HTTP_UTILS_H_
