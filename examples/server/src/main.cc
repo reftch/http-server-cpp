@@ -1,8 +1,6 @@
 #include <charconv>
 #include <chrono>
-#include <iomanip>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <thread>
 
@@ -15,17 +13,7 @@
 [[nodiscard]]
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
-
-    // Format as ISO 8601 string
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time_t), "%Y-%m-%dT%H:%M:%S");
-
-    // Add milliseconds
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-    ss << "." << std::setfill('0') << std::setw(3) << ms.count() << "Z";
-
-    return "{\"time\":\"" + ss.str() + "\"}";
+    return std::format(R"({{"time":"{:%Y-%m-%dT%H:%M:%S}"}})", now);
 }
 
 int main() {
