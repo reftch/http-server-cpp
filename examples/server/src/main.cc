@@ -1,3 +1,4 @@
+#include <charconv>
 #include <chrono>
 #include <iomanip>
 #include <memory>
@@ -6,10 +7,12 @@
 #include <thread>
 
 // #include "response.h"
+#include "response.h"
 #include "server.h"
 // #define HTTP_OPENSSL_SUPPORT
 // #include "sslserver.h"
 
+[[nodiscard]]
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
@@ -47,27 +50,37 @@ int main() {
     });
 
     s.setRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [&](const http::Request& req, http::Response& res) {
-        std::string value = req.params().at("v");
-        res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(std::stoi(value) + 1) + "\"}";
+        auto it = req.params().find("v");
+        if (it == req.params().end()) {
+            res << http::ContentType::JSON << http::Status::bad_request << R"({"error":"missing parameter 'v'"})";
+            return;
+        }
+
+        int val = 0;
+        if (!std::from_chars(it->second.data(), it->second.data() + it->second.size(), val).ptr) {
+            res << http::ContentType::JSON << http::Status::bad_request << R"({"error":"invalid integer"})";
+            return;
+        }
+
+        res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(val + 1) + "\"}";
     });
 
     // SSE handler
-    s.setRoute<http::HttpMethod::GET>("/events", [&](const http::Request&, http::Response& res) {
-        // Send initial response to establish connection
-        res << http::ContentType::SSE << "data: connected" << "\n\n";
+    s.setRoute<http::HttpMethod::GET>("/events", [](const http::Request&, http::Response& res) {
+        res << http::ContentType::SSE << "data: connected\n\n";
         res.sendChunk();
 
-        // Create a thread that will send events
-        std::thread([res_ptr = std::make_shared<http::Response>(std::move(res))]() {
+        auto res_ptr = std::make_shared<http::Response>(std::move(res));
+
+        // C++20 jthread auto-joins on destruction & supports stop_token
+        std::jthread worker([res_ptr]() {
             auto result = true;
             while (result) {
-                // prepare message
                 *res_ptr << "data: " << getCurrentTimeJson() << "\n\n";
-                // Send SSE format
                 result = res_ptr->sendChunk();
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-        }).detach();
+        });
     });
 
     // Websocket handler
@@ -84,7 +97,7 @@ int main() {
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
 
         // Start the background thread
-        std::thread([ws_ptr]() {
+        std::jthread worker([ws_ptr]() {
             while (true) {
                 auto time_json = getCurrentTimeJson();
                 // Send message through websocket
@@ -97,7 +110,7 @@ int main() {
                 // Sleep for 1 seconds
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-        }).detach();
+        });
     });
 
     // Post request for CORS
