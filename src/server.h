@@ -172,6 +172,7 @@ namespace http {
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
+        void closeSocket(int fd, const std::string& label);
 
        protected:
         // static directory

@@ -79,31 +79,26 @@ namespace http {
 #endif
     }
 
+    void Server::closeSocket(int fd, const std::string& label) {
+        if (utils::isSocketAlive(fd)) {
+            log.info("closing {} socket FD: {}", label, fd);
+            if (close(fd) == -1) {
+                log.error("Failed to close {} socket: {}", label, strerror(errno));
+            }
+        }
+    }
+
     void Server::stop() {
         std::cout << "\n";
 
-        // close all websocket connections
-        for (auto iter = wsRoutes.begin(); iter != wsRoutes.end(); iter++) {
-            auto wsRoute = *iter;
-            if (utils::isSocketAlive(wsRoute.sockfd)) {
-                log.info("closing websocket connection FD: {}", wsRoute.sockfd);
-                if (close(wsRoute.sockfd) == -1) {
-                    log.error("Failed to close socket: {}", strerror(errno));
-                }
-            }
-        }
+        // This is the cleanest "Algorithm" version
+        std::ranges::for_each(wsRoutes, [this](const auto& ws) {
+            closeSocket(ws.sockfd, "websocket");
+        });
 
-        // close the listening socket (the main server socket)
-        if (utils::isSocketAlive(sockfd_)) {
-            log.info("closing master connection socket FD: {}", sockfd_);
-            if (close(sockfd_) == -1) {
-                log.error("Failed to close socket: {}", strerror(errno));
-            }
-        }
+        closeSocket(sockfd_, "master");
 
-        // set the running flag to false to break the while loop in start()
         running_ = false;
-
         log.info("Server stopped successfully");
     }
 
@@ -117,12 +112,12 @@ namespace http {
             descriptors.back().events = POLLIN;
 
             // Client sockets
-            for (int fd : client_list_) {
+            std::ranges::transform(client_list_, std::back_inserter(descriptors), [](int fd) {
                 pollfd pfd{};
                 pfd.fd = fd;
                 pfd.events = POLLIN;
-                descriptors.push_back(pfd);
-            }
+                return pfd;
+            });
 
             int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), POLL_TIMEOUT);
 
@@ -207,9 +202,9 @@ namespace http {
                 }
             }
 
-            for (int fd : closedSockets) {
-                client_list_.erase(fd);
-            }
+            std::erase_if(client_list_, [&](int fd) {
+                return std::ranges::contains(closedSockets, fd);
+            });
         }
     }
 
