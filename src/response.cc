@@ -68,18 +68,16 @@ namespace http {
             }
         }
 
-        // Add all headers (order not guaranteed, but acceptable for HTTP)
-        for (const auto& header : headers_) {
+        // Add all headers using std::ranges::for_each
+        std::ranges::for_each(headers_, [&](const auto& header) {
             body.append(header.first);
             body.append(miscStrings::name_value_separator);
             body.append(header.second);
             body.append(miscStrings::crlf);
-        }
+        });
 
         body.append(miscStrings::crlf);
         body.append(content_);
-
-        // std::cout << "sending: " << body << std::endl;
 
         return body;
     }

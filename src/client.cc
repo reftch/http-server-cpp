@@ -1,6 +1,12 @@
 
 #include "client.h"
 
+#include <algorithm>
+#include <expected>
+#include <functional>
+#include <ranges>
+#include <string>
+
 #include "utils.h"
 
 namespace http {
@@ -86,20 +92,25 @@ namespace http {
         Status status = parseStatus(raw_response);
 
         std::string header_section = raw_response.substr(0, header_end);
-        std::istringstream iss(header_section);
-        std::string line;
 
-        while (std::getline(iss, line)) {
-            if (line.empty()) break;
+        // Split headers by lines and process them
+        auto lines = header_section | std::views::split('\n') | std::views::transform([](auto&& line_view) {
+                         return std::string(line_view.begin(), line_view.end());
+                     }) |
+                     std::views::take_while([](const std::string& line) {
+                         return !line.empty();
+                     });
 
+        // Process headers using for_each
+        std::ranges::for_each(lines.begin(), lines.end(), [&](const std::string& line) {
             size_t colon_pos = line.find(':');
-            if (colon_pos == std::string::npos) continue;
+            if (colon_pos == std::string::npos) return;
 
             std::string key = utils::trim(line.substr(0, colon_pos));
             std::string value = utils::trim(line.substr(colon_pos + 1));
 
             response.setHeader(key, value);
-        }
+        });
 
         std::string body = raw_response.substr(header_end + 4);
 
@@ -119,35 +130,56 @@ namespace http {
         return response;
     }
 
+    /**
+     * Parses a chunked encoded body without using raw loops.
+     * Uses recursion to handle the variable-length jumps of the chunked protocol.
+     */
     std::expected<std::string, std::string> BaseClient::parseChunkedBody(const std::string& chunked_body) {
         std::string result;
-        size_t pos = 0;
 
-        while (pos < chunked_body.size()) {
-            size_t line_end = chunked_body.find("\r\n", pos);
+        // Use std::function directly without auto deduction
+        std::function<std::expected<void, std::string>(size_t)> parse =
+            [&](size_t pos) -> std::expected<void, std::string> {
+            // Base case: End of input reached
+            if (pos >= chunked_body.size()) {
+                return {};
+            }
+
+            auto line_end = chunked_body.find("\r\n", pos);
             if (line_end == std::string::npos) {
                 return std::unexpected("Invalid chunked encoding: missing size line");
             }
 
             std::string size_str = chunked_body.substr(pos, line_end - pos);
-
             size_t chunk_size = 0;
             if (!utils::parseHexSize(size_str, chunk_size)) {
                 return std::unexpected("Invalid chunk size");
             }
 
-            pos = line_end + 2;
+            const size_t data_start = line_end + 2;
 
+            // Termination condition: Chunk size of 0 signals the end of the stream
             if (chunk_size == 0) {
-                break;
+                return {};
             }
 
-            if (pos + chunk_size > chunked_body.size()) {
+            // Bounds check
+            if (data_start + chunk_size > chunked_body.size()) {
                 return std::unexpected("Truncated chunk body");
             }
 
-            result.append(chunked_body, pos, chunk_size);
-            pos += chunk_size + 2;  // skip \r\n
+            // Append data and recurse
+            result.append(chunked_body, data_start, chunk_size);
+
+            // The next search starts after the current chunk's trailing \r\n
+            return parse(data_start + chunk_size + 2);
+        };
+
+        // Initiate recursion from position 0
+        auto status = parse(0);
+
+        if (!status) {
+            return std::unexpected(status.error());
         }
 
         return result;

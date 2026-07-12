@@ -4,10 +4,11 @@
 #include <string>
 #include <thread>
 
-// #include "response.h"
 #include "response.h"
 #include "server.h"
+
 // #define HTTP_OPENSSL_SUPPORT
+// #include "response.h"
 // #include "sslserver.h"
 
 [[nodiscard]]
@@ -18,11 +19,11 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    // log.setLevel(http::Level::DEBUG);
+    log.setLevel(http::Level::DEBUG);
 
-    // http::Server s("0.0.0.0", 8080);
+    http::Server s("0.0.0.0", 8080);
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    http::Server s;
+    // http::Server s;
 
     s.setDefaultHeaders({
         {"Connection", "keep-alive"},
@@ -60,7 +61,6 @@ int main() {
 
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
 
-        // C++20 jthread auto-joins on destruction & supports stop_token
         std::jthread worker([res_ptr]() {
             auto result = true;
             while (result) {
