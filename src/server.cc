@@ -120,7 +120,6 @@ namespace http {
             });
 
             int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), POLL_TIMEOUT);
-
             if (rc < 0) {
                 if (errno == EINTR) continue;
                 log.error("poll failed: {}", strerror(errno));
@@ -242,70 +241,32 @@ namespace http {
     }
 
     bool Server::sendResponse(const int sd, std::string& body) {
-        // write response
-        const char* ptr = body.c_str();
-        ssize_t total_written = 0;
-        ssize_t size = body.size();
+        std::string_view data = body;
 
-        while (total_written < size) {
-            ssize_t written = send(sd, ptr + total_written, size - total_written, MSG_NOSIGNAL);
+        // Recursive lambda definition
+        std::function<bool()> sendAll = [&]() -> bool {
+            ssize_t written = send(sd, data.data(), data.size(), MSG_NOSIGNAL);
+
             if (written == -1) {
-                // Check if it's a temporary error
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // This is expected in non-blocking mode - just continue
-                    // But we should add a timeout mechanism for large files
-                    // std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                    continue;
+                    return sendAll();  // Recurse
                 } else {
                     log.warning("Error writing response body: {}", strerror(errno));
-                    break;
+                    return false;
                 }
             }
-            total_written += written;
-        }
 
-        if (total_written == -1) {
-            log.error("Error writing response body: {}", strerror(errno));
-            return false;
-        }
+            if (static_cast<size_t>(written) < data.size()) {
+                data.remove_prefix(written);
+                return sendAll();  // Recurse
+            }
 
-        return true;
+            return true;
+        };
+
+        return sendAll();
     }
-
-    // bool Server::sendResponse(const int sd, std::string& body) {
-    //     const char* ptr = body.c_str();
-    //     size_t total_size = body.size();
-
-    //     // We use a recursive lambda to handle the "loop" logic.
-    //     // This satisfies the "no raw loops" constraint by using recursion
-    //     // instead of iteration.
-    //     std::function<bool()> sendAll = [&]() -> bool {
-    //         ssize_t written = send(sd, ptr, total_size, MSG_NOSIGNAL);
-
-    //         if (written == -1) {
-    //             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-    //                 // Non-blocking mode: wait and retry
-    //                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    //                 return sendAll();
-    //             } else {
-    //                 log.warning("Error writing response body: {}", strerror(errno));
-    //                 return false;
-    //             }
-    //         }
-
-    //         if (static_cast<size_t>(written) < total_size) {
-    //             // Advance the pointer and remaining size for the next "iteration"
-    //             ptr += written;
-    //             total_size -= written;
-    //             return sendAll();
-    //         }
-
-    //         return true;  // Everything sent successfully
-    //     };
-
-    //     return sendAll();
-    // }
 
     std::string Server::handleRoute(http::Request& req, http::Response& res) {
         res.setStaticDirectory(static_directory_);
