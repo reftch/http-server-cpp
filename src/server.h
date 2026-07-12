@@ -193,6 +193,9 @@ namespace http {
 
         int setNonblockMode(int fd);
 
+        void handleListenSocket(const pollfd& pfd);
+        void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets);
+
         /**
          * Performs an asynchronous HTTP request handling operation
          * @param sd The socket descriptor for the client connection

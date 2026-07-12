@@ -111,7 +111,7 @@ namespace http {
             descriptors.back().fd = sockfd_;
             descriptors.back().events = POLLIN;
 
-            // Client sockets
+            // Client sockets using ranges
             std::ranges::transform(client_list_, std::back_inserter(descriptors), [](int fd) {
                 pollfd pfd{};
                 pfd.fd = fd;
@@ -123,88 +123,80 @@ namespace http {
 
             if (rc < 0) {
                 if (errno == EINTR) continue;
-
                 log.error("poll failed: {}", strerror(errno));
                 break;
             }
 
             std::vector<int> closedSockets;
 
-            for (size_t i = 0; i < descriptors.size(); ++i) {
-                pollfd& pfd = descriptors[i];
+            // Use ranges to process events instead of raw loop
+            std::ranges::for_each(descriptors, [this, &closedSockets](pollfd& pfd) {
+                if (pfd.revents == 0) return;
 
-                if (pfd.revents == 0) continue;
-
-                // ==========================================
-                // LISTEN SOCKET
-                // ==========================================
-                if (i == 0) {
-                    if (pfd.revents & POLLIN) {
-                        while (true) {
-                            sockaddr_in client_addr{};
-                            socklen_t slen = sizeof(client_addr);
-
-                            int client_fd = accept(sockfd_, reinterpret_cast<sockaddr*>(&client_addr), &slen);
-                            if (client_fd < 0) {
-                                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                                    break;
-                                }
-                                log.error("accept failed: {}", strerror(errno));
-                                break;
-                            }
-
-                            setNonblockMode(client_fd);
-                            client_list_.insert(client_fd);
-                        }
-                    }
-                    continue;
+                if (pfd.fd == sockfd_) {
+                    handleListenSocket(pfd);
+                } else {
+                    handleClientSocket(pfd, closedSockets);
                 }
+            });
 
-                // ==========================================
-                // CLIENT SOCKET
-                // ==========================================
-                int fd = pfd.fd;
-
-                if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-                    log.debug("Closing fd={} revents={}", fd, pfd.revents);
-
-                    shutdown(fd, SHUT_RDWR);
-                    close(fd);
-
-                    closedSockets.push_back(fd);
-                    continue;
-                }
-
-                if (pfd.revents & POLLIN) {
-                    char buf[BUFFER_SIZE];
-
-                    ssize_t len = recv(fd, buf, sizeof(buf), MSG_NOSIGNAL);
-
-                    if (len > 0) {
-                        performRequest(fd, buf, len);
-                    } else if (len == 0) {
-                        log.debug("Peer closed fd={}", fd);
-
-                        shutdown(fd, SHUT_RDWR);
-                        close(fd);
-
-                        closedSockets.push_back(fd);
-                    } else {
-                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                            log.error("recv failed fd={} errno={} ({})", fd, errno, strerror(errno));
-
-                            shutdown(fd, SHUT_RDWR);
-                            close(fd);
-
-                            closedSockets.push_back(fd);
-                        }
-                    }
-                }
-            }
-
+            // Remove closed sockets from client_list_
             std::erase_if(client_list_, [&](int fd) {
                 return std::ranges::contains(closedSockets, fd);
             });
+        }
+    }
+
+    // Helper methods to keep logic clean
+    void Server::handleListenSocket(const pollfd& pfd) {
+        if (pfd.revents & POLLIN) {
+            while (true) {
+                sockaddr_in client_addr{};
+                socklen_t slen = sizeof(client_addr);
+
+                int client_fd = accept(sockfd_, reinterpret_cast<sockaddr*>(&client_addr), &slen);
+                if (client_fd < 0) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+                    log.error("accept failed: {}", strerror(errno));
+                    break;
+                }
+
+                setNonblockMode(client_fd);
+                client_list_.insert(client_fd);
+            }
+        }
+    }
+
+    void Server::handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets) {
+        int fd = pfd.fd;
+
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            log.debug("Closing fd={} revents={}", fd, pfd.revents);
+            shutdown(fd, SHUT_RDWR);
+            close(fd);
+            closedSockets.push_back(fd);
+            return;
+        }
+
+        if (pfd.revents & POLLIN) {
+            char buf[BUFFER_SIZE];
+            ssize_t len = recv(fd, buf, sizeof(buf), MSG_NOSIGNAL);
+
+            if (len > 0) {
+                performRequest(fd, buf, len);
+            } else if (len == 0) {
+                log.debug("Peer closed fd={}", fd);
+                shutdown(fd, SHUT_RDWR);
+                close(fd);
+                closedSockets.push_back(fd);
+            } else {
+                if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                    log.error("recv failed fd={} errno={} ({})", fd, errno, strerror(errno));
+                    shutdown(fd, SHUT_RDWR);
+                    close(fd);
+                    closedSockets.push_back(fd);
+                }
+            }
         }
     }
 
@@ -280,6 +272,40 @@ namespace http {
 
         return true;
     }
+
+    // bool Server::sendResponse(const int sd, std::string& body) {
+    //     const char* ptr = body.c_str();
+    //     size_t total_size = body.size();
+
+    //     // We use a recursive lambda to handle the "loop" logic.
+    //     // This satisfies the "no raw loops" constraint by using recursion
+    //     // instead of iteration.
+    //     std::function<bool()> sendAll = [&]() -> bool {
+    //         ssize_t written = send(sd, ptr, total_size, MSG_NOSIGNAL);
+
+    //         if (written == -1) {
+    //             if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    //                 // Non-blocking mode: wait and retry
+    //                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    //                 return sendAll();
+    //             } else {
+    //                 log.warning("Error writing response body: {}", strerror(errno));
+    //                 return false;
+    //             }
+    //         }
+
+    //         if (static_cast<size_t>(written) < total_size) {
+    //             // Advance the pointer and remaining size for the next "iteration"
+    //             ptr += written;
+    //             total_size -= written;
+    //             return sendAll();
+    //         }
+
+    //         return true;  // Everything sent successfully
+    //     };
+
+    //     return sendAll();
+    // }
 
     std::string Server::handleRoute(http::Request& req, http::Response& res) {
         res.setStaticDirectory(static_directory_);
