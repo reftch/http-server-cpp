@@ -1,6 +1,6 @@
 #include "router.h"
 
-#include <algorithm> 
+#include <algorithm>
 #include <numeric>
 #include <ranges>
 #include <string>
@@ -32,7 +32,7 @@ namespace http {
             });
 
         // Final registration logic
-        if (node->handlers.contains(method)) {  
+        if (node->handlers.contains(method)) {
             return -1;
         }
 
@@ -86,16 +86,11 @@ namespace http {
     }
 
     std::vector<std::string> Router::splitPath(const std::string& path) {
-        auto view = path | std::views::split('/')          // Split into sub-ranges by '/'
-                    | std::views::filter([](auto&& rng) {  // Remove empty segments (e.g., "//")
-                          return !std::ranges::empty(rng);
-                      }) |
-                    std::views::transform([](auto&& rng) {  // Convert sub-ranges to strings
-                        return std::string(rng.begin(), rng.end());
-                    });
-
-        // converts a range/view directly into a container
-        return std::ranges::to<std::vector<std::string>>(view);
+        return path | std::views::split('/')  // Split into sub-ranges delimited by '/'
+               | std::views::filter([](auto&& r) {
+                     return !std::ranges::empty(r);
+                 })                                            // Remove empty parts (e.g., "//" or leading "/")
+               | std::ranges::to<std::vector<std::string>>();  // Convert sub-ranges to strings and collect into vector
     }
 
 }  // namespace http
