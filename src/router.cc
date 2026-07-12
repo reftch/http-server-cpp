@@ -52,7 +52,7 @@ namespace http {
         auto parts = splitPath(std::string(path_without_query));
 
         // We accumulate an optional node pointer
-        // If at any point a node is missing, we return nullopt and stop progressing.
+        // If at any point a node is missing, we return nullopt and stop progressing
         auto final_node_opt = std::accumulate(
             parts.begin(), parts.end(), std::optional<const Node*>(&root_),
             [&](std::optional<const Node*> current, const std::string& part) -> std::optional<const Node*> {
