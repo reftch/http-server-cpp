@@ -193,8 +193,8 @@ namespace http {
 
         int setNonblockMode(int fd);
 
-        void handleListenSocket(const pollfd& pfd);
-        void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets);
+        virtual void handleListenSocket(const pollfd& pfd);
+        virtual void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets);
 
         /**
          * Performs an asynchronous HTTP request handling operation

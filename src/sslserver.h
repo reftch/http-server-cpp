@@ -5,6 +5,8 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#include <algorithm>
+#include <ranges>
 // #include <string>
 // #include <mutex>
 // #include <unordered_map>
@@ -123,127 +125,314 @@ namespace http {
         /**
          * HTTPS request handling loop
          */
-        void handleRequests() override {
-            std::vector<struct pollfd> pollfds;
+        // void handleRequests() override {
+        //     std::vector<struct pollfd> pollfds;
 
-            while (running_) {
-                // Clear and rebuild pollfds vector
-                pollfds.clear();
+        //     while (running_) {
+        //         // Clear and rebuild pollfds vector
+        //         pollfds.clear();
 
-                // Add server socket
-                struct pollfd server_pollfd;
-                server_pollfd.fd = sockfd_;
-                server_pollfd.events = POLLIN;
-                server_pollfd.revents = 0;
-                pollfds.push_back(server_pollfd);
+        //         // Add server socket
+        //         struct pollfd server_pollfd;
+        //         server_pollfd.fd = sockfd_;
+        //         server_pollfd.events = POLLIN;
+        //         server_pollfd.revents = 0;
+        //         pollfds.push_back(server_pollfd);
 
-                std::unordered_map<int, ClientConnection>::iterator it;
+        //         std::unordered_map<int, ClientConnection>::iterator it;
 
-                for (it = ssl_clients_.begin(); it != ssl_clients_.end(); ++it) {
-                    pollfd pfd;
+        //         for (it = ssl_clients_.begin(); it != ssl_clients_.end(); ++it) {
+        //             pollfd pfd;
 
-                    pfd.fd = it->first;
-                    pfd.events = POLLIN;
-                    pfd.revents = 0;
+        //             pfd.fd = it->first;
+        //             pfd.events = POLLIN;
+        //             pfd.revents = 0;
 
-                    pollfds.push_back(pfd);
-                }
+        //             pollfds.push_back(pfd);
+        //         }
 
-                int activity = poll(&pollfds[0], pollfds.size(), POLL_TIMEOUT);
-                if (activity < 0) {
-                    if (errno == EINTR) {
-                        continue;
+        //         int activity = poll(&pollfds[0], pollfds.size(), POLL_TIMEOUT);
+        //         if (activity < 0) {
+        //             if (errno == EINTR) {
+        //                 continue;
+        //             }
+        //             log.warning("poll failed");
+        //             continue;
+        //         }
+
+        //         //
+        //         // ACCEPT NEW CLIENT
+        //         //
+        //         if (pollfds[0].revents & POLLIN) {
+        //             int clientfd = accept(sockfd_, (struct sockaddr*)NULL, NULL);
+        //             if (clientfd < 0) {
+        //                 log.warning("Accepted error");
+        //                 continue;
+        //             }
+        //             // Set non-blocking mode for client socket
+        //             int flags = fcntl(clientfd, F_GETFL, 0);
+        //             fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
+
+        //             SSL* ssl = SSL_new(ssl_ctx_);
+        //             if (!ssl) {
+        //                 close(clientfd);
+        //                 continue;
+        //             }
+
+        //             SSL_set_fd(ssl, clientfd);
+
+        //             ClientConnection client;
+
+        //             client.fd = clientfd;
+        //             client.ssl = ssl;
+        //             client.handshake_completed = false;
+
+        //             ssl_clients_[clientfd] = client;
+        //         }
+
+        //         //
+        //         // HANDLE CLIENTS
+        //         //
+        //         size_t i;
+
+        //         std::vector<int> dead_clients;
+        //         for (i = 0; i < pollfds.size(); ++i) {
+        //             if (!(pollfds[i].revents & POLLIN)) {
+        //                 continue;
+        //             }
+
+        //             int fd = pollfds[i].fd;
+        //             if (ssl_clients_.find(fd) == ssl_clients_.end()) {
+        //                 continue;
+        //             }
+
+        //             ClientConnection& client = ssl_clients_[fd];
+
+        //             //
+        //             // HANDSHAKE
+        //             //
+        //             if (!client.handshake_completed) {
+        //                 int ret = SSL_accept(client.ssl);
+        //                 if (ret == 1) {
+        //                     client.handshake_completed = true;
+        //                     log.debug("TLS handshake completed FD={}", fd);
+        //                 } else {
+        //                     int err = SSL_get_error(client.ssl, ret);
+        //                     if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+        //                         continue;
+        //                     }
+
+        //                     log.debug("TLS handshake failed FD={} and will close", fd);
+        //                     dead_clients.push_back(fd);
+        //                     continue;
+        //                 }
+        //             }
+
+        //             //
+        //             // READ REQUEST
+        //             //
+        //             char buffer[READ_BUFFER_SIZE];
+        //             ssize_t nread = SSLRead(client, buffer, sizeof(buffer));
+        //             if (nread > 0) {
+        //                 performRequest(fd, buffer, nread);
+        //             } else if (nread < 0) {
+        //                 dead_clients.push_back(fd);
+        //             }
+        //         }
+
+        //         //
+        //         // CLEANUP
+        //         //
+        //         for (i = 0; i < dead_clients.size(); ++i) {
+        //             closeClient(dead_clients[i]);
+        //         }
+        //     }
+        // }
+
+        // void handleRequests() override {
+        //     while (running_) {
+        //         // 1. BUILD POLLFDS (Replacing concat with standard container operations)
+        //         std::vector<pollfd> pollfds;
+        //         pollfds.reserve(1 + ssl_clients_.size());  // Optimization: prevent multiple reallocations
+
+        //         // Add server socket
+        //         pollfds.push_back({sockfd_, POLLIN, 0});
+
+        //         // Add clients using a range-based transformation and insertion
+        //         auto client_view = ssl_clients_ | std::views::transform([](const auto& pair) {
+        //                                return pollfd{pair.first, POLLIN, 0};
+        //                            });
+        //         pollfds.insert(pollfds.end(), client_view.begin(), client_view.end());
+
+        //         // 2. POLL
+        //         int activity = poll(pollfds.data(), static_cast<int>(pollfds.size()), POLL_TIMEOUT);
+        //         if (activity < 0) {
+        //             if (errno == EINTR) continue;
+        //             log.warning("poll failed");
+        //             continue;
+        //         }
+
+        //         // 3. ACCEPT NEW CLIENT (Handle server socket)
+        //         if (pollfds[0].revents & POLLIN) {
+        //             int clientfd = accept(sockfd_, nullptr, nullptr);
+        //             if (clientfd >= 0) {
+        //                 int flags = fcntl(clientfd, F_GETFL, 0);
+        //                 fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
+
+        //                 if (SSL* ssl = SSL_new(ssl_ctx_)) {
+        //                     SSL_set_fd(ssl, clientfd);
+        //                     ssl_clients_[clientfd] = ClientConnection{clientfd, ssl, false};
+        //                 } else {
+        //                     close(clientfd);
+        //                 }
+        //             } else {
+        //                 log.warning("Accepted error");
+        //             }
+        //         }
+
+        //         // 4. HANDLE CLIENTS
+        //         std::vector<int> dead_clients;
+
+        //         // Create a view of ready clients: drop the server, filter by POLLIN
+        //         auto ready_clients = pollfds | std::views::drop(1) | std::views::filter([](const pollfd& p) {
+        //                                  return p.revents & POLLIN;
+        //                              });
+
+        //         // Process all ready clients using a range algorithm instead of a raw loop
+        //         std::ranges::for_each(ready_clients, [&](const pollfd& pfd) {
+        //             int fd = pfd.fd;
+        //             auto& client = ssl_clients_[fd];
+
+        //             if (!client.handshake_completed) {
+        //                 int ret = SSL_accept(client.ssl);
+        //                 if (ret == 1) {
+        //                     client.handshake_completed = true;
+        //                     log.debug("TLS handshake completed FD={}", fd);
+        //                 } else {
+        //                     int err = SSL_get_error(client.ssl, ret);
+        //                     if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE) {
+        //                         log.debug("TLS handshake failed FD={} and will close", fd);
+        //                         dead_clients.push_back(fd);
+        //                     }
+        //                 }
+        //             } else {
+        //                 char buffer[READ_BUFFER_SIZE];
+        //                 ssize_t nread = SSLRead(client, buffer, sizeof(buffer));
+        //                 if (nread > 0) {
+        //                     performRequest(fd, buffer, nread);
+        //                 } else if (nread < 0) {
+        //                     dead_clients.push_back(fd);
+        //                 }
+        //             }
+        //         });
+
+        //         // 5. CLEANUP
+        //         std::ranges::for_each(dead_clients, [this](int fd) {
+        //             closeClient(fd);
+        //         });
+        //     }
+        // }
+
+        /**
+         * Handles the server's listening socket: accepts new connections,
+         * sets non-blocking mode, and initializes SSL context.
+         */
+        void handleListenSocket(const pollfd&) override {
+            // We use sockfd_ directly as per original logic
+            int clientfd = accept(sockfd_, nullptr, nullptr);
+            if (clientfd < 0) {
+                log.warning("Accepted error");
+                return;
+            }
+
+            // Set non-blocking mode
+            int flags = fcntl(clientfd, F_GETFL, 0);
+            fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
+
+            if (SSL* ssl = SSL_new(ssl_ctx_)) {
+                SSL_set_fd(ssl, clientfd);
+                ssl_clients_[clientfd] = ClientConnection{clientfd, ssl, false};
+            } else {
+                close(clientfd);
+            }
+        }
+
+        /**
+         * Handles an individual client: performs TLS handshake if necessary,
+         * or reads incoming data. Adds FD to closedSockets if a fatal error occurs.
+         */
+        void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets) override {
+            int fd = pfd.fd;
+            auto it = ssl_clients_.find(fd);
+            if (it == ssl_clients_.end()) return;
+
+            ClientConnection& client = it->second;
+
+            // handle Handshake Phase
+            if (!client.handshake_completed) {
+                int ret = SSL_accept(client.ssl);
+                if (ret == 1) {
+                    client.handshake_completed = true;
+                    log.debug("TLS handshake completed FD={}", fd);
+                } else {
+                    int err = SSL_get_error(client.ssl, ret);
+                    if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE) {
+                        log.debug("TLS handshake failed FD={} and will close", fd);
+                        closedSockets.push_back(fd);
                     }
+                    return;  // Exit early if we are still waiting for handshake
+                }
+            }
+
+            // handle Data Phase (only if handshake is complete)
+            char buffer[READ_BUFFER_SIZE];
+            ssize_t nread = SSLRead(client, buffer, sizeof(buffer));
+            if (nread > 0) {
+                performRequest(fd, buffer, nread);
+            } else if (nread < 0) {
+                closedSockets.push_back(fd);
+            }
+        }
+
+        void handleRequests() override {
+            while (running_) {
+                // Build pollfds using functional composition
+                auto client_view = ssl_clients_ | std::views::transform([](const auto& pair) {
+                                       return pollfd{pair.first, POLLIN, 0};
+                                   });
+
+                std::vector<pollfd> pollfds;
+                pollfds.reserve(1 + ssl_clients_.size());
+                pollfds.push_back({sockfd_, POLLIN, 0});
+                pollfds.insert(pollfds.end(), client_view.begin(), client_view.end());
+
+                // Wait for activity
+                int activity = poll(pollfds.data(), static_cast<int>(pollfds.size()), POLL_TIMEOUT);
+                if (activity < 0) {
+                    if (errno == EINTR) continue;
                     log.warning("poll failed");
                     continue;
                 }
 
-                //
-                // ACCEPT NEW CLIENT
-                //
-                if (pollfds[0].revents & POLLIN) {
-                    int clientfd = accept(sockfd_, (struct sockaddr*)NULL, NULL);
-                    if (clientfd < 0) {
-                        log.warning("Accepted error");
-                        continue;
-                    }
-                    // Set non-blocking mode for client socket
-                    int flags = fcntl(clientfd, F_GETFL, 0);
-                    fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
-
-                    SSL* ssl = SSL_new(ssl_ctx_);
-                    if (!ssl) {
-                        close(clientfd);
-                        continue;
-                    }
-
-                    SSL_set_fd(ssl, clientfd);
-
-                    ClientConnection client;
-
-                    client.fd = clientfd;
-                    client.ssl = ssl;
-                    client.handshake_completed = false;
-
-                    ssl_clients_[clientfd] = client;
-                }
-
-                //
-                // HANDLE CLIENTS
-                //
-                size_t i;
-
+                // Identify sockets with activity via a view pipeline
                 std::vector<int> dead_clients;
-                for (i = 0; i < pollfds.size(); ++i) {
-                    if (!(pollfds[i].revents & POLLIN)) {
-                        continue;
+                auto ready_fds = pollfds | std::views::filter([](const pollfd& p) {
+                                     return (p.revents & POLLIN);
+                                 });
+
+                // Dispatch: Distinguish between Listen Socket and Client Sockets
+                std::ranges::for_each(ready_fds, [&](const pollfd& pfd) {
+                    if (pfd.fd == sockfd_) {
+                        handleListenSocket(pfd);
+                    } else {
+                        handleClientSocket(pfd, dead_clients);
                     }
+                });
 
-                    int fd = pollfds[i].fd;
-                    if (ssl_clients_.find(fd) == ssl_clients_.end()) {
-                        continue;
-                    }
-
-                    ClientConnection& client = ssl_clients_[fd];
-
-                    //
-                    // HANDSHAKE
-                    //
-                    if (!client.handshake_completed) {
-                        int ret = SSL_accept(client.ssl);
-                        if (ret == 1) {
-                            client.handshake_completed = true;
-                            log.debug("TLS handshake completed FD={}", fd);
-                        } else {
-                            int err = SSL_get_error(client.ssl, ret);
-                            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-                                continue;
-                            }
-
-                            log.debug("TLS handshake failed FD={} and will close", fd);
-                            dead_clients.push_back(fd);
-                            continue;
-                        }
-                    }
-
-                    //
-                    // READ REQUEST
-                    //
-                    char buffer[READ_BUFFER_SIZE];
-                    ssize_t nread = SSLRead(client, buffer, sizeof(buffer));
-                    if (nread > 0) {
-                        performRequest(fd, buffer, nread);
-                    } else if (nread < 0) {
-                        dead_clients.push_back(fd);
-                    }
-                }
-
-                //
-                // CLEANUP
-                //
-                for (i = 0; i < dead_clients.size(); ++i) {
-                    closeClient(dead_clients[i]);
-                }
+                // Cleanup: Close any sockets marked for removal
+                std::ranges::for_each(dead_clients, [this](int fd) {
+                    closeClient(fd);
+                });
             }
         }
 
@@ -356,7 +545,6 @@ namespace http {
                 client.ssl = nullptr;
             }
 
-            log.debug("Client id: {}", client.fd);
             if (client.fd != -1) {
                 close(client.fd);
                 client.fd = -1;
@@ -369,36 +557,35 @@ namespace http {
          * Send response
          */
         bool sendResponse(const int sd, std::string& body) override {
-            // write response
-            const char* ptr = body.c_str();
-            ssize_t total_written = 0;
-            ssize_t size = body.size();
-
             ClientConnection& client = ssl_clients_[sd];
+            std::string_view data = body;  // Use string_view for easier slicing
 
-            while (total_written < size) {
-                ssize_t written = SSLWrite(client, ptr + total_written, size - total_written);
+            // Recursive lambda definition
+            std::function<bool()> sendAll = [&]() -> bool {
+                ssize_t written = SSLWrite(client, data.data(), data.size());
+
                 if (written == -1) {
                     // Check if it's a temporary error
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        // This is expected in non-blocking mode - just continue
-                        // But we should add a timeout mechanism for large files
                         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                        continue;
+                        return sendAll();  // Recurse with the same data
                     } else {
                         log.warning("Error writing response body: {}", strerror(errno));
-                        break;
+                        return false;  // Hard error
                     }
                 }
-                total_written += written;
-            }
 
-            if (total_written == -1) {
-                log.error("Error writing response body: {}", strerror(errno));
-                return false;
-            }
+                // Advance the view by 'written' bytes
+                data.remove_prefix(written);
 
-            return true;
+                if (data.empty()) {
+                    return true;  // All data sent successfully
+                }
+
+                return sendAll();  // Recurse with remaining data
+            };
+
+            return sendAll();
         }
 
         /**
