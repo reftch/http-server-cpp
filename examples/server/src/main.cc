@@ -4,12 +4,12 @@
 #include <string>
 #include <thread>
 
-// #include "response.h"
-// #include "server.h"
-
-#define HTTP_OPENSSL_SUPPORT
 #include "response.h"
-#include "sslserver.h"
+#include "server.h"
+
+// #define HTTP_OPENSSL_SUPPORT
+// #include "response.h"
+// #include "sslserver.h"
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
@@ -21,8 +21,8 @@ int main() {
     static auto& log = http::Logger::getInstance();
     log.setLevel(http::Level::DEBUG);
 
-    // http::Server s("0.0.0.0", 8080);
-    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    http::Server s("0.0.0.0", 8080);
+    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
     // http::Server s;
 
     s.setDefaultHeaders({
@@ -59,22 +59,16 @@ int main() {
         res << http::ContentType::SSE << "data: connected\n\n";
         res.sendChunk();
 
-        for (int i : std::views::iota(0, 5)) {
-            std::cout << "Iteration: " << i << "\n";
-            res << "data: " << getCurrentTimeJson() << "\n\n";
-            res.sendChunk();
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        // auto res_ptr = std::make_shared<http::Response>(std::move(res));
+        auto res_ptr = std::make_shared<http::Response>(std::move(res));
 
-        // std::jthread worker([res_ptr]() {
-        //     auto result = true;
-        //     while (result) {
-        //         *res_ptr << "data: " << getCurrentTimeJson() << "\n\n";
-        //         result = res_ptr->sendChunk();
-        //         std::this_thread::sleep_for(std::chrono::seconds(1));
-        //     }
-        // });
+        std::jthread worker([res_ptr]() {
+            auto result = true;
+            while (result) {
+                *res_ptr << "data: " << getCurrentTimeJson() << "\n\n";
+                result = res_ptr->sendChunk();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        });
     });
 
     // Websocket handler
