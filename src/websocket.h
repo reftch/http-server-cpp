@@ -1,6 +1,7 @@
 #ifndef WEBSOCKET_H_
 #define WEBSOCKET_H_
 
+#include "utils.h"
 #ifdef HTTP_OPENSSL_SUPPORT
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -146,7 +147,8 @@ namespace http {
          * @return Number of bytes sent, or -1 on error
          */
         ssize_t send(const std::string& msg) {
-            if (frame.opcode == WsOpcode::Close) {
+            if (!utils::isSocketAlive(frame.sockfd)) {
+                log.info("Close socket");
                 close();
                 return -1;
             }
@@ -158,10 +160,13 @@ namespace http {
                 return -1;  // Return error if frame creation failed
             }
 
-            if (frame.opcode == WsOpcode::Close) {
-                close();
-                return -1;
-            }
+            log.info("Socket status {}, socket {}", frame.opcode == WsOpcode::Text, frame.sockfd);
+
+            // if (frame.opcode == WsOpcode::Close) {
+            //     log.info("Close socket");
+            //     close();
+            //     return -1;
+            // }
 
             // Send the frame to the socket
             ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);

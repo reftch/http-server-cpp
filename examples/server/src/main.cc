@@ -6,6 +6,7 @@
 
 #include "response.h"
 #include "server.h"
+#include "websocket.h"
 
 // #define HTTP_OPENSSL_SUPPORT
 // #include "response.h"
@@ -73,7 +74,7 @@ int main() {
 
     // Websocket handler
     s.setRoute("/ws", [](http::WebSocket& ws) {
-        log.info("Token: {}", ws.query().at("token"));
+        log.info("Handler enter, token: {}", ws.query().at("token"));
 
         std::string msg;
         auto result = ws >> msg;
@@ -91,7 +92,7 @@ int main() {
                 // Send message through websocket
                 auto result = *ws_ptr << time_json;
                 if (result < 0) {
-                    log.error("WebSocket send failed");
+                    log.debug("WebSocket send failed");
                     break;
                 }
 
@@ -99,6 +100,10 @@ int main() {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         });
+
+        worker.join();
+
+        log.info("Exit handler");
     });
 
     // Post request for CORS

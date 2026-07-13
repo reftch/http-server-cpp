@@ -273,19 +273,43 @@ namespace utils {
     }
 
     bool isSocketAlive(int sockfd) {
-        if (sockfd < 0) return false;
+        char buffer;
+        // MSG_PEEK looks at the data without removing it from the queue.
+        // MSG_DONTWAIT ensures we don't block if there is no data.
+        ssize_t result = recv(sockfd, &buffer, 1, MSG_PEEK | MSG_DONTWAIT);
 
-        int error = 0;
-        socklen_t len = sizeof(error);
-        int result = getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+        std::cout << "Result " << result << ", error " << errno << "\n";
 
-        // If getsockopt fails or there's an error, socket is likely closed
-        if (result < 0 || error != 0) {
+        if (result > 0) {
+            return true;  // Data is waiting or connection is fine
+        } else if (result == 0) {
+            return false;  // Peer performed a graceful shutdown
+        } else {
+            int err = errno;
+            // If error is EAGAIN/EWOULDBLOCK, it just means no data is waiting,
+            // but the socket is still alive.
+            if (err == EAGAIN || err == EWOULDBLOCK) {
+                return true;
+            }
+            std::cout << "Result " << result << ", error " << errno << "\n";
             return false;
         }
-
-        return true;
     }
+
+    // bool isSocketAlive(int sockfd) {
+    //     if (sockfd < 0) return false;
+
+    //     int error = 0;
+    //     socklen_t len = sizeof(error);
+    //     int result = getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+
+    //     // If getsockopt fails or there's an error, socket is likely closed
+    //     if (result < 0 || error != 0) {
+    //         return false;
+    //     }
+
+    //     return true;
+    // }
 
     std::string trim(const std::string& str) {
         size_t start = str.find_first_not_of(" \t\r\n");
