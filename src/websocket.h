@@ -1,7 +1,6 @@
 #ifndef WEBSOCKET_H_
 #define WEBSOCKET_H_
 
-#include "utils.h"
 #ifdef HTTP_OPENSSL_SUPPORT
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -18,6 +17,7 @@
 #include <vector>
 
 #include "logger.h"
+#include "utils.h"
 
 namespace http {
 
@@ -153,32 +153,16 @@ namespace http {
             }
 
             // Creates WebSocket frame from string
-#ifndef HTTP_OPENSSL_SUPPORT
             auto response = writeFrame(msg, frame.fin, frame.opcode);
             if (response.empty()) {
                 return -1;  // Return error if frame creation failed
             }
 
             // Send the frame to the socket
+#ifndef HTTP_OPENSSL_SUPPORT
             ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
 #else
-            // auto response = writeFrame(msg, true, WsOpcode::Text);
-            auto response = writeFrame(msg, frame.fin, frame.opcode);
-            // auto response = writeFrame(msg, frame.fin, WsOpcode::Text);
-            if (response.empty()) {
-                return -1;  // Return error if frame creation failed
-            }
-            // Send the frame to the socket
             ssize_t sent = SSL_write(frame.ssl, response.data(), response.size());
-            // If we get a positive value, check if connection is actually alive
-            // Verify connection is still alive by checking if we can read
-            char test_buf[1];
-            int result = SSL_peek(frame.ssl, test_buf, 1);
-            if (result == 0) {
-                std::cout << "Connection closed during peek\n";
-                return -1;
-            }
-
 #endif
             if (sent < 0) {
                 perror("WebSocket send failed");
@@ -210,9 +194,9 @@ namespace http {
                 case WsOpcode::Binary:
                     return Result::Binary;
                 case WsOpcode::Ping:
-                    return Result::Ping;  // Add this line
+                    return Result::Ping;
                 case WsOpcode::Pong:
-                    return Result::Pong;  // Add this line
+                    return Result::Pong;
                 default:
                     return Result::Fail;
             }

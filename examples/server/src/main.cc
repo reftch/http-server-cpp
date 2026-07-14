@@ -20,7 +20,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    log.setLevel(http::Level::DEBUG);
+    // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
     http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
@@ -101,8 +101,6 @@ int main() {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }).detach();
-
-        log.info("Exit handler");
     });
 
     // Post request for CORS
