@@ -202,6 +202,8 @@ namespace http {
     void Server::performRequest(const int sd, const char* buffer, const ssize_t nread) {
         std::string raw_request(buffer, nread);
 
+        log.info("Request {}", raw_request);
+
         // Parse the request line to find method and path
         http::Request req(raw_request);
         Response res(default_headers_, sd);

@@ -4,13 +4,13 @@
 #include <string>
 #include <thread>
 
-#include "response.h"
-#include "server.h"
-#include "websocket.h"
-
-// #define HTTP_OPENSSL_SUPPORT
 // #include "response.h"
-// #include "sslserver.h"
+// #include "server.h"
+// #include "websocket.h"
+
+#define HTTP_OPENSSL_SUPPORT
+#include "response.h"
+#include "sslserver.h"
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
@@ -22,8 +22,8 @@ int main() {
     static auto& log = http::Logger::getInstance();
     log.setLevel(http::Level::DEBUG);
 
-    http::Server s("0.0.0.0", 8080);
-    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    // http::Server s("0.0.0.0", 8080);
+    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
     // http::Server s;
 
     s.setDefaultHeaders({
@@ -62,14 +62,15 @@ int main() {
 
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
 
-        std::jthread worker([res_ptr]() {
+        std::thread([res_ptr]() {
+            // std::jthread worker([res_ptr]() {
             auto result = true;
             while (result) {
                 *res_ptr << "data: " << getCurrentTimeJson() << "\n\n";
                 result = res_ptr->sendChunk();
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-        });
+        }).detach();
     });
 
     // Websocket handler
@@ -86,7 +87,7 @@ int main() {
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
 
         // Start the background thread
-        std::jthread worker([ws_ptr]() {
+        std::thread([ws_ptr]() {
             while (true) {
                 auto time_json = getCurrentTimeJson();
                 // Send message through websocket
@@ -99,9 +100,7 @@ int main() {
                 // Sleep for 1 seconds
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-        });
-
-        worker.join();
+        }).detach();
 
         log.info("Exit handler");
     });
