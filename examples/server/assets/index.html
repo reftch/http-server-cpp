@@ -66,7 +66,6 @@
                 console.log(ws)
                 ws.close(1000, "Client initiated disconnect");
                 connectBtn.innerText = "Connect WS";
-                timeDisplay.textContent = "No info";
             } else {
                 initWebSocket();
             }
@@ -78,7 +77,6 @@
                 eventSource = null;
                 console.log("SSE connection closed");
                 sseBtn.innerText = "Connect SSE";
-                timeDisplay.textContent = "No info";
             } else {
                 sseConnection();
             }

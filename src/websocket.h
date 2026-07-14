@@ -148,7 +148,7 @@ namespace http {
          */
         ssize_t send(const std::string& msg) {
             if (!utils::isSocketAlive(frame.sockfd)) {
-                // close();
+                close();
                 return -1;
             }
 
