@@ -90,7 +90,7 @@ namespace http {
          * @param query Query parameters from the connection
          */
         WebSocket(int sockfd, const std::string& raw_request, const std::unordered_map<std::string, std::string> query)
-            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), query_(query), isOpen(true) {
+            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), query_(query) {
             log.debug("Websocket open FD={}", sockfd);
         }
 #ifdef HTTP_OPENSSL_SUPPORT
@@ -104,7 +104,7 @@ namespace http {
          */
         WebSocket(int sockfd, SSL* ssl, const std::string& raw_request,
                   const std::unordered_map<std::string, std::string> query)
-            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), query_(query), isOpen(true) {}
+            : frame{sockfd, ssl}, byte_data(raw_request.begin(), raw_request.end()), query_(query) {}
 #endif
 
         /**
@@ -127,7 +127,6 @@ namespace http {
          * This method closes the underlying socket and cleans up SSL resources if needed.
          */
         void close() {
-            isOpen = false;
             log.debug("Websocket {} will closed", frame.sockfd);
             ::close(frame.sockfd);
 #ifdef HTTP_OPENSSL_SUPPORT
@@ -140,6 +139,14 @@ namespace http {
 #endif
         }
 
+        bool isOpen() {
+            if (!utils::isSocketAlive(frame.sockfd)) {
+                close();
+                return false;
+            }
+            return true;
+        }
+
         /**
          * @brief Send a message through the WebSocket connection
          *
@@ -147,11 +154,6 @@ namespace http {
          * @return Number of bytes sent, or -1 on error
          */
         ssize_t send(const std::string& msg) {
-            if (!utils::isSocketAlive(frame.sockfd)) {
-                close();
-                return -1;
-            }
-
             // Creates WebSocket frame from string
             auto response = writeFrame(msg, frame.fin, frame.opcode);
             if (response.empty()) {
@@ -225,7 +227,6 @@ namespace http {
         Frame frame;
         std::vector<uint8_t> byte_data;
         std::unordered_map<std::string, std::string> query_;
-        bool isOpen = false;
 
         /**
          * @brief Read a single WebSocket frame from raw bytes

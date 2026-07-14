@@ -4,18 +4,18 @@
 #include <string>
 #include <thread>
 
-// #include "response.h"
-// #include "server.h"
-// #include "websocket.h"
-
-#define HTTP_OPENSSL_SUPPORT
 #include "response.h"
-#include "sslserver.h"
+#include "server.h"
+#include "websocket.h"
+
+// #define HTTP_OPENSSL_SUPPORT
+// #include "response.h"
+// #include "sslserver.h"
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
-    return std::format(R"({{"time":"{:%Y-%m-%dT%H:%M:%S}"}})", now);
+    return std::format(R"({{"time":"{:%Y-%m-%dT%H:%M:%SZ}"}})", now);
 }
 
 int main() {
@@ -23,8 +23,8 @@ int main() {
     // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8080);
-    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    // http::Server s;
+    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    http::Server s;
 
     s.setDefaultHeaders({
         {"Connection", "keep-alive"},
@@ -75,8 +75,6 @@ int main() {
 
     // Websocket handler
     s.setRoute("/ws", [](http::WebSocket& ws) {
-        log.info("Handler enter, token: {}", ws.query().at("token"));
-
         std::string msg;
         auto result = ws >> msg;
         if (result != http::Result::Fail) {
@@ -88,15 +86,8 @@ int main() {
 
         // Start the background thread
         std::thread([ws_ptr]() {
-            while (true) {
-                auto time_json = getCurrentTimeJson();
-                // Send message through websocket
-                auto result = *ws_ptr << time_json;
-                if (result < 0) {
-                    log.debug("WebSocket send failed");
-                    break;
-                }
-
+            while (ws_ptr->isOpen()) {
+                *ws_ptr << getCurrentTimeJson();
                 // Sleep for 1 seconds
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }

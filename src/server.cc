@@ -229,12 +229,10 @@ namespace http {
 
         // HTTP websocket handshake
         if (processWebsocketHandshake(sd, req)) {
-            log.info("Norm path: {}", req.normalize_path());
             updateWsRoute(req.normalize_path(), req.query(), sd);
             return;
         }
 
-        // handle HTTP request
         std::string body = handleRoute(req, res);
         // send server response
         sendResponse(sd, body);

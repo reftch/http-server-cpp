@@ -45,10 +45,6 @@
         let eventSource = null;
 
         function getDate(str) {
-            const data = JSON.parse(event.data);
-
-            // console.log('WebSocket message:', data);
-            // if (data.type === 'time_update') {
             return new Date(str).toLocaleString('de-DE', {
                 year: 'numeric',
                 month: '2-digit',
@@ -57,7 +53,6 @@
                 minute: '2-digit',
                 second: '2-digit',
                 hour12: false,
-                timeZone: 'UTC'
             });
         }
 
@@ -146,10 +141,6 @@
 
                 ws.onclose = function (event) {
                     console.log('WebSocket disconnected');
-                    connectBtn.innerText = "Connect WS";
-                    timeDisplay.textContent = "No info";
-                    // Attempt to reconnect after 3 seconds
-                    // setTimeout(initWebSocket, 3000);
                 };
 
                 ws.onerror = function (error) {
