@@ -2,6 +2,7 @@
 
 #include <poll.h>
 
+#include <cerrno>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -276,14 +277,15 @@ namespace utils {
 
     bool isSocketAlive(int sockfd) {
         char buffer;
-        ssize_t result = recv(sockfd, &buffer, 1, MSG_PEEK | MSG_DONTWAIT);
+        // ssize_t result = recv(sockfd, &buffer, 1, MSG_PEEK | MSG_DONTWAIT);
+        ssize_t result = recv(sockfd, &buffer, 1, 0);
 
         // If the buffer is empty (EAGAIN), the socket is alive and healthy
         // In all other cases (data arrived, EOF/0, or actual system error),
         // the connection is no longer in its healthy 'idle' state.
 
         // Returns true ONLY if the error is specifically 'Resource temporarily unavailable'
-        return (result == -1 && (errno == EAGAIN || errno == EWOULDBLOCK));
+        return (result == -1 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOTCONN));
     }
 
     std::string trim(const std::string& str) {

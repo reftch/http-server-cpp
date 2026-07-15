@@ -86,11 +86,19 @@ namespace http {
     }
 
     std::vector<std::string> Router::splitPath(const std::string& path) {
-        return path | std::views::split('/')  // Split into sub-ranges delimited by '/'
-               | std::views::filter([](auto&& r) {
-                     return !std::ranges::empty(r);
-                 })                                            // Remove empty parts (e.g., "//" or leading "/")
-               | std::ranges::to<std::vector<std::string>>();  // Convert sub-ranges to strings and collect into vector
+        auto view = path | std::views::split('/')  // Split into sub-ranges
+                    | std::views::filter([](auto&& r) {
+                          return !std::ranges::empty(r);  // Remove empty parts
+                      }) |
+                    std::views::transform([](auto&& r) {
+                        // This part is the key:
+                        // Convert the sub-range 'r' into a real std::string
+                        return std::string(r.begin(), r.end());
+                    });
+
+        // Now we convert the resulting view into a vector
+        // We use the constructor of vector to do this
+        return {view.begin(), view.end()};
     }
 
 }  // namespace http
