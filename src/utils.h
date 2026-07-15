@@ -214,7 +214,7 @@ namespace utils {
      * @param size Size of the file in bytes.
      * @return A computed ETag string suitable for HTTP response headers.
      */
-    std::string computeEtag(size_t mtime_raw, size_t size);
+    std::string computeEtag(int mtime_raw, size_t size);
 
     /**
      * @brief Converts an integer to a hexadecimal string representation.

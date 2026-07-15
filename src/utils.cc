@@ -138,15 +138,15 @@ namespace utils {
         return std::string(buf);
     }
 
-    std::string computeEtag(size_t mtime, size_t size) {
+    std::string computeEtag(int mtime, size_t size) {
         // If mtime cannot be determined (negative value indicates an error
         // or sentinel), do not generate an ETag. Returning a neutral / fixed
         // value like 0 could collide with a real file that legitimately has
         // mtime == 0 (epoch) and lead to misleading validators.
 
-        // if (mtime < 0) {
-        //     return std::string();
-        // }
+        if (mtime < 0) {
+            return std::string();
+        }
 
         return std::string("W/\"") + fromIntToHex(mtime) + "-" + fromIntToHex(size) + "\"";
     }
