@@ -6,8 +6,9 @@ project(http-server
     LANGUAGES CXX)
 
 # User-configurable options
-option(BUILD_EXAMPLES "Build example applications" ON)
-option(BUILD_TESTS "Tests" ON)
+option(BUILD_EXAMPLES "Build example applications" OFF)
+option(BUILD_TESTS "Tests" OFF)
+option(BUILD_DASHBOARD "Server dashboard" ON)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -48,3 +49,7 @@ endif()
 if(BUILD_EXAMPLES)  
     add_subdirectory(examples)
 endif()
+
+# if(BUILD_DASHBOARD)  
+    add_subdirectory(dashboard)
+# endif()

@@ -1,0 +1,80 @@
+
+[tasks.dev]
+description = "Run application in dev mode"
+env = { 
+    "DEV_MODE" = "true", 
+    "HOST" = "0.0.0.0", 
+    "PORT" = "8080",
+}
+run = [
+    { tasks = ["watch-app"] }, 
+]
+
+# -----------------------------------------------------------------------------
+# API
+# -----------------------------------------------------------------------------
+
+[tasks.app]
+description = "Build and run dashboard"
+depends = ["app-install"]
+quiet = true
+hide = true
+run = "cmake --build build -j$(nproc) && cd build && ./dashboard/dashboard"
+
+[tasks.watch-app]
+description = "Watch and run application"
+run = "mise w -r -w src -w dashboard app"
+
+[tasks.app-install]
+description = "Build and run application"
+quiet = true
+hide = true
+#run = "mkdir -p build && cd . /build && cmake .. && cp -r ../dashboard/assets ."
+run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cp -r ./dashboard/assets ./build"
+
+# -----------------------------------------------------------------------------
+# Web
+# -----------------------------------------------------------------------------
+ 
+[tasks.bun-install]
+description = "Install bun dependencies"
+quiet = true
+hide = true
+run = "bun install --cwd web"
+
+[tasks.bun-dev]
+description = "Run web in development mode"
+depends = ["bun-install"]
+quiet = true
+hide = true
+run = "bun --cwd web dev"
+
+[tasks.bun-build]
+description = "Run web in development mode"
+depends = ["bun-install"]
+quiet = true
+hide = true
+run = "bun --cwd web build"
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+
+[tasks.clean]
+description = "Cleanup"
+quiet = true
+run = "rm -rf ./build ./web/node_modules assets/ui"
+
+
+[tasks.prod-up]
+description = 'Bring up production environment'
+quiet = true
+run = '''
+docker compose -f docker/compose.yml up -d --build
+docker image prune -a -f
+'''
+
+[tasks.prod-down]
+description = 'Take down production environment'
+quiet = true
+run = 'docker compose -f docker/compose.yml down'
