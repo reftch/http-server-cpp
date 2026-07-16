@@ -18,17 +18,23 @@ using json = nlohmann::json;
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
+    // Get current time
     auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
 
-    auto local_time =
-        std::chrono::zoned_time{std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(now)};
+    // Convert to local time structure
+    std::tm local_tm = *std::localtime(&now_c);
 
-    return std::format(R"({{"content":"<div id='wstime'>{:%d.%m.%Y %H:%M:%S}</div>"}})", local_time);
+    // Use stringstream to format the date
+    std::stringstream ss;
+    ss << std::put_time(&local_tm, "%d.%m.%Y %H:%M:%S");
+
+    return std::format(R"({{"content":"<div id='wstime'>{}</div>"}})", ss.str());
 }
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    log.setLevel(http::Level::DEBUG);
+    // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8083);
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
@@ -80,20 +86,8 @@ int main() {
         }).detach();
     });
 
-    s.setRoute("/chatroom", [](http::WebSocket& ws) {
-        std::string msg;
-        auto result = ws >> msg;
-        if (result != http::Result::Fail) {
-            auto data = json::parse(msg).at("body");
-            auto message = data.at("message").get<std::string>();
-
-            log.info("Received websocket message {}", message);
-            ws << std::format(R"({{"content":"<div id='messages'>{}</div>"}})", message);
-        }
-    });
-
     // Websocket handler
-    s.setRoute("/wscount", [](http::WebSocket& ws) {
+    s.setRoute("/wstime", [](http::WebSocket& ws) {
         std::string msg;
         auto result = ws >> msg;
         if (result != http::Result::Fail) {

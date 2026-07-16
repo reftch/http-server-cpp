@@ -118,6 +118,7 @@ TEST_F(ServerTestFixture, WebsocketBinaryMessage) {
         std::string received_message = message_future.get();
 
         EXPECT_EQ(received_result, Result::Binary);
+
         // Compare raw bytes if needed
     } catch (const std::exception& e) {
         std::cerr << "Exception in websocket handler: " << e.what() << std::endl;

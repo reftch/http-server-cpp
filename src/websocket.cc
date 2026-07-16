@@ -114,65 +114,23 @@ namespace http {
         return frame;
     }
 
-    // std::optional<WsOpcode> getWebSocketFrame(const std::string& data) {
-    //     if (data.length() < 2) return std::nullopt;
-
-    //     const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data.data());
-    //     uint8_t first_byte = bytes[0];
-    //     uint8_t opcode = first_byte & 0x0F;
-    //     bool fin = (first_byte & 0x80) != 0;
-
-    //     // Check if opcode is valid
-    //     if (opcode > 0xA) return std::nullopt;
-
-    //     // Basic frame structure validation
-    //     if (fin && opcode <= 0xA) {
-    //         return static_cast<WsOpcode>(opcode);
-    //     }
-
-    //     return std::nullopt;
-    // }
-
     std::optional<WsOpcode> getWebSocketFrame(const std::string& data) {
-        if (data.size() < 2) return std::nullopt;
+        if (data.length() < 2) return std::nullopt;
 
-        const auto* bytes = reinterpret_cast<const uint8_t*>(data.data());
+        const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data.data());
+        uint8_t first_byte = bytes[0];
+        uint8_t opcode = first_byte & 0x0F;
+        bool fin = (first_byte & 0x80) != 0;
 
-        uint8_t first = bytes[0];
-        uint8_t second = bytes[1];
+        // Check if opcode is valid
+        if (opcode > 0xA) return std::nullopt;
 
-        bool fin = (first & 0x80) != 0;
-        uint8_t opcode = first & 0x0F;
-        bool masked = (second & 0x80) != 0;
-
-        // RSV bits must be zero unless extensions are enabled
-        if (first & 0x70) return std::nullopt;
-
-        // Validate opcode
-        switch (opcode) {
-            case 0x0:  // continuation
-            case 0x1:  // text
-            case 0x2:  // binary
-            case 0x8:  // close
-            case 0x9:  // ping
-            case 0xA:  // pong
-                break;
-
-            default:
-                return std::nullopt;
+        // Basic frame structure validation
+        if (fin && opcode <= 0xA) {
+            return static_cast<WsOpcode>(opcode);
         }
 
-        uint8_t payload_len = second & 0x7F;
-
-        // Control frames must be FIN and <=125 bytes
-        if (opcode >= 0x8) {
-            if (!fin || payload_len > 125) return std::nullopt;
-        }
-
-        // Client frames must be masked
-        if (!masked) return std::nullopt;
-
-        return static_cast<WsOpcode>(opcode);
+        return std::nullopt;
     }
 
 }  // namespace http
