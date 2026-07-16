@@ -4,13 +4,13 @@
 #include <string>
 #include <thread>
 
-#include "response.h"
-#include "server.h"
-#include "websocket.h"
-
-// #define HTTP_OPENSSL_SUPPORT
 // #include "response.h"
-// #include "sslserver.h"
+// #include "server.h"
+// #include "websocket.h"
+
+#define HTTP_OPENSSL_SUPPORT
+#include "response.h"
+#include "sslserver.h"
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
@@ -22,9 +22,9 @@ int main() {
     static auto& log = http::Logger::getInstance();
     // log.setLevel(http::Level::DEBUG);
 
-    // http::Server s("0.0.0.0", 8080);
-    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    http::Server s;
+    // http::Server s("0.0.0.0", 8083);
+    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    // http::Server s;
 
     s.setDefaultHeaders({
         {"Connection", "keep-alive"},

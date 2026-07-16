@@ -1,6 +1,7 @@
 #ifndef WEBSOCKET_H_
 #define WEBSOCKET_H_
 
+#include <variant>
 #ifdef HTTP_OPENSSL_SUPPORT
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -69,6 +70,30 @@ namespace http {
             : fin(false), opcode(WsOpcode::Continuation), mask(false), payload_length(0), sockfd(sfd), ssl(ssl) {}
 #endif
     };
+
+    struct BasicTransport {
+        int sockfd;
+
+        ssize_t send(const std::vector<uint8_t>& msg) {
+            return ::send(sockfd, msg.data(), static_cast<int>(msg.size()), 0);
+        }
+    };
+
+#ifdef HTTP_OPENSSL_SUPPORT
+    struct SSLTransport {
+        SSL* ssl;
+
+        ssize_t send(const std::vector<uint8_t>& msg) {
+            return SSL_write(ssl, msg.data(), static_cast<int>(msg.size()));
+        }
+    };
+#else
+    struct SSLTransport {
+        ssize_t send(const std::vector<uint8_t>&) {
+            return -1;  // SSL not supported
+        }
+    };
+#endif
 
     /**
      * @brief WebSocket class for handling WebSocket connections
@@ -162,10 +187,18 @@ namespace http {
 
             // Send the frame to the socket
 #ifndef HTTP_OPENSSL_SUPPORT
-            ssize_t sent = ::send(frame.sockfd, response.data(), response.size(), 0);
+            transport_ = BasicTransport{frame.sockfd};
 #else
-            ssize_t sent = SSL_write(frame.ssl, response.data(), response.size());
+            transport_ = SSLTransport{frame.ssl};
 #endif
+
+            ssize_t sent = -1;
+            std::visit(
+                [&response, &sent](auto&& t) {
+                    sent = t.send(response);
+                },
+                transport_);
+
             if (sent < 0) {
                 perror("WebSocket send failed");
             }
@@ -227,6 +260,13 @@ namespace http {
         Frame frame;
         std::vector<uint8_t> byte_data;
         std::unordered_map<std::string, std::string> query_;
+
+#ifdef HTTP_OPENSSL_SUPPORT
+        using Transport = std::variant<BasicTransport, SSLTransport>;
+#else
+        using Transport = std::variant<BasicTransport>;
+#endif
+        Transport transport_;
 
         /**
          * @brief Read a single WebSocket frame from raw bytes
