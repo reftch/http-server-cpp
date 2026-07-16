@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Dashboard</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HTMX 4.x Unstable Beta -->
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/hx-sse.js"></script>
+    <style>
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
+        }
+
+        .status-pulse {
+            animation: pulse-green 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans">
+
+    <!-- Navigation -->
+    <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Left Side: Logo -->
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center font-bold text-white">S
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">Dashboard</span>
+                </div>
+
+                <!-- Right Side: Status & User Menu -->
+                <div class="flex items-center gap-6">
+                    <!-- System Status Indicator -->
+                    <div
+                        class="hidden md:flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
+                        <span class="relative flex h-2 w-2">
+                            <span
+                                class="status-pulse absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span class="text-[10px] font-bold text-green-500 uppercase tracking-widest">Live</span>
+                    </div>
+
+                    <!-- USER AUTH SECTION -->
+                    <!--
+                         NOTE: In your production app, the server should decide whether to return
+                         the 'Login Button' or this 'Avatar Dropdown' based on the session.
+                    -->
+                    <div class="relative group">
+                        <!-- Avatar Image (using a placeholder) -->
+                        <button class="flex items-center gap-3 focus:outline-none">
+                            <img src="https://github.com/shadcn.png" alt="User Avatar"
+                                class="w-8 h-8 rounded-full border border-slate-700 hover:border-indigo-500 transition-colors">
+                            <span class="text-sm font-medium text-slate-300 hidden sm:block">Developer</span>
+                        </button>
+
+                        <!-- Dropdown Menu (Shows on Hover via Tailwind 'group' class) -->
+                        <div class="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all
+duration-200 z-50">
+                            <div class="px-4 py-3 border-b border-slate-800">
+                                <p class="text-sm font-semibold text-white">Alex Dev</p>
+                                <p class="text-xs text-slate-500 truncate">alex@example.com</p>
+                            </div>
+                            <div class="py-1">
+                                <a href="#"
+                                    class="block px-4 py-2 text-sm text-slate-300 hover:bg-indigo-600 hover:text-white transition">Profile</a>
+                                <a href="#"
+                                    class="block px-4 py-2 text-sm text-slate-300 hover:bg-indigo-600 hover:text-white transition">Settings</a>
+                            </div>
+                            <div class="py-1 border-t border-slate-800">
+                                <!-- Since you use OAuth, this link would trigger your logout route -->
+                                <a href="/auth/logout"
+                                    class="block px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition">Sign
+                                    Out</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Metric Cards Grid -->
+        <div id="metrics-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+            <!-- CPU Card -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm" hx-sse:connect="/api/metrics/cpu"
+                hx-on:cpu="htmx.find('#cpu-value').textContent = event.detail.data; htmx.find('#cpu-bar').style.width = event.detail.data + '%';">
+                <p class="text-slate-400 text-sm font-medium">CPU Usage</p>
+
+                <div id="cpu-content">
+                    <h3 class="text-3xl font-bold mt-2">
+                        <span id="cpu-value">0</span>%
+                    </h3>
+
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
+                        <div id="cpu-bar" class="bg-indigo-500 h-full transition-all duration-100" style="width: 0%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RAM Card -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
+                <p class="text-slate-400 text-sm font-medium">Memory Usage</p>
+                <h3 class="text-3xl font-bold mt-2">4.2GB</h3>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
+                    <div class="bg-emerald-500 h-full transition-all duration-500" style="width: 53%"></div>
+                </div>
+            </div>
+
+            <!-- Network Card -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
+                <p class="text-slate-400 text-sm font-medium">Network In</p>
+                <h3 class="text-3xl font-bold mt-2">12.5 <span class="text-lg font-normal text-slate-500">MB/s</span>
+                </h3>
+            </div>
+
+            <!-- Uptime Card -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
+                <p class="text-slate-400 text-sm font-medium">System Uptime</p>
+                <h3 class="text-3xl font-bold mt-2">12d <span class="text-lg font-normal text-slate-500">04h</span></h3>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Logs Section -->
+            <div
+                class="lg:col-span-2 bg-black border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[500px]">
+                <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                    <h2 class="font-semibold text-slate-200">System Logs</h2>
+                    <button
+                        class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded transition">Clear
+                        Console</button>
+                </div>
+
+                <!-- HTMX Loop for logs -->
+                <div id="log-container"
+                    class="p-4 font-mono text-sm overflow-y-auto space-y-2 flex-grow leading-relaxed" hx-get="/api/logs"
+                    hx-trigger="every 30s">
+                    <p class="text-blue-400"><span class="text-slate-600">[10:24:01]</span> <span
+                            class="text-green-500">INFO</span> Server started successfully.</p>
+                    <p class="text-blue-400"><span class="text-slate-600">[10:25:32]</span> <span
+                            class="text-green-500">INFO</span> GET /api/metrics - 200 OK</p>
+                    <p class="text-amber-400"><span class="text-slate-600">[10:26:15]</span> <span
+                            class="text-yellow-500">WARN</span> High memory threshold reached.</p>
+                    <p class="text-red-400"><span class="text-slate-600">[10:27:01]</span> <span
+                            class="text-red-500">ERROR</span> Failed to connect to Database.</p>
+                </div>
+            </div>
+
+            <!-- Controls Section -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm h-fit">
+                <h2 class="font-semibold text-lg mb-4 text-slate-100">Server Actions</h2>
+                <div class="space-y-3">
+                    <!-- HTMX Post Action -->
+                    <button hx-post="/api/restart" hx-confirm="Are you sure you want to restart the server?"
+                        class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-2 px-4 rounded transition duration-200 shadow-lg shadow-amber-900/20">
+                        Restart Server
+                    </button>
+
+                    <button hx-post="/api/shutdown" hx-confirm="This will stop the service. Continue?"
+                        class="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-4 rounded transition duration-200 shadow-lg shadow-red-900/20">
+                        Shutdown
+                    </button>
+
+                    <hr class="border-slate-800 my-4">
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Log Verbosity</label>
+                        <select
+                            class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition text-slate-300">
+                            <option>Error Only</option>
+                            <option selected>Warning & Error</option>
+                            <option>Debug (All)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+
+</html>
