@@ -87,12 +87,6 @@ namespace http {
             return SSL_write(ssl, msg.data(), static_cast<int>(msg.size()));
         }
     };
-#else
-    struct SSLTransport {
-        ssize_t send(const std::vector<uint8_t>&) {
-            return -1;  // SSL not supported
-        }
-    };
 #endif
 
     /**

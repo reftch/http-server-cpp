@@ -80,12 +80,10 @@ namespace http {
     }
 
     void Server::closeSocket(int fd, const std::string& label) {
-        // if (utils::isSocketAlive(fd)) {
-        log.info("Closing {} socket FD: {}", label, fd);
+        log.debug("Closing {} socket FD: {}", label, fd);
         if (close(fd) == -1) {
             log.error("Failed to close {} socket: {}", label, strerror(errno));
         }
-        // }
     }
 
     void Server::stop() {
