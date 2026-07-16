@@ -1,5 +1,6 @@
 #include <charconv>
 #include <chrono>
+#include <format>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -18,16 +19,20 @@ using json = nlohmann::json;
 [[nodiscard]]
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
-    return std::format(R"({{"time":"{:%Y-%m-%dT%H:%M:%SZ}"}})", now);
+
+    auto local_time =
+        std::chrono::zoned_time{std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(now)};
+
+    return std::format(R"({{"content":"<div id='wstime'>{:%d.%m.%Y %H:%M:%S}</div>"}})", local_time);
 }
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    // log.setLevel(http::Level::DEBUG);
+    log.setLevel(http::Level::DEBUG);
 
-    http::Server s("0.0.0.0", 8083);
+    // http::Server s("0.0.0.0", 8083);
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    // http::Server s;
+    http::Server s;
 
     s.setDefaultHeaders({
         {"Connection", "keep-alive"},
@@ -88,11 +93,11 @@ int main() {
     });
 
     // Websocket handler
-    s.setRoute("/ws", [](http::WebSocket& ws) {
+    s.setRoute("/wscount", [](http::WebSocket& ws) {
         std::string msg;
         auto result = ws >> msg;
         if (result != http::Result::Fail) {
-            log.info("Received websocket message {}", msg);
+            log.info("Websocket message is {}", 1);
         }
 
         // Store ws in a shared_ptr to keep it alive
@@ -100,9 +105,9 @@ int main() {
 
         // Start the background thread
         std::thread([ws_ptr]() {
+            // int i = 0;
             while (ws_ptr->isOpen()) {
                 *ws_ptr << getCurrentTimeJson();
-                // Sleep for 1 seconds
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }).detach();
