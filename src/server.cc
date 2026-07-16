@@ -80,12 +80,12 @@ namespace http {
     }
 
     void Server::closeSocket(int fd, const std::string& label) {
-        if (utils::isSocketAlive(fd)) {
-            log.info("closing {} socket FD: {}", label, fd);
-            if (close(fd) == -1) {
-                log.error("Failed to close {} socket: {}", label, strerror(errno));
-            }
+        // if (utils::isSocketAlive(fd)) {
+        log.info("Closing {} socket FD: {}", label, fd);
+        if (close(fd) == -1) {
+            log.error("Failed to close {} socket: {}", label, strerror(errno));
         }
+        // }
     }
 
     void Server::stop() {
@@ -211,16 +211,17 @@ namespace http {
             pre_routing_handler_(req, res);
         }
 
-        // is websocket requests
+        // Websocket requests
         auto opcode = getWebSocketFrame(raw_request);
         if (opcode.has_value()) {
             log.debug("Websocket status: {}", toWsOpcodeString(opcode.value()));
+            if (opcode.value() == WsOpcode::Close) {
+                closeSocket(sd, "websocket");
+                return;
+            }
+
             auto route = getWsRouteBySocketId(sd);
             if (route.has_value()) {
-                if (opcode.value() == WsOpcode::Close) {
-                    return;
-                }
-
                 WebSocket ws(sd, raw_request, route->query);
                 route->handler(ws);
             }

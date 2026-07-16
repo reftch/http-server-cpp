@@ -1,6 +1,7 @@
 #include <charconv>
 #include <chrono>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
 
@@ -12,6 +13,8 @@
 #include "response.h"
 #include "sslserver.h"
 
+using json = nlohmann::json;
+
 [[nodiscard]]
 std::string getCurrentTimeJson() {
     auto now = std::chrono::system_clock::now();
@@ -20,7 +23,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
-    // log.setLevel(http::Level::DEBUG);
+    log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8083);
     http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
@@ -71,6 +74,18 @@ int main() {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }).detach();
+    });
+
+    s.setRoute("/chatroom", [](http::WebSocket& ws) {
+        std::string msg;
+        auto result = ws >> msg;
+        if (result != http::Result::Fail) {
+            auto data = json::parse(msg).at("body");
+            auto message = data.at("message").get<std::string>();
+
+            log.info("Received websocket message {}", message);
+            ws << std::format(R"({{"content":"<div id='messages'>{}</div>"}})", message);
+        }
     });
 
     // Websocket handler

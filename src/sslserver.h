@@ -249,6 +249,7 @@ namespace http {
                 auto route = getWsRouteBySocketId(sd);
                 if (route.has_value()) {
                     if (opcode.value() == WsOpcode::Close) {
+                        closeSocket(sd, "websocket");
                         return;
                     }
 

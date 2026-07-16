@@ -172,7 +172,6 @@ namespace http {
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
-        void closeSocket(int fd, const std::string& label);
 
        protected:
         // static directory
@@ -196,6 +195,8 @@ namespace http {
 
         virtual void handleListenSocket(const pollfd& pfd);
         virtual void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets);
+
+        void closeSocket(int fd, const std::string& label);
 
         /**
          * Performs an asynchronous HTTP request handling operation
