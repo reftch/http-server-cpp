@@ -81,6 +81,8 @@ int main() {
         res << http::ContentType::SSE << "event: connected\n" << "data: connected\n\n";
         res.sendChunk();
 
+        log.info("Server metrics endpoint connected");
+
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
         std::thread([res_ptr]() {
             auto result = true;

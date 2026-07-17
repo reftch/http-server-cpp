@@ -1,4 +1,4 @@
-# file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/examples/server)
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/dashboard)
 
 find_package(OpenSSL REQUIRED)
 
