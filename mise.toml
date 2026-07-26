@@ -30,7 +30,14 @@ description = "Build and run application"
 quiet = true
 hide = true
 #run = "mkdir -p build && cd . /build && cmake .. && cp -r ../dashboard/assets ."
-run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cp -r ./dashboard/assets ./build"
+#run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cp -r ./dashboard/assets ./build"
+run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release"
+
+[tasks.build]
+description = "Build application"
+depends = ["app-install"]
+quiet = true
+run = "cmake --build build -j$(nproc)"
 
 # -----------------------------------------------------------------------------
 # Web
@@ -64,7 +71,6 @@ run = "bun --cwd web build"
 description = "Cleanup"
 quiet = true
 run = "rm -rf ./build ./web/node_modules assets/ui"
-
 
 [tasks.prod-up]
 description = 'Bring up production environment'
