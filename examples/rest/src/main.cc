@@ -3,7 +3,7 @@
 int main() {
     http::Server s;
 
-    s.setDefaultHeaders({{"Connection", "keep-alive"}});
+    // s.setDefaultHeaders({{"Connection", "keep-alive"}});
 
     s.setRoute<http::HttpMethod::GET>("/api/v1/inc/:id", [&](const http::Request& req, http::Response& res) {
         auto& params = req.params();

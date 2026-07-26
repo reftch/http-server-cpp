@@ -233,7 +233,7 @@ namespace http {
         }
 
         std::string body = handleRoute(req, res);
-        // send server response
+
         sendResponse(sd, body);
     }
 
