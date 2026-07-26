@@ -11,7 +11,7 @@
 
 namespace http {
 
-    int Server::start() {
+    int Server::run() {
         // open socket
         if ((sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
             log.error("Socket creation failed");
@@ -75,7 +75,7 @@ namespace http {
         return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #else
         flags = 1;
-        return ioctl(fd, FIONBIO, &flags);
+        return fcntl(fd, F_SETFL, &flags);
 #endif
     }
 

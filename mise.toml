@@ -1,36 +1,33 @@
+[env]
+EXAMPLE = "server"
+DEV_MODE = true
+HOST = "0.0.0.0"
+PORT = 8080
 
 [tasks.dev]
 description = "Run application in dev mode"
-env = { 
-    "DEV_MODE" = "true", 
-    "HOST" = "0.0.0.0", 
-    "PORT" = "8080",
-}
-run = [
-    { tasks = ["watch-app"] }, 
-]
+run = [{ tasks = ["watch-app"] }]
 
 # -----------------------------------------------------------------------------
 # API
 # -----------------------------------------------------------------------------
 
-[tasks.app]
+[tasks.build-and-run]
 description = "Build and run dashboard"
 depends = ["app-install"]
 quiet = true
 hide = true
-run = "cmake --build build -j$(nproc) && cd build && ./dashboard/dashboard"
+run = "cmake --build build -j$(nproc) && cd build && ./examples/$EXAMPLE/$EXAMPLE"
 
 [tasks.watch-app]
 description = "Watch and run application"
-run = "mise w -r -w src -w dashboard app"
+quiet = true
+run = "mise w -r -w src -w src build-and-run"
 
 [tasks.app-install]
 description = "Build and run application"
 quiet = true
 hide = true
-#run = "mkdir -p build && cd . /build && cmake .. && cp -r ../dashboard/assets ."
-#run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cp -r ./dashboard/assets ./build"
 run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release"
 
 [tasks.build]
@@ -42,7 +39,7 @@ run = "cmake --build build -j$(nproc)"
 # -----------------------------------------------------------------------------
 # Web
 # -----------------------------------------------------------------------------
- 
+
 [tasks.bun-install]
 description = "Install bun dependencies"
 quiet = true

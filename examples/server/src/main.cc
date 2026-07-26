@@ -171,7 +171,7 @@ int main() {
         res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     });
 
-    s.start();
+    s.run();
 
     return 0;
 }
