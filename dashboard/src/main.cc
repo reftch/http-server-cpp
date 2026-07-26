@@ -1,65 +1,69 @@
-#include <mach/mach.h>
-#include <mach/mach_host.h>
+// #include <mach/mach.h>
+// #include <mach/mach_host.h>
 
 #include <charconv>
 #include <chrono>
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <thread>
 
+#include "cpu.h"
 #include "response.h"
 #include "server.h"
+
 // #include "websocket.h"
 
 // #define HTTP_OPENSSL_SUPPORT
 // #include "response.h"
 // #include "sslserver.h"
 
-using CpuTicks = std::array<uint64_t, 4>;
+// using CpuTicks = std::array<uint64_t, 4>;
 
-CpuTicks readCpuTicks() {
-    processor_info_array_t info;
-    mach_msg_type_number_t count;
-    natural_t cpuCount;
+// CpuTicks readCpuTicks() {
+//     processor_info_array_t info;
+//     mach_msg_type_number_t count;
+//     natural_t cpuCount;
 
-    kern_return_t result = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &cpuCount, &info, &count);
+//     kern_return_t result = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &cpuCount, &info, &count);
 
-    if (result != KERN_SUCCESS) return {0, 0, 0, 0};
+//     if (result != KERN_SUCCESS) return {0, 0, 0, 0};
 
-    uint64_t user = 0;
-    uint64_t system = 0;
-    uint64_t idle = 0;
-    uint64_t nice = 0;
+//     uint64_t user = 0;
+//     uint64_t system = 0;
+//     uint64_t idle = 0;
+//     uint64_t nice = 0;
 
-    for (unsigned i = 0; i < cpuCount; i++) {
-        user += info[CPU_STATE_MAX * i + CPU_STATE_USER];
-        system += info[CPU_STATE_MAX * i + CPU_STATE_SYSTEM];
-        idle += info[CPU_STATE_MAX * i + CPU_STATE_IDLE];
-        nice += info[CPU_STATE_MAX * i + CPU_STATE_NICE];
-    }
+//     for (unsigned i = 0; i < cpuCount; i++) {
+//         user += info[CPU_STATE_MAX * i + CPU_STATE_USER];
+//         system += info[CPU_STATE_MAX * i + CPU_STATE_SYSTEM];
+//         idle += info[CPU_STATE_MAX * i + CPU_STATE_IDLE];
+//         nice += info[CPU_STATE_MAX * i + CPU_STATE_NICE];
+//     }
 
-    vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(info), count * sizeof(integer_t));
+//     vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(info), count * sizeof(integer_t));
 
-    return {user, system, idle, nice};
-}
+//     return {user, system, idle, nice};
+// }
 
-int getCpuUsage() {
-    auto before = readCpuTicks();
+// int getCpuUsage() {
+//     auto before = readCpuTicks();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-    auto after = readCpuTicks();
+//     auto after = readCpuTicks();
 
-    uint64_t totalBefore = before[0] + before[1] + before[2] + before[3];
-    uint64_t totalAfter = after[0] + after[1] + after[2] + after[3];
+//     uint64_t totalBefore = before[0] + before[1] + before[2] + before[3];
+//     uint64_t totalAfter = after[0] + after[1] + after[2] + after[3];
 
-    uint64_t total = totalAfter - totalBefore;
-    uint64_t idle = after[2] - before[2];
+//     uint64_t total = totalAfter - totalBefore;
+//     uint64_t idle = after[2] - before[2];
 
-    if (total == 0) return 0;
+//     if (total == 0) return 0;
 
-    return static_cast<int>(100.0 * (1.0 - static_cast<double>(idle) / total));
-}
+//     return static_cast<int>(100.0 * (1.0 - static_cast<double>(idle) / total));
+// }
 
 int main() {
     static auto& log = http::Logger::getInstance();
@@ -85,11 +89,20 @@ int main() {
 
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
         std::thread([res_ptr]() {
-            auto result = true;
+            Cpu cpu;
+
+            bool result = true;
+
             while (result) {
-                auto usage = getCpuUsage();
-                *res_ptr << "event: cpu\n" << "data: " << usage << "\n\n";
+                auto usage = cpu.usage();
+
+                std::ostringstream ss;
+                ss << std::fixed << std::setprecision(1) << usage;
+
+                *res_ptr << "event: cpu\n" << "data: " << ss.str() << "\n\n";
+
                 result = res_ptr->sendChunk();
+
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
         }).detach();
