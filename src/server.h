@@ -112,7 +112,7 @@ namespace http {
          * @return 3 on connection binding error
          * @return 4 on connection listener error
          */
-        virtual int start();
+        virtual int run();
 
         /**
          * Signals the server to shut down, stops the polling loop, and closes all sockets.

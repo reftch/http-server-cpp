@@ -50,7 +50,7 @@ namespace http {
         /**
          * Start HTTPS server
          */
-        int start() override {
+        int run() override {
             if (!initializeSSL()) {
                 return 1;
             }

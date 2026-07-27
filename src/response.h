@@ -130,16 +130,6 @@ namespace http {
         Response() { setHeader("Connection", "keep-alive"); };
 
         /**
-         * @brief Constructs a response with initial headers.
-         * @param default_headers Initial list of header key-value pairs.
-         */
-        Response(const std::vector<std::pair<std::string, std::string>>& default_headers) {
-            for (const auto& header : default_headers) {
-                setHeader(header.first, header.second);
-            }
-        }
-
-        /**
          * @brief Constructs a response with headers and a socket file descriptor.
          * @param default_headers Initial list of header key-value pairs.
          * @param sockfd Socket file descriptor used to send the response.
@@ -149,6 +139,7 @@ namespace http {
                 setHeader(header.first, header.second);
             }
             sockfd_ = sockfd;
+            setHeader("Connection", "keep-alive");
         }
 
 #ifdef HTTP_OPENSSL_SUPPORT
@@ -161,6 +152,7 @@ namespace http {
             for (const auto& header : default_headers) {
                 setHeader(header.first, header.second);
             }
+            setHeader("Connection", "keep-alive");
         }
 #endif
 
