@@ -189,6 +189,9 @@ namespace http {
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
+        std::vector<pollfd> poll_fds_;
+
+        void remove_by_fd(int sockfd);
 
        protected:
         // static directory
@@ -211,7 +214,7 @@ namespace http {
         int setNonblockMode(int fd);
 
         virtual void handleListenSocket(const pollfd& pfd);
-        virtual void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets);
+        virtual void handleClientSocket(const pollfd& pfd);
 
         void closeSocket(int fd, const std::string& label);
 
