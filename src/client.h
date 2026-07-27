@@ -562,15 +562,7 @@ namespace http {
                 }
             }
 
-#ifdef HTTP_OPENSSL_SUPPORT
-            if (client_protocol == Protocol::HTTPS) {
-                return std::make_unique<HttpsClient>(host, port);
-            } else {
-                return std::make_unique<HttpClient>(host, port);
-            }
-#else
             return std::make_unique<HttpClient>(host, port);
-#endif
         }
 
        private:
