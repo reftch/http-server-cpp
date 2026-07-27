@@ -19,7 +19,7 @@ class ServerTestFixture : public ::testing::Test {
 
     static void startServer(std::unique_ptr<http::Server>& server) {
         if (server) {
-            server->run();
+            server->start();
         }
     }
 

@@ -32,6 +32,7 @@
     </div>
 
     <script>
+
         document.addEventListener('htmx:after:ws:connection', (e) => {
             console.log(e.detail.connection);
             if (e.detail.connection.url.includes('/wstime')) {

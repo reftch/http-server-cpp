@@ -85,8 +85,7 @@ namespace http {
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
          */
-        Server() : port_(8080), host_("0.0.0.0") {
-        }
+        Server() : port_(8080), host_("0.0.0.0") {}
         /**
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
@@ -94,21 +93,14 @@ namespace http {
          * @param host The hostname or IP address to bind to.
          * @param port The port number to listen on.
          */
-        Server(const std::string& host, const int& port) : port_(port), host_(host) {
-        }
+        Server(const std::string& host, const int& port) : port_(port), host_(host) {}
 
         virtual ~Server() = default;
 
         // Getters
-        std::string host() const {
-            return host_;
-        }
-        int port() const {
-            return port_;
-        }
-        bool is_running() {
-            return running_;
-        }
+        std::string host() const { return host_; }
+        int port() const { return port_; }
+        bool is_running() { return running_; }
 
         /**
          * Starts the server and begins listening for incoming connections.
@@ -120,7 +112,7 @@ namespace http {
          * @return 3 on connection binding error
          * @return 4 on connection listener error
          */
-        virtual int run();
+        virtual int start();
 
         /**
          * Signals the server to shut down, stops the polling loop, and closes all sockets.
@@ -128,19 +120,13 @@ namespace http {
         virtual void stop();
 
         template <HttpMethod M>
-
-        Server& setRoute(const std::string& path, request_handler handler) {
+        void setRoute(const std::string& path, request_handler handler) {
             router_.registerHandler(std::string(toString(M)), path, handler);
-            return *this;
         }
 
-        void setPreRoute(request_handler handler) {
-            pre_routing_handler_ = std::move(handler);
-        };
+        void setPreRoute(request_handler handler) { pre_routing_handler_ = std::move(handler); };
 
-        void setPostRoute(request_handler handler) {
-            post_routing_handler_ = std::move(handler);
-        };
+        void setPostRoute(request_handler handler) { post_routing_handler_ = std::move(handler); };
 
         void setRoute(const std::string& path, const WsHandler handler) {
             WsRoute wsRoute;
@@ -172,26 +158,20 @@ namespace http {
             return std::nullopt;
         }
 
-        Server& setDefaultHeaders(std::initializer_list<std::pair<const char*, const char*>> headers) {
+        void setDefaultHeaders(std::initializer_list<std::pair<const char*, const char*>> headers) {
             default_headers_.clear();
             for (const auto& header : headers) {
                 default_headers_.emplace_back(header.first, header.second);
             }
-            return *this;
         }
 
-        void setAssetDirectory(const std::string& directory) {
-            static_directory_ = directory;
-        }
+        void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
 
         virtual bool sendResponse(const int sd, std::string& body);
 
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
-        std::vector<pollfd> poll_fds_;
-
-        void remove_by_fd(int sockfd);
 
        protected:
         // static directory
@@ -214,7 +194,7 @@ namespace http {
         int setNonblockMode(int fd);
 
         virtual void handleListenSocket(const pollfd& pfd);
-        virtual void handleClientSocket(const pollfd& pfd);
+        virtual void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets);
 
         void closeSocket(int fd, const std::string& label);
 

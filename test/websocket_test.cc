@@ -33,7 +33,7 @@ TEST_F(ServerTestFixture, WebsocketStartAndStop) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->run();
+        server->start();
     });
 
     // Wait for server to start
@@ -96,7 +96,7 @@ TEST_F(ServerTestFixture, WebsocketBinaryMessage) {
     });
 
     std::thread server_thread([&server]() {
-        server->run();
+        server->start();
     });
 
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
@@ -146,7 +146,7 @@ TEST_F(ServerTestFixture, WebsocketMultipleClients) {
     });
 
     std::thread server_thread([&server]() {
-        server->run();
+        server->start();
     });
 
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
@@ -189,7 +189,7 @@ TEST_F(ServerTestFixture, WebsocketInvalidUpgrade) {
     });
 
     std::thread server_thread([&server]() {
-        server->run();
+        server->start();
     });
 
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
@@ -216,7 +216,7 @@ TEST_F(ServerTestFixture, WebsocketTimeout) {
     });
 
     std::thread server_thread([&server]() {
-        server->run();
+        server->start();
     });
 
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
@@ -250,7 +250,7 @@ TEST_F(ServerTestFixture, WebsocketPingPong) {
     });
 
     std::thread server_thread([&server]() {
-        server->run();
+        server->start();
     });
 
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";
@@ -300,7 +300,7 @@ TEST_F(ServerTestFixture, WebsocketClientDisconnect) {
     });
 
     std::thread server_thread([&server]() {
-        server->run();
+        server->start();
     });
 
     ASSERT_TRUE(waitForServerStart(server)) << "Server failed to start within timeout";

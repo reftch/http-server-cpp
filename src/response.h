@@ -127,9 +127,17 @@ namespace http {
         /**
          * @brief Constructs an empty HTTP response with default "Connection: keep-alive".
          */
-        Response() {
-            setHeader("Connection", "keep-alive");
-        };
+        Response() { setHeader("Connection", "keep-alive"); };
+
+        /**
+         * @brief Constructs a response with initial headers.
+         * @param default_headers Initial list of header key-value pairs.
+         */
+        Response(const std::vector<std::pair<std::string, std::string>>& default_headers) {
+            for (const auto& header : default_headers) {
+                setHeader(header.first, header.second);
+            }
+        }
 
         /**
          * @brief Constructs a response with headers and a socket file descriptor.
@@ -141,7 +149,6 @@ namespace http {
                 setHeader(header.first, header.second);
             }
             sockfd_ = sockfd;
-            setHeader("Connection", "keep-alive");
         }
 
 #ifdef HTTP_OPENSSL_SUPPORT
@@ -154,7 +161,6 @@ namespace http {
             for (const auto& header : default_headers) {
                 setHeader(header.first, header.second);
             }
-            setHeader("Connection", "keep-alive");
         }
 #endif
 
@@ -163,25 +169,19 @@ namespace http {
          * @param key Header name.
          * @param val Header value.
          */
-        void setHeader(const std::string& key, const std::string& val) {
-            headers_[std::move(key)] = std::move(val);
-        }
+        void setHeader(const std::string& key, const std::string& val) { headers_[std::move(key)] = std::move(val); }
 
         /**
          * @brief Gets the content of the response body.
          * @return The current content string.
          */
-        std::string content() {
-            return content_;
-        }
+        std::string content() { return content_; }
 
         /**
          * @brief Gets the status code of the response.
          * @return The current HTTP status.
          */
-        http::Status status() {
-            return status_;
-        }
+        http::Status status() { return status_; }
 
         /**
          * @brief Gets all headers as a map.
@@ -201,11 +201,6 @@ namespace http {
             status_ = S;
             content_type_ = T;
             content_ = content;
-            return *this;
-        }
-
-        Response& setContentType(const ContentType type) {
-            content_type_ = type;
             return *this;
         }
 
@@ -289,9 +284,7 @@ namespace http {
          * @brief Sets the static directory used for serving files.
          * @param static_directory Directory path to serve static assets from.
          */
-        void setStaticDirectory(const std::string static_directory) {
-            static_directory_ = static_directory;
-        }
+        void setStaticDirectory(const std::string static_directory) { static_directory_ = static_directory; }
 
        private:
         http::Status status_ = Status::ok;
