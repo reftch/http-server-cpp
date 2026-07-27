@@ -30,7 +30,7 @@ TEST_F(ServerTestFixture, SetHostAndPort) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start
@@ -63,7 +63,7 @@ TEST_F(ServerTestFixture, DefaultHostAndPort) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start
@@ -343,7 +343,7 @@ TEST_F(ServerTestFixture, SetDefaultHeaders) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start
@@ -386,7 +386,7 @@ TEST_F(ServerTestFixture, SetDefaultHeadersEmpty) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start
@@ -619,7 +619,7 @@ TEST_F(ServerTestFixture, SetAssetDirectory) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start
@@ -664,7 +664,7 @@ TEST_F(ServerTestFixture, SetAssetDirectoryWithNonExistentPath) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start
@@ -704,7 +704,7 @@ TEST_F(ServerTestFixture, SetAssetDirectoryWithEmptyPath) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start
@@ -762,7 +762,7 @@ TEST_F(ServerTestFixture, SetAssetDirectoryMultipleCalls) {
 
     // Start server in separate thread
     std::thread server_thread([&server]() {
-        server->start();
+        server->run();
     });
 
     // Wait for server to start

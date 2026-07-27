@@ -38,7 +38,7 @@ int main() {
 
     // http::Server s("0.0.0.0", 8083);
     // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    http::Server s;
+    http::Server s("0.0.0.0", 8082);
 
     s.setDefaultHeaders({
         {"Connection", "keep-alive"},
@@ -114,7 +114,7 @@ int main() {
         res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     });
 
-    s.start();
+    s.run();
 
     return 0;
 }

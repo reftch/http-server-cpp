@@ -7,15 +7,18 @@ project(http-server
 
 # User-configurable options
 option(BUILD_EXAMPLES "Build example applications" ON)
-option(BUILD_TESTS "Tests" OFF)
+option(BUILD_TESTS "Tests" ON)
+
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add warn + opt flags globally
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic -Wno-dev ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
-
 
 # Configuration
 add_compile_definitions(KEEPALIVE_MAX_COUNT=96)
