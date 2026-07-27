@@ -39,7 +39,7 @@ namespace http {
         std::ofstream log_file_;            /**< Output file stream for log file. */
         std::string log_file_path_;         /**< Path to the current log file. */
         mutable std::mutex log_mutex_;      /**< Mutex for thread-safe operations. */
-        Level current_level = Level::INFO;
+        Level current_level_ = Level::INFO;
 
        public:
         /**
@@ -51,7 +51,7 @@ namespace http {
             return instance;
         }
 
-        void setLevel(Level level) { current_level = level; }
+        void setLevel(Level level) { current_level_ = level; }
 
         /**
          * @brief Enable file logging with a specific file path.
@@ -121,7 +121,7 @@ namespace http {
          */
         template <typename... Args>
         void trace(std::string_view format, Args&&... args) {
-            if (current_level <= Level::TRACE) {
+            if (current_level_ <= Level::TRACE) {
                 log(Level::TRACE, format, std::forward<Args>(args)...);
             }
         }
@@ -135,7 +135,7 @@ namespace http {
          */
         template <typename... Args>
         void debug(std::string_view format, Args&&... args) {
-            if (current_level <= Level::DEBUG) {
+            if (current_level_ <= Level::DEBUG) {
                 log(Level::DEBUG, format, std::forward<Args>(args)...);
             }
         }
@@ -149,7 +149,7 @@ namespace http {
          */
         template <typename... Args>
         void info(std::string_view format, Args&&... args) {
-            if (current_level <= Level::INFO) {
+            if (current_level_ <= Level::INFO) {
                 log(Level::INFO, format, std::forward<Args>(args)...);
             }
         }
@@ -163,7 +163,7 @@ namespace http {
          */
         template <typename... Args>
         void warning(std::string_view format, Args&&... args) {
-            if (current_level <= Level::WARNING) {
+            if (current_level_ <= Level::WARNING) {
                 log(Level::WARNING, format, std::forward<Args>(args)...);
             }
         }
@@ -177,7 +177,7 @@ namespace http {
          */
         template <typename... Args>
         void error(std::string_view format, Args&&... args) {
-            if (current_level <= Level::ERROR) {
+            if (current_level_ <= Level::ERROR) {
                 log(Level::ERROR, format, std::forward<Args>(args)...);
             }
         }
@@ -191,13 +191,13 @@ namespace http {
          */
         template <typename... Args>
         void critical(std::string_view format, Args&&... args) {
-            if (current_level <= Level::CRITICAL) {
+            if (current_level_ <= Level::CRITICAL) {
                 log(Level::CRITICAL, format, std::forward<Args>(args)...);
             }
         }
 
         std::string toString() {
-            switch (current_level) {
+            switch (current_level_) {
                 case Level::TRACE:
                     return "TRACE";
                 case Level::DEBUG:

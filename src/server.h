@@ -136,6 +136,21 @@ namespace http {
             wsRoutes.insert(wsRoute);
         }
 
+        void setDefaultHeaders(std::initializer_list<std::pair<const char*, const char*>> headers) {
+            default_headers_.clear();
+            for (const auto& header : headers) {
+                default_headers_.emplace_back(header.first, header.second);
+            }
+        }
+
+        void setAssetsDirectory(const std::string& directory) { static_directory_ = directory; }
+
+        virtual bool sendResponse(const int sd, std::string& body);
+
+       private:
+        // Websocket routes
+        std::set<WsRoute> wsRoutes;
+
         bool updateWsRoute(const std::string& path, const std::unordered_map<std::string, std::string>& query,
                            const int32_t sockfd) {
             // Search for the route with matching path and protocol
@@ -157,21 +172,6 @@ namespace http {
             }
             return std::nullopt;
         }
-
-        void setDefaultHeaders(std::initializer_list<std::pair<const char*, const char*>> headers) {
-            default_headers_.clear();
-            for (const auto& header : headers) {
-                default_headers_.emplace_back(header.first, header.second);
-            }
-        }
-
-        void setAssetDirectory(const std::string& directory) { static_directory_ = directory; }
-
-        virtual bool sendResponse(const int sd, std::string& body);
-
-       private:
-        // Websocket routes
-        std::set<WsRoute> wsRoutes;
 
        protected:
         // static directory
