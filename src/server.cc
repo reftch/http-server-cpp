@@ -101,45 +101,38 @@ namespace http {
     }
 
     void Server::handleRequests() {
+        poll_fds_.clear();
+
+        // Main listen socket
+        poll_fds_.push_back({});
+        poll_fds_.back().fd = sockfd_;
+        poll_fds_.back().events = POLLIN;
+
         while (running_) {
-            std::vector<pollfd> descriptors;
-
-            // Listen socket
-            descriptors.push_back({});
-            descriptors.back().fd = sockfd_;
-            descriptors.back().events = POLLIN;
-
             // Client sockets using ranges
-            std::ranges::transform(client_list_, std::back_inserter(descriptors), [](int fd) {
+            std::ranges::transform(client_list_, std::back_inserter(poll_fds_), [](int fd) {
                 pollfd pfd{};
                 pfd.fd = fd;
                 pfd.events = POLLIN;
                 return pfd;
             });
 
-            int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), POLL_TIMEOUT);
+            int rc = poll(poll_fds_.data(), static_cast<nfds_t>(poll_fds_.size()), POLL_TIMEOUT);
             if (rc < 0) {
                 if (errno == EINTR) continue;
                 log.error("poll failed: {}", strerror(errno));
                 break;
             }
 
-            std::vector<int> closedSockets;
-
             // Use ranges to process events instead of raw loop
-            std::ranges::for_each(descriptors, [this, &closedSockets](pollfd& pfd) {
+            std::ranges::for_each(poll_fds_, [this](pollfd& pfd) {
                 if (pfd.revents == 0) return;
 
                 if (pfd.fd == sockfd_) {
                     handleListenSocket(pfd);
                 } else {
-                    handleClientSocket(pfd, closedSockets);
+                    handleClientSocket(pfd);
                 }
-            });
-
-            // Remove closed sockets from client_list_
-            std::erase_if(client_list_, [&](int fd) {
-                return std::ranges::contains(closedSockets, fd);
             });
         }
     }
@@ -159,19 +152,21 @@ namespace http {
                 }
 
                 setNonblockMode(client_fd);
-                client_list_.insert(client_fd);
+                poll_fds_.push_back({});
+                poll_fds_.back().fd = client_fd;
+                poll_fds_.back().events = POLLIN;
             }
         }
     }
 
-    void Server::handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets) {
+    void Server::handleClientSocket(const pollfd& pfd) {
         int fd = pfd.fd;
 
         if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
             log.debug("Closing fd={} revents={}", fd, pfd.revents);
             shutdown(fd, SHUT_RDWR);
             close(fd);
-            closedSockets.push_back(fd);
+            remove_by_fd(fd);
             return;
         }
 
@@ -185,15 +180,27 @@ namespace http {
                 log.debug("Peer closed fd={}", fd);
                 shutdown(fd, SHUT_RDWR);
                 close(fd);
-                closedSockets.push_back(fd);
+                remove_by_fd(fd);
             } else {
                 if (errno != EAGAIN && errno != EWOULDBLOCK) {
                     log.error("recv failed fd={} errno={} ({})", fd, errno, strerror(errno));
                     shutdown(fd, SHUT_RDWR);
                     close(fd);
-                    closedSockets.push_back(fd);
+                    remove_by_fd(fd);
                 }
             }
+        }
+    }
+
+    void Server::remove_by_fd(int sockfd) {
+        // Find the iterator pointing to the element with matching fd
+        auto it = std::find_if(poll_fds_.begin(), poll_fds_.end(), [sockfd](const pollfd& pfd) {
+            return pfd.fd == sockfd;
+        });
+
+        // If we found it, erase it
+        if (it != poll_fds_.end()) {
+            poll_fds_.erase(it);
         }
     }
 
