@@ -6,13 +6,11 @@
 #include <string>
 #include <thread>
 
-#include "response.h"
-#include "server.h"
+// #include "server.h"
 // #include "websocket.h"
 
-// #define HTTP_OPENSSL_SUPPORT
-// #include "response.h"
-// #include "sslserver.h"
+#define HTTP_OPENSSL_SUPPORT
+#include "sslserver.h"
 
 using json = nlohmann::json;
 

@@ -151,28 +151,6 @@ namespace http {
         // Websocket routes
         std::set<WsRoute> wsRoutes;
 
-        bool updateWsRoute(const std::string& path, const std::unordered_map<std::string, std::string>& query,
-                           const int32_t sockfd) {
-            // Search for the route with matching path and protocol
-            for (auto it = wsRoutes.begin(); it != wsRoutes.end(); ++it) {
-                if (it->path == path) {
-                    const_cast<WsRoute&>(*it).sockfd = sockfd;
-                    const_cast<WsRoute&>(*it).query = query;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        std::optional<WsRoute> getWsRouteBySocketId(const int32_t sockfd) {
-            for (const auto& route : wsRoutes) {
-                if (route.sockfd == sockfd) {
-                    return route;
-                }
-            }
-            return std::nullopt;
-        }
-
        protected:
         // static directory
         std::string static_directory_ = "./assets";
@@ -197,6 +175,28 @@ namespace http {
         virtual void handleClientSocket(const pollfd& pfd, std::vector<int>& closedSockets);
 
         void closeSocket(int fd, const std::string& label);
+
+        bool updateWsRoute(const std::string& path, const std::unordered_map<std::string, std::string>& query,
+                           const int32_t sockfd) {
+            // Search for the route with matching path and protocol
+            for (auto it = wsRoutes.begin(); it != wsRoutes.end(); ++it) {
+                if (it->path == path) {
+                    const_cast<WsRoute&>(*it).sockfd = sockfd;
+                    const_cast<WsRoute&>(*it).query = query;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        std::optional<WsRoute> getWsRouteBySocketId(const int32_t sockfd) {
+            for (const auto& route : wsRoutes) {
+                if (route.sockfd == sockfd) {
+                    return route;
+                }
+            }
+            return std::nullopt;
+        }
 
         /**
          * Performs an asynchronous HTTP request handling operation
