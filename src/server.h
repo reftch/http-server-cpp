@@ -39,9 +39,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <functional>
 #include <set>
 #include <string>
+#include <thread>
 
 #include "logger.h"
 #include "request.h"
