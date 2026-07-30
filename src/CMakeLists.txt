@@ -11,6 +11,7 @@ add_library(http-server STATIC
   server.cc
   server.h
   sslserver.h
+  status.h
   utils.cc
   utils.h
   websocket.h

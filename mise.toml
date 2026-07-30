@@ -1,5 +1,5 @@
 [env]
-EXAMPLE = "server"
+EXAMPLE = "rest"
 DEV_MODE = true
 HOST = "0.0.0.0"
 PORT = 8080
@@ -28,7 +28,7 @@ run = "mise w -r -w src -w src build-and-run"
 description = "Build and run application"
 quiet = true
 hide = true
-run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release"
+run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF"
 
 [tasks.build]
 description = "Build application"

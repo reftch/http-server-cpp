@@ -1,9 +1,9 @@
 #include "server.h"
 
 int main() {
-    http::Server s("0.0.0.0", 8082);
+    http::Server s("0.0.0.0", 8080);
 
-    s.setRoute<http::HttpMethod::GET>("/api/v1/inc/:id", [&](const http::Request& req, http::Response& res) {
+    s.setRoute<http::HttpMethod::GET>("/api/v1/users/:id", [&](const http::Request& req, http::Response& res) {
         auto& params = req.params();
         auto it = params.find("id");
 

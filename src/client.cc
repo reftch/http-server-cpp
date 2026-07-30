@@ -7,6 +7,7 @@
 #include <ranges>
 #include <string>
 
+#include "status.h"
 #include "utils.h"
 
 namespace http {

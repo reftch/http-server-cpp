@@ -610,7 +610,7 @@ TEST_F(ServerTestFixture, SetAssetDirectory) {
     test_file << "asset content";
     test_file.close();
 
-    server->setAssetDirectory(test_asset_dir);
+    server->setAssetsDirectory(test_asset_dir);
 
     // Set up route for asset endpoint
     server->setRoute<http::HttpMethod::GET>("/assets/test.txt", [](const http::Request&, http::Response& res) {
@@ -655,7 +655,7 @@ TEST_F(ServerTestFixture, SetAssetDirectoryWithNonExistentPath) {
     const std::string non_existent_dir = "./non_existent_assets";
 
     // This should not crash the server
-    server->setAssetDirectory(non_existent_dir);
+    server->setAssetsDirectory(non_existent_dir);
 
     // Set up a simple route
     server->setRoute<http::HttpMethod::GET>("/test", [](const http::Request&, http::Response& res) {
@@ -695,7 +695,7 @@ TEST_F(ServerTestFixture, SetAssetDirectoryWithEmptyPath) {
     // Set empty asset directory
     const std::string empty_dir = "";
 
-    server->setAssetDirectory(empty_dir);
+    server->setAssetsDirectory(empty_dir);
 
     // Set up a simple route
     server->setRoute<http::HttpMethod::GET>("/test", [](const http::Request&, http::Response& res) {
@@ -748,8 +748,8 @@ TEST_F(ServerTestFixture, SetAssetDirectoryMultipleCalls) {
     file2 << "content2";
     file2.close();
 
-    server->setAssetDirectory(dir1);
-    server->setAssetDirectory(dir2);
+    server->setAssetsDirectory(dir1);
+    server->setAssetsDirectory(dir2);
 
     // Set up routes for both files
     server->setRoute<http::HttpMethod::GET>("/assets/file1.txt", [](const http::Request&, http::Response& res) {
