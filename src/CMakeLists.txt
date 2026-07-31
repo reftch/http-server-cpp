@@ -1,4 +1,5 @@
 add_library(http-server STATIC
+  pool/pool.h
   client.h
   client.cc
   logger.h

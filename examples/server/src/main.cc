@@ -22,6 +22,8 @@ std::string getCurrentTimeJson() {
 
 int main() {
     static auto& log = http::Logger::getInstance();
+    http::ThreadPool pool;
+
     // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8083);
@@ -41,7 +43,8 @@ int main() {
         res << http::ContentType::HTML << "home.html";
     });
 
-    s.setRoute<http::HttpMethod::GET>("/api/v1/inc/:v", [&](const http::Request& req, http::Response& res) {
+    // REST endpoint
+    s.setRoute<http::HttpMethod::GET>("/api/v1/users/:v", [&](const http::Request& req, http::Response& res) {
         auto it = req.params().find("v");
         if (it == req.params().end()) {
             res << http::ContentType::JSON << http::Status::bad_request << R"({"error":"missing parameter 'v'"})";
@@ -58,20 +61,23 @@ int main() {
     });
 
     // SSE handler
-    s.setRoute<http::HttpMethod::GET>("/stream", [](const http::Request&, http::Response& res) {
+    s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
         res << http::ContentType::SSE << "data: connected\n\n";
-        res.sendChunk();
+        if (!res.sendChunk()) {
+            return;
+        }
 
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
-        std::thread([res_ptr]() {
-            int i = 0;
-            auto result = true;
-            while (result) {
-                *res_ptr << "data: " << (++i) << "\n\n";
-                result = res_ptr->sendChunk();
+
+        pool.enqueue([res_ptr] {
+            int counter = 0;
+            while (true) {
+                *res_ptr << "data: " << (++counter) << "\n\n";
+                if (!res_ptr->sendChunk()) break;
+
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-        }).detach();
+        });
     });
 
     // Websocket handler

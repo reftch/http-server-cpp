@@ -41,13 +41,13 @@ endif()
 # Include the header files
 include_directories(${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(src)
-    
+
 # Tests
 if(BUILD_TESTS)
-    enable_testing() 
+    enable_testing()
     add_subdirectory(test)
 endif()
 
-if(BUILD_EXAMPLES)  
+if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()

@@ -46,6 +46,7 @@
 #include <thread>
 
 #include "logger.h"
+#include "pool/pool.h"
 #include "request.h"
 #include "response.h"
 #include "router.h"
