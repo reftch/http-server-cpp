@@ -27,8 +27,8 @@ int main() {
     // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8083);
-    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    http::Server s("0.0.0.0", 8082);
+    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    // http::Server s("0.0.0.0", 8082);
 
     s.setDefaultHeaders({
         {"Connection", "keep-alive"},
@@ -81,24 +81,23 @@ int main() {
     });
 
     // Websocket handler
-    s.setRoute("/wstime", [](http::WebSocket& ws) {
+    s.setRoute("/wstime", [&](http::WebSocket& ws) {
         std::string msg;
         auto result = ws >> msg;
         if (result != http::Result::Fail) {
-            log.info("Websocket message is {}", 1);
+            // return;
         }
 
         // Store ws in a shared_ptr to keep it alive
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
 
         // Start the background thread
-        std::thread([ws_ptr]() {
-            // int i = 0;
+        pool.enqueue([ws_ptr] {
             while (ws_ptr->isOpen()) {
                 *ws_ptr << getCurrentTimeJson();
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-        }).detach();
+        });
     });
 
     // Post request for CORS

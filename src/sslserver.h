@@ -11,7 +11,6 @@
 // #include <mutex>
 // #include <unordered_map>
 
-#include "response.h"
 #include "server.h"
 
 namespace http {

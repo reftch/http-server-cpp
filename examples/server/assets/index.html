@@ -10,6 +10,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0-beta6/dist/htmx.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0-beta6/dist/ext/hx-sse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0-beta6/dist/ext/hx-ws.min.js"></script>
 </head>
 
 <body>
@@ -22,9 +23,9 @@
             <span>Count: </span> <span id="count">Waiting for messages...</span>
         </div>
 
-        <!-- <div hx-ws:connect="/wstime" hx-target="#wstime" hx-swap="outerHTML">
+        <div hx-ws:connect="/wstime" hx-target="#wstime" hx-swap="outerHTML">
             <div id="wstime">Waiting for messages...</div>
-        </div> -->
+        </div>
 
         <img src="image.png" width="100" alt="A sample PNG image" class="centered-image">
         <a href="/home">Home page</a>
