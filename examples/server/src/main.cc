@@ -1,8 +1,8 @@
 #include <charconv>
 
-#define HTTP_OPENSSL_SUPPORT
-#include "sslserver.h"
-// #include "server.h"
+// #define HTTP_OPENSSL_SUPPORT
+// #include "sslserver.h"
+#include "server.h"
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
@@ -27,12 +27,12 @@ int main() {
     // log.setLevel(http::Level::DEBUG);
 
     // http::Server s("0.0.0.0", 8083);
-    http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    // http::Server s("0.0.0.0", 8082);
+    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
+    http::Server s;
 
-    s.setDefaultHeaders({
-        {"Connection", "keep-alive"},
-    });
+    // s.setDefaultHeaders({
+    //     {"Connection", "keep-alive"},
+    // });
 
     s.setRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
         res << http::ContentType::HTML << "index.html";
