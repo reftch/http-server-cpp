@@ -12,29 +12,28 @@ namespace http {
 
     class ThreadPool {
        public:
-        explicit ThreadPool() : stop(false) {
+        explicit ThreadPool() : stop_(false) {
             auto threads = std::thread::hardware_concurrency();
 
             if (threads == 0) threads = 4;
-            workers.reserve(threads);
+            workers_.reserve(threads);
 
             for (size_t i = 0; i < threads; ++i) {
-                workers.emplace_back([this] {
+                workers_.emplace_back([this] {
                     while (true) {
                         std::function<void()> task;
                         {
-                            std::unique_lock<std::mutex> lock(mutex);
+                            std::unique_lock<std::mutex> lock(mutex_);
 
-                            condition.wait(lock, [this] {
-                                return stop || !tasks.empty();
+                            condition_.wait(lock, [this] {
+                                return stop_ || !tasks_.empty();
                             });
 
-                            if (stop && tasks.empty()) return;
+                            if (stop_ && tasks_.empty()) return;
 
-                            task = std::move(tasks.front());
-                            tasks.pop();
+                            task = std::move(tasks_.front());
+                            tasks_.pop();
                         }
-
                         task();
                     }
                 });
@@ -43,13 +42,13 @@ namespace http {
 
         ~ThreadPool() {
             {
-                std::lock_guard<std::mutex> lock(mutex);
-                stop = true;
+                std::lock_guard<std::mutex> lock(mutex_);
+                stop_ = true;
             }
 
-            condition.notify_all();
+            condition_.notify_all();
 
-            for (auto& worker : workers) {
+            for (auto& worker : workers_) {
                 if (worker.joinable()) worker.join();
             }
         }
@@ -57,23 +56,20 @@ namespace http {
         template <typename F>
         void enqueue(F&& f) {
             {
-                std::lock_guard<std::mutex> lock(mutex);
-
-                tasks.emplace(std::forward<F>(f));
+                std::lock_guard<std::mutex> lock(mutex_);
+                tasks_.emplace(std::forward<F>(f));
             }
 
-            condition.notify_one();
+            condition_.notify_one();
         }
 
        private:
-        std::vector<std::thread> workers;
+        std::vector<std::thread> workers_;
+        std::queue<std::function<void()>> tasks_;
+        std::mutex mutex_;
+        std::condition_variable condition_;
 
-        std::queue<std::function<void()>> tasks;
-
-        std::mutex mutex;
-        std::condition_variable condition;
-
-        bool stop;
+        bool stop_;
     };
 }  // namespace http
 
