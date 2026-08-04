@@ -19,6 +19,7 @@
         <p>This is a simple web page that includes a PNG image.</p>
 
         <!-- Auto-connects on load, streams messages into the div -->
+        <!-- <button hx-sse:connect="/stream" hx-trigger="click once" hx-target="#count">Start</button> -->
         <div hx-sse:connect="/stream" hx-target="#count">
             <span>Count: </span> <span id="count">Waiting for messages...</span>
         </div>

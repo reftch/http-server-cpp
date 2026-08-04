@@ -1,5 +1,5 @@
 [env]
-EXAMPLE = "rest"
+EXAMPLE = "server"
 DEV_MODE = true
 HOST = "0.0.0.0"
 PORT = 8080

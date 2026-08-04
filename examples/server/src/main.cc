@@ -21,8 +21,9 @@ std::string getCurrentTimeJson() {
 }
 
 int main() {
-    http::Server s("0.0.0.0", 8088);
+    http::Server s;
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
+
     http::ThreadPool pool;
 
     // REST endpoint
