@@ -267,10 +267,11 @@ namespace http {
                 return;
             }
 
-            // handle request
-            std::string body = handleRoute(req, res);
             // send server response
-            sendResponse(sd, body);
+            auto body_opt = handleRoute(req, res);
+            if (body_opt) {
+                sendResponse(sd, *body_opt);
+            }
         }
 
        private:

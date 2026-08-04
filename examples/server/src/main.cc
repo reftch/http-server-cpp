@@ -22,6 +22,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     http::Server s("0.0.0.0", 8088);
+    // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
     http::ThreadPool pool;
 
     // REST endpoint
@@ -31,19 +32,11 @@ int main() {
 
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
-        res << http::ContentType::SSE << "data: connected\n\n";
-        if (!res.sendChunk()) {
-            return;
-        }
-
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
-
         pool.enqueue([res_ptr] {
             int counter = 0;
             while (true) {
-                *res_ptr << "data: " << (++counter) << "\n\n";
-                if (!res_ptr->sendChunk()) break;
-
+                if (!res_ptr->stream(std::format("data: {} \n\n", ++counter).c_str())) break;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         });
@@ -53,8 +46,8 @@ int main() {
     s.setRoute("/wstime", [&](http::WebSocket& ws) {
         std::string msg;
         auto result = ws >> msg;
-        if (result != http::Result::Fail) {
-            // return;
+        if (result == http::Result::Fail) {
+            return;
         }
 
         // Store ws in a shared_ptr to keep it alive

@@ -218,7 +218,7 @@ namespace http {
         /**
          * Handles HTTP route matching and request processing
          */
-        virtual std::string handleRoute(http::Request& req, http::Response& res);
+        virtual std::optional<std::string> handleRoute(http::Request& req, http::Response& res);
 
         void handleStaticResource(http::Request& req, http::Response& res);
 

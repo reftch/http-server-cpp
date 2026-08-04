@@ -3,6 +3,10 @@
 
 #include <thread>
 
+#ifndef POLL_TIMEOUT
+#define POLL_TIMEOUT 300
+#endif
+
 #include "gtest/gtest.h"
 #include "server.h"
 

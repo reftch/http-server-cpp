@@ -232,9 +232,11 @@ namespace http {
             return;
         }
 
-        std::string body = handleRoute(req, res);
         // send server response
-        sendResponse(sd, body);
+        auto body_opt = handleRoute(req, res);
+        if (body_opt) {
+            sendResponse(sd, *body_opt);
+        }
     }
 
     bool Server::sendResponse(const int sd, std::string& body) {
@@ -265,7 +267,7 @@ namespace http {
         return sendAll();
     }
 
-    std::string Server::handleRoute(http::Request& req, http::Response& res) {
+    std::optional<std::string> Server::handleRoute(http::Request& req, http::Response& res) {
         res.setStaticDirectory(static_directory_);
         http::request_handler handler;
         if (router_.match(&req, &handler)) {

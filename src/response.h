@@ -179,23 +179,28 @@ namespace http {
          * @param chunked Whether to build a chunked transfer encoding response.
          * @return Full HTTP response as a string.
          */
-        std::string build(bool chunked = false);
+        std::optional<std::string> build(bool chunked = false);
 
         /**
          * @brief Sends the response as a chunk over socket or SSL connection.
          * @return True if all bytes were sent successfully, otherwise false.
          */
-        bool sendChunk() {
-            const auto data = build(true);
-            const auto expected_bytes = static_cast<ssize_t>(data.size());
+        bool stream(const char* content) {
+            content_ = content;
+            content_type_ = ContentType::SSE;
+
+            auto data_opt = build(true);
+            if (!data_opt) return false;
+
+            const auto& data = *data_opt;
+            const size_t len = data.size();
 
 #ifdef HTTP_OPENSSL_SUPPORT
-            const auto written = SSL_write(ssl, data.data(), data.size());
+            const ssize_t written = SSL_write(ssl, data.data(), len);
 #else
-            const auto written = ::send(sockfd_, data.data(), data.size(), MSG_NOSIGNAL);
+            const ssize_t written = ::send(sockfd_, data.data(), len, MSG_NOSIGNAL);
 #endif
-
-            return written == expected_bytes;
+            return written == static_cast<ssize_t>(len);
         }
 
         /**
