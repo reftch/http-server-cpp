@@ -21,43 +21,12 @@ std::string getCurrentTimeJson() {
 }
 
 int main() {
-    static auto& log = http::Logger::getInstance();
+    http::Server s("0.0.0.0", 8088);
     http::ThreadPool pool;
 
-    // log.setLevel(http::Level::DEBUG);
-
-    // http::Server s("0.0.0.0", 8083);
-    // http::SSLServer s("localhost", 8443, "cert.pem", "key.pem");
-    http::Server s;
-
-    // s.setDefaultHeaders({
-    //     {"Connection", "keep-alive"},
-    // });
-
-    s.setRoute<http::HttpMethod::GET>("/", [](const http::Request&, http::Response& res) {
-        res << http::ContentType::HTML << "index.html";
-    });
-
-    s.setRoute<http::HttpMethod::GET>("/home", [](const http::Request& req, http::Response& res) {
-        log.info("Request path: {}", req.path());
-        res << http::ContentType::HTML << "home.html";
-    });
-
     // REST endpoint
-    s.setRoute<http::HttpMethod::GET>("/api/v1/users/:v", [&](const http::Request& req, http::Response& res) {
-        auto it = req.params().find("v");
-        if (it == req.params().end()) {
-            res << http::ContentType::JSON << http::Status::bad_request << R"({"error":"missing parameter 'v'"})";
-            return;
-        }
-
-        int val = 0;
-        if (!std::from_chars(it->second.data(), it->second.data() + it->second.size(), val).ptr) {
-            res << http::ContentType::JSON << http::Status::bad_request << R"({"error":"invalid integer"})";
-            return;
-        }
-
-        res << http::ContentType::JSON << "{\"value\":\"" + std::to_string(val + 1) + "\"}";
+    s.setRoute<http::HttpMethod::GET>("/api/v1/users/:v", [](const http::Request& req, http::Response& res) {
+        res << http::ContentType::JSON << "{\"value\":\"" << req.params().at("v") << "\"}";
     });
 
     // SSE handler

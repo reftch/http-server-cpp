@@ -1,10 +1,11 @@
-#define HTTP_OPENSSL_SUPPORT
-#include "sslserver.h"
+// #define HTTP_OPENSSL_SUPPORT
+// #include "sslserver.h"
 
-// #include "server.h"
+#include "server.h"
 
 int main() {
-    http::SSLServer s("0.0.0.0", 8080, "cert.pem", "key.pem");
+    // http::SSLServer s("0.0.0.0", 8080, "cert.pem", "key.pem");
+    http::Server s;
 
     s.setRoute<http::HttpMethod::GET>("/api/v1/users/:id", [&](const http::Request& req, http::Response& res) {
         auto& params = req.params();

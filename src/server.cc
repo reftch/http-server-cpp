@@ -283,7 +283,23 @@ namespace http {
     }
 
     void Server::handleStaticResource(http::Request& req, http::Response& res) {
-        std::string path = static_directory_ + req.path();
+        std::string request_path = req.path();
+        std::string path = static_directory_ + request_path;
+
+        // If path is a directory, append index.html
+        struct stat st;
+        if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+            if (request_path.back() != '/') {
+                request_path += "/";
+            }
+
+            request_path += "index.html";
+            path = static_directory_ + request_path;
+
+            req.setPath(request_path);
+            req.setMimeType("text/html");
+        }
+
         struct stat file_stat;
 
         if (stat(path.c_str(), &file_stat) == 0) {
