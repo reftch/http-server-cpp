@@ -117,7 +117,8 @@ namespace http {
                 return pfd;
             });
 
-            int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), POLL_TIMEOUT);
+            auto timeout = utils::getEnv("POLL_TIMEOUT", -1);
+            int rc = poll(descriptors.data(), static_cast<nfds_t>(descriptors.size()), timeout);
             if (rc < 0) {
                 if (errno == EINTR) continue;
                 log.error("poll failed: {}", strerror(errno));

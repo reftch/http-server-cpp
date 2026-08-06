@@ -7,7 +7,7 @@ int main() {
     http::Client cli("http://0.0.0.0:8080");
     // http::Client cli("https://0.0.0.0:8443");
 
-    auto res = cli.get("/api/v1/inc/2");
+    auto res = cli.get("/api/v1/users/100");
 
     log.info("Response status: {}", static_cast<int>(res->status()));
     log.info("Response body: {}", res->content());

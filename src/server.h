@@ -9,10 +9,6 @@
 #define KEEPALIVE_MAX_COUNT 100
 #endif
 
-#ifndef POLL_TIMEOUT
-#define POLL_TIMEOUT -1
-#endif
-
 #ifndef BUFFER_SIZE
 #define BUFFER_SIZE 1024
 #endif
@@ -43,7 +39,6 @@
 #include <functional>
 #include <set>
 #include <string>
-#include <thread>
 
 #include "logger.h"
 #include "request.h"

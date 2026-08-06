@@ -39,8 +39,11 @@ run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COM
 
 [tasks.test]
 description = "Run tests"
+env = {
+    POLL_TIMEOUT = 300,
+}
 quiet = true
-run = "cmake -S . -B build -DBUILD_TESTING=ON && cmake --build build -j$(nproc) && ./build/test/tests"
+run = "cmake -S . -B build -DBUILD_TESTS:BOOL=ON && cmake --build build -j$(nproc) && ./build/test/tests"
 
 # -----------------------------------------------------------------------------
 # Miscellaneous

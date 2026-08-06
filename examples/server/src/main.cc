@@ -20,7 +20,7 @@ std::string getCurrentTimeJson() {
 }
 
 int main() {
-    http::Server s("0.0.0.0", 8088, 2);
+    http::Server s;
     // http::Logger::getInstance().setLevel(http::Level::DEBUG);
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
 
@@ -43,16 +43,15 @@ int main() {
 
     // WebSocket handler
     s.setRoute("/wstime", [&](http::WebSocket& ws) {
-        std::string msg;
-        auto result = ws >> msg;
-        if (result == http::Result::Fail) {
-            return;
-        }
-
-        // Store ws in a shared_ptr to keep it alive
         // Start the background thread
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
         s.taskQueue()->enqueue([ws_ptr] {
+            std::string msg;
+            auto result = *ws_ptr >> msg;
+            if (result == http::Result::Fail) {
+                return;
+            }
+
             while (ws_ptr->isOpen()) {
                 *ws_ptr << getCurrentTimeJson();
                 std::this_thread::sleep_for(std::chrono::seconds(1));
