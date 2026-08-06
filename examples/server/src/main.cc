@@ -23,8 +23,6 @@ int main() {
     http::Server s;
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
 
-    http::ThreadPool pool;
-
     // REST endpoint
     s.setRoute<http::HttpMethod::GET>("/api/v1/users/:v", [](const http::Request& req, http::Response& res) {
         res << http::ContentType::JSON << "{\"value\":\"" << req.params().at("v") << "\"}";
@@ -33,7 +31,7 @@ int main() {
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
-        pool.enqueue([res_ptr] {
+        s.taskQueue()->enqueue([res_ptr] {
             int counter = 0;
             while (true) {
                 if (!res_ptr->stream(std::format("data: {} \n\n", ++counter).c_str())) break;
@@ -54,7 +52,7 @@ int main() {
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
 
         // Start the background thread
-        pool.enqueue([ws_ptr] {
+        s.taskQueue()->enqueue([ws_ptr] {
             while (ws_ptr->isOpen()) {
                 *ws_ptr << getCurrentTimeJson();
                 std::this_thread::sleep_for(std::chrono::seconds(1));
