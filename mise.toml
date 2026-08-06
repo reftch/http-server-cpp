@@ -17,18 +17,18 @@ description = "Build and run dashboard"
 depends = ["app-install"]
 quiet = true
 hide = true
-run = "cmake --build build -j$(nproc) --target $EXAMPLE && cd build && ./examples/$EXAMPLE/$EXAMPLE"
+run = "cmake --build build -j$(nproc) --target $EXAMPLE && cd ./build/examples/$EXAMPLE && ./$EXAMPLE"
 
 [tasks.watch-app]
 description = "Watch and run application"
 quiet = true
-run = "mise w -r -w src -w src build-and-run"
+run = "mise w -r -w src -w examples build-and-run"
 
 [tasks.app-install]
 description = "Build and run application"
 quiet = true
 hide = true
-run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF"
+run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 
 [tasks.build]
 description = "Build application"
@@ -72,7 +72,7 @@ run = "bun --cwd web build"
 [tasks.clean]
 description = "Cleanup"
 quiet = true
-run = "rm -rf ./build ./web/node_modules assets/ui"
+run = "rm -rf ./build ./web/node_modules assets/ui .cache"
 
 [tasks.prod-up]
 description = 'Bring up production environment'

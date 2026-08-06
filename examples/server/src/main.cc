@@ -34,7 +34,7 @@ int main() {
         s.taskQueue()->enqueue([res_ptr] {
             int counter = 0;
             while (true) {
-                if (!res_ptr->stream(std::format("data: {} \n\n", ++counter).c_str())) break;
+                if (!res_ptr->stream(std::format("data: {}\n\n", ++counter).c_str())) break;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         });
