@@ -12,17 +12,24 @@ run = [{ tasks = ["watch-app"] }]
 # API
 # -----------------------------------------------------------------------------
 
-[tasks.build-and-run]
+[tasks.build]
 description = "Build and run dashboard"
 depends = ["app-install"]
 quiet = true
 hide = true
-run = "cmake --build build -j$(nproc) --target $EXAMPLE && cd ./build/examples/$EXAMPLE && ./$EXAMPLE"
+run = "cmake --build build -j$(nproc) --target $EXAMPLE"
+
+[tasks.app-run]
+description = "Build and run dashboard"
+depends = ["build"]
+quiet = true
+hide = true
+run = "cd ./build/examples/$EXAMPLE && ./$EXAMPLE"
 
 [tasks.watch-app]
 description = "Watch and run application"
 quiet = true
-run = "mise w -r -w src -w examples build-and-run"
+run = "mise w -r -w src -w examples app-run"
 
 [tasks.app-install]
 description = "Build and run application"
@@ -30,40 +37,10 @@ quiet = true
 hide = true
 run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 
-[tasks.build]
-description = "Build application"
-depends = ["app-install"]
-quiet = true
-run = "cmake --build build -j$(nproc)"
-
 [tasks.test]
 description = "Run tests"
 quiet = true
 run = "cmake -S . -B build -DBUILD_TESTING=ON && cmake --build build -j$(nproc) && ./build/test/tests"
-
-# -----------------------------------------------------------------------------
-# Web
-# -----------------------------------------------------------------------------
-
-[tasks.bun-install]
-description = "Install bun dependencies"
-quiet = true
-hide = true
-run = "bun install --cwd web"
-
-[tasks.bun-dev]
-description = "Run web in development mode"
-depends = ["bun-install"]
-quiet = true
-hide = true
-run = "bun --cwd web dev"
-
-[tasks.bun-build]
-description = "Run web in development mode"
-depends = ["bun-install"]
-quiet = true
-hide = true
-run = "bun --cwd web build"
 
 # -----------------------------------------------------------------------------
 # Miscellaneous
