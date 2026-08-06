@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include <map>
+#include <optional>
 #include <string>
 
 #ifdef HTTP_OPENSSL_SUPPORT

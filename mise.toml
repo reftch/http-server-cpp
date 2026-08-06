@@ -1,5 +1,5 @@
 [env]
-TARGET = "server"
+TARGET = "rest"
 DEV_MODE = true
 HOST = "0.0.0.0"
 PORT = 8080
@@ -44,6 +44,7 @@ env = {
 }
 quiet = true
 run = "cmake -S . -B build -DBUILD_TESTS:BOOL=ON && cmake --build build -j$(nproc) && ./build/test/tests"
+
 
 # -----------------------------------------------------------------------------
 # Miscellaneous
