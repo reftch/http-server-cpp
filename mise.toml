@@ -17,7 +17,7 @@ description = "Build and run dashboard"
 depends = ["app-install"]
 quiet = true
 hide = true
-run = "cmake --build build -j$(nproc) && cd build && ./examples/$EXAMPLE/$EXAMPLE"
+run = "cmake --build build -j$(nproc) --target $EXAMPLE && cd build && ./examples/$EXAMPLE/$EXAMPLE"
 
 [tasks.watch-app]
 description = "Watch and run application"
@@ -35,6 +35,11 @@ description = "Build application"
 depends = ["app-install"]
 quiet = true
 run = "cmake --build build -j$(nproc)"
+
+[tasks.test]
+description = "Run tests"
+quiet = true
+run = "cmake -S . -B build -DBUILD_TESTING=ON && cmake --build build -j$(nproc) && ./build/test/tests"
 
 # -----------------------------------------------------------------------------
 # Web
