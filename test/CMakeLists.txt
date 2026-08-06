@@ -21,10 +21,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# target_compile_definitions(http-server PRIVATE
-#     POLL_TIMEOUT=300
-# )
-
 target_link_libraries(tests PRIVATE
     http-server
     GTest::gtest
@@ -32,4 +28,3 @@ target_link_libraries(tests PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
 )
-

@@ -21,6 +21,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     http::Server s("0.0.0.0", 8088);
+    // http::Logger::getInstance().setLevel(http::Level::DEBUG);
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
 
     // REST endpoint
@@ -40,7 +41,7 @@ int main() {
         });
     });
 
-    // Websocket handler
+    // WebSocket handler
     s.setRoute("/wstime", [&](http::WebSocket& ws) {
         std::string msg;
         auto result = ws >> msg;
@@ -49,9 +50,8 @@ int main() {
         }
 
         // Store ws in a shared_ptr to keep it alive
-        auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
-
         // Start the background thread
+        auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
         s.taskQueue()->enqueue([ws_ptr] {
             while (ws_ptr->isOpen()) {
                 *ws_ptr << getCurrentTimeJson();

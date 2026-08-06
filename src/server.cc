@@ -209,27 +209,29 @@ namespace http {
             pre_routing_handler_(req, res);
         }
 
-        // Websocket requests
-        auto opcode = getWebSocketFrame(raw_request);
-        if (opcode.has_value()) {
-            log.debug("Websocket status: {}", toWsOpcodeString(opcode.value()));
-            if (opcode.value() == WsOpcode::Close) {
-                closeSocket(sd, "websocket");
+        if (wsRoutes.size() > 0) {
+            // Websocket requests
+            auto opcode = getWebSocketFrame(raw_request);
+            if (opcode.has_value()) {
+                log.debug("Websocket status: {}", toWsOpcodeString(opcode.value()));
+                if (opcode.value() == WsOpcode::Close) {
+                    closeSocket(sd, "websocket");
+                    return;
+                }
+
+                auto route = getWsRouteBySocketId(sd);
+                if (route.has_value()) {
+                    WebSocket ws(sd, raw_request, route->query);
+                    route->handler(ws);
+                }
                 return;
             }
 
-            auto route = getWsRouteBySocketId(sd);
-            if (route.has_value()) {
-                WebSocket ws(sd, raw_request, route->query);
-                route->handler(ws);
+            // HTTP websocket handshake
+            if (processWebsocketHandshake(sd, req)) {
+                updateWsRoute(req.normalize_path(), req.query(), sd);
+                return;
             }
-            return;
-        }
-
-        // HTTP websocket handshake
-        if (processWebsocketHandshake(sd, req)) {
-            updateWsRoute(req.normalize_path(), req.query(), sd);
-            return;
         }
 
         // send server response

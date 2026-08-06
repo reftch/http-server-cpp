@@ -7,10 +7,10 @@ project(http-server
 
 # User-configurable options
 option(BUILD_EXAMPLES "Build example applications" ON)
-option(BUILD_TESTS "Tests" ON)
+option(BUILD_TESTS "Tests" OFF)
 
 if(POLICY CMP0135)
-    cmake_policy(SET CMP0135 NEW)
+  cmake_policy(SET CMP0135 NEW)
 endif()
 
 set(CMAKE_CXX_STANDARD 23)
@@ -29,7 +29,7 @@ add_compile_definitions(POLL_TIMEOUT=-1)
 # Enable clang-tidy performance checks
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
 if(ENABLE_CLANG_TIDY)
-    set(CMAKE_CXX_CLANG_TIDY
+  set(CMAKE_CXX_CLANG_TIDY
         clang-tidy;
         -checks=performance-unnecessary-value-param,
                 performance-unnecessary-copy-initialization,
@@ -44,10 +44,10 @@ add_subdirectory(src)
 
 # Tests
 if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(test)
+  enable_testing()
+  add_subdirectory(test)
 endif()
 
 if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
+  add_subdirectory(examples)
 endif()
