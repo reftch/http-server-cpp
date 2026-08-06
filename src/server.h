@@ -9,10 +9,6 @@
 #define KEEPALIVE_MAX_COUNT 100
 #endif
 
-#ifndef POLL_TIMEOUT
-#define POLL_TIMEOUT -1
-#endif
-
 #ifndef BUFFER_SIZE
 #define BUFFER_SIZE 1024
 #endif
@@ -43,13 +39,12 @@
 #include <functional>
 #include <set>
 #include <string>
-#include <thread>
 
 #include "logger.h"
-#include "pool/pool.h"
 #include "request.h"
 #include "response.h"
 #include "router.h"
+#include "task.h"
 #include "websocket.h"
 
 namespace http {
@@ -88,7 +83,8 @@ namespace http {
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
          */
-        Server() : port_(8080), host_("0.0.0.0") {}
+        Server() : port_(8080), host_("0.0.0.0"), taskQueue_(std::make_shared<http::TaskQueue>(0)) {}
+
         /**
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
@@ -96,7 +92,11 @@ namespace http {
          * @param host The hostname or IP address to bind to.
          * @param port The port number to listen on.
          */
-        Server(const std::string& host, const int& port) : port_(port), host_(host) {}
+        Server(const std::string& host, const int& port)
+            : port_(port), host_(host), taskQueue_(std::make_shared<http::TaskQueue>(0)) {}
+
+        Server(const std::string& host, const int& port, size_t workers)
+            : port_(port), host_(host), taskQueue_(std::make_shared<http::TaskQueue>(workers)) {}
 
         virtual ~Server() = default;
 
@@ -150,6 +150,8 @@ namespace http {
 
         virtual bool sendResponse(const int sd, std::string& body);
 
+        std::shared_ptr<http::TaskQueue> taskQueue() { return taskQueue_; }
+
        private:
         // Websocket routes
         std::set<WsRoute> wsRoutes;
@@ -166,10 +168,12 @@ namespace http {
         int32_t sockfd_ = -1;            // server file descriptor
         const int port_;                 // Port number to listen on
         const std::string host_;         // Hostname or IP address to bind to
+        std::shared_ptr<http::TaskQueue> taskQueue_;
 
         request_handler pre_routing_handler_;   // Pre-Routing handler
         request_handler post_routing_handler_;  // Post-Routing handler
         std::vector<std::pair<std::string, std::string>> default_headers_;
+
         std::chrono::time_point<std::chrono::high_resolution_clock> start_ = std::chrono::high_resolution_clock::now();
 
         int setNonblockMode(int fd);

@@ -122,6 +122,16 @@ namespace http {
             return *this;
         }
 
+        Response& setContentType(ContentType content_type) {
+            content_type_ = content_type;
+            return *this;
+        }
+
+        Response& setStatus(Status status) {
+            status_ = status;
+            return *this;
+        }
+
         /**
          * @brief Sets the content type via operator<<.
          * @param type Content type to set.

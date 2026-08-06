@@ -1,5 +1,4 @@
 add_library(http-server STATIC
-  pool/pool.h
   client.h
   client.cc
   logger.h
@@ -13,6 +12,7 @@ add_library(http-server STATIC
   server.h
   sslserver.h
   status.h
+  task.h
   utils.cc
   utils.h
   websocket.h

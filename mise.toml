@@ -1,5 +1,5 @@
 [env]
-EXAMPLE = "server"
+TARGET = "server"
 DEV_MODE = true
 HOST = "0.0.0.0"
 PORT = 8080
@@ -12,53 +12,38 @@ run = [{ tasks = ["watch-app"] }]
 # API
 # -----------------------------------------------------------------------------
 
-[tasks.build-and-run]
+[tasks.build]
 description = "Build and run dashboard"
 depends = ["app-install"]
 quiet = true
 hide = true
-run = "cmake --build build -j$(nproc) && cd build && ./examples/$EXAMPLE/$EXAMPLE"
+run = "cmake --build build -j$(nproc) --target $TARGET"
+
+[tasks.app-run]
+description = "Build and run dashboard"
+depends = ["build"]
+quiet = true
+hide = true
+run = "cd ./build/examples/$TARGET && ./$TARGET"
 
 [tasks.watch-app]
 description = "Watch and run application"
 quiet = true
-run = "mise w -r -w src -w src build-and-run"
+run = "mise w -r -w src -w examples app-run"
 
 [tasks.app-install]
 description = "Build and run application"
 quiet = true
 hide = true
-run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF"
+run = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 
-[tasks.build]
-description = "Build application"
-depends = ["app-install"]
+[tasks.test]
+description = "Run tests"
+env = {
+    POLL_TIMEOUT = 300,
+}
 quiet = true
-run = "cmake --build build -j$(nproc)"
-
-# -----------------------------------------------------------------------------
-# Web
-# -----------------------------------------------------------------------------
-
-[tasks.bun-install]
-description = "Install bun dependencies"
-quiet = true
-hide = true
-run = "bun install --cwd web"
-
-[tasks.bun-dev]
-description = "Run web in development mode"
-depends = ["bun-install"]
-quiet = true
-hide = true
-run = "bun --cwd web dev"
-
-[tasks.bun-build]
-description = "Run web in development mode"
-depends = ["bun-install"]
-quiet = true
-hide = true
-run = "bun --cwd web build"
+run = "cmake -S . -B build -DBUILD_TESTS:BOOL=ON && cmake --build build -j$(nproc) && ./build/test/tests"
 
 # -----------------------------------------------------------------------------
 # Miscellaneous
@@ -67,7 +52,7 @@ run = "bun --cwd web build"
 [tasks.clean]
 description = "Cleanup"
 quiet = true
-run = "rm -rf ./build ./web/node_modules assets/ui"
+run = "rm -rf ./build ./web/node_modules assets/ui .cache"
 
 [tasks.prod-up]
 description = 'Bring up production environment'
