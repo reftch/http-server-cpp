@@ -20,7 +20,7 @@ std::string getCurrentTimeJson() {
 }
 
 int main() {
-    http::Server s("0.0.0.0", 8088);
+    http::Server s("0.0.0.0", 8088, 2);
     // http::Logger::getInstance().setLevel(http::Level::DEBUG);
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
 

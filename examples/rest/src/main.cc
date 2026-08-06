@@ -1,7 +1,6 @@
 // #define HTTP_OPENSSL_SUPPORT
 // #include "sslserver.h"
 
-#include "response.h"
 #include "server.h"
 
 int main() {

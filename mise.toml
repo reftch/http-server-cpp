@@ -1,5 +1,5 @@
 [env]
-EXAMPLE = "rest"
+TARGET = "server"
 DEV_MODE = true
 HOST = "0.0.0.0"
 PORT = 8080
@@ -17,14 +17,14 @@ description = "Build and run dashboard"
 depends = ["app-install"]
 quiet = true
 hide = true
-run = "cmake --build build -j$(nproc) --target $EXAMPLE"
+run = "cmake --build build -j$(nproc) --target $TARGET"
 
 [tasks.app-run]
 description = "Build and run dashboard"
 depends = ["build"]
 quiet = true
 hide = true
-run = "cd ./build/examples/$EXAMPLE && ./$EXAMPLE"
+run = "cd ./build/examples/$TARGET && ./$TARGET"
 
 [tasks.watch-app]
 description = "Watch and run application"
