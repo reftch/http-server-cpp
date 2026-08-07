@@ -212,6 +212,12 @@ namespace http {
         }
 
         if (wsRoutes.size() > 0) {
+            // HTTP websocket handshake
+            if (processWebsocketHandshake(sd, req)) {
+                updateWsRoute(req.normalize_path(), req.query(), sd);
+                // return;
+            }
+
             // Websocket requests
             auto opcode = getWebSocketFrame(raw_request);
             if (opcode.has_value()) {
@@ -226,12 +232,6 @@ namespace http {
                     WebSocket ws(sd, raw_request, route->query);
                     route->handler(ws);
                 }
-                return;
-            }
-
-            // HTTP websocket handshake
-            if (processWebsocketHandshake(sd, req)) {
-                updateWsRoute(req.normalize_path(), req.query(), sd);
                 return;
             }
         }
