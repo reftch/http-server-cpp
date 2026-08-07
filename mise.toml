@@ -1,5 +1,5 @@
 [env]
-TARGET = "server"
+TARGET = "rest"
 DEV_MODE = true
 HOST = "0.0.0.0"
 PORT = 8080
@@ -22,9 +22,12 @@ run = "cmake --build build -j$(nproc) --target $TARGET"
 [tasks.app-run]
 description = "Build and run dashboard"
 depends = ["build"]
+# env = {
+#     POLL_TIMEOUT = 300,
+# }
 quiet = true
 hide = true
-run = "cd ./build/examples/$TARGET && ./$TARGET"
+run = "cd ./build/examples/$TARGET && ./$TARGET || true"
 
 [tasks.watch-app]
 description = "Watch and run application"
