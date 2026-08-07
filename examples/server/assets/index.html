@@ -14,22 +14,12 @@
 
     <body>
         <div class="container">
-            <h1>Welcome to simple Web Page</h1>
-            <p>This is a simple web page that includes a PNG image.</p>
+            <h1>SSE Demo Page</h1>
 
             <!-- Auto-connects on load, streams messages into the div -->
-            <!-- <button hx-sse:connect="/stream" hx-trigger="click once" hx-target="#count">Start</button> -->
             <div hx-sse:connect="/stream" hx-target="#count">
                 <span>Count: </span>
                 <span id="count">Waiting for messages...</span>
-            </div>
-
-            <div
-                hx-ws:connect="/wstime"
-                hx-target="#wstime"
-                hx-swap="outerHTML"
-            >
-                <div id="wstime">Waiting for messages...</div>
             </div>
 
             <img
@@ -38,26 +28,7 @@
                 alt="A sample PNG image"
                 class="centered-image"
             />
-            <a href="/home">Home page</a>
+            <a href="/websocket">WebSocket Demo Page</a>
         </div>
-
-        <script>
-            document.addEventListener("htmx:after:ws:connection", (e) => {
-                console.log(e.detail.connection);
-                if (e.detail.connection.url.includes("/wstime")) {
-                    let ws = e.detail.connection.socket;
-                    ws.send("start");
-                }
-            });
-
-            document.addEventListener("htmx:ws:close", (e) => {
-                console.log(
-                    "Disconnected from",
-                    e.detail.connection.url,
-                    "reason:",
-                    e.detail.reason,
-                );
-            });
-        </script>
     </body>
 </html>

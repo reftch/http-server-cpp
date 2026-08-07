@@ -21,6 +21,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     http::Server s;
+    // auto& log = http::Logger::getInstance();
     // http::Logger::getInstance().setLevel(http::Level::DEBUG);
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
 
@@ -29,11 +30,12 @@ int main() {
         res << http::ContentType::JSON << "{\"value\":\"" << req.params().at("v") << "\"}";
     });
 
+    int counter = 0;
+
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
-        s.taskQueue()->enqueue([res_ptr] {
-            int counter = 0;
+        s.taskQueue()->enqueue("/stream", [res_ptr, &counter] {
             while (true) {
                 if (!res_ptr->stream(std::format("data: {}\n\n", ++counter).c_str())) break;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -43,9 +45,8 @@ int main() {
 
     // WebSocket handler
     s.setRoute("/wstime", [&](http::WebSocket& ws) {
-        // Start the background thread
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
-        s.taskQueue()->enqueue([ws_ptr] {
+        s.taskQueue()->enqueue("/wstime", [ws_ptr] {
             std::string msg;
             auto result = *ws_ptr >> msg;
             if (result == http::Result::Fail) {

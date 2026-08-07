@@ -36,6 +36,7 @@ namespace http {
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = inet_addr(host_.c_str());
         server_addr.sin_port = htons(port_);
+
         if (bind(sockfd_, (struct sockaddr*)(&server_addr), sizeof(server_addr)) == -1) {
             log.error("Bind the server address failed");
             exit(3);

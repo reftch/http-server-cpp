@@ -228,6 +228,7 @@ namespace http {
         std::string static_directory_;
         std::map<std::string, std::string> headers_;
         int sockfd_;
+
         Logger& log = Logger::getInstance();
 
 #ifdef HTTP_OPENSSL_SUPPORT

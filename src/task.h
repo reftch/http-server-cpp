@@ -5,6 +5,7 @@
 #include <functional>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <thread>
 #include <vector>
 
@@ -49,12 +50,26 @@ namespace http {
             }
         }
 
+        /**
+         * @brief Enqueues a task with a unique key.
+         * If the key is already in the queue, the task is ignored.
+         */
         template <typename F>
-        void enqueue(F&& f) {
-            {
-                std::lock_guard<std::mutex> lock(mutex);
-                tasks.emplace(std::forward<F>(f));
+        void enqueue(const std::string& key, F&& f) {
+            std::lock_guard<std::mutex> lock(mutex);
+
+            // Check if this specific "key" (e.g., "/wstime") is already running/queued
+            if (running_keys.find(key) != running_keys.end()) {
+                return;  // Skip enqueuing
             }
+
+            running_keys.insert(key);
+            tasks.emplace([this, key, task_func = std::forward<F>(f)]() mutable {
+                task_func();
+                // After the task finishes, remove its key so it can be run again later
+                std::lock_guard<std::mutex> lock(this->mutex);
+                this->running_keys.erase(key);
+            });
 
             condition.notify_one();
         }
@@ -62,6 +77,7 @@ namespace http {
        private:
         std::vector<std::thread> workers;
         std::queue<std::function<void()>> tasks;
+        std::set<std::string> running_keys;
         std::mutex mutex;
         std::condition_variable condition;
         bool stop;
