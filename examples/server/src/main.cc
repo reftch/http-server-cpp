@@ -49,7 +49,6 @@ int main() {
         s.taskQueue()->enqueue("/wstime", [ws_ptr] {
             while (ws_ptr->isOpen()) {
                 ws_ptr->send(getCurrentTimeJson());
-                // *ws_ptr << getCurrentTimeJson();
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         });

@@ -30,7 +30,7 @@ TEST_F(TaskQueueTest, ExecutesSingleTask) {
     bool executed = false;
     std::mutex mtx;
 
-    queue.enqueue([&]() {
+    queue.enqueue("test1", [&]() {
         std::lock_guard<std::mutex> lock(mtx);
         executed = true;
     });
@@ -50,7 +50,7 @@ TEST_F(TaskQueueTest, ExecutesMultipleSequentialTasks) {
     const int num_tasks = 100;
 
     for (int i = 0; i < num_tasks; ++i) {
-        queue.enqueue([&counter]() {
+        queue.enqueue("test2", [&counter]() {
             counter++;
         });
     }
@@ -69,7 +69,7 @@ TEST_F(TaskQueueTest, HandlesConcurrentTasksWithDefaultThreads) {
     const int num_tasks = 50;
 
     for (int i = 0; i < num_tasks; ++i) {
-        queue.enqueue([&]() {
+        queue.enqueue("test3", [&]() {
             int current = ++active_threads;
             // Update max observed concurrency
             int observed = max_observed_concurrency.load();
@@ -96,7 +96,7 @@ TEST_F(TaskQueueTest, StressTest) {
     const int iterations = 1000;
 
     for (int i = 0; i < iterations; ++i) {
-        queue.enqueue([&sum, i]() {
+        queue.enqueue("test4", [&sum, i]() {
             sum += i;
         });
     }
@@ -114,7 +114,7 @@ TEST_F(TaskQueueTest, ShutsDownCleanly) {
     {
         TaskQueue queue(4);
         for (int i = 0; i < 10; ++i) {
-            queue.enqueue([&]() {
+            queue.enqueue("test5", [&]() {
                 std::this_thread::sleep_for(10ms);
                 completed_tasks++;
             });
@@ -133,7 +133,7 @@ TEST_F(TaskQueueTest, RespectsSingleThreadLimit) {
     std::atomic<bool> concurrency_violation{false};
 
     for (int i = 0; i < 20; ++i) {
-        queue.enqueue([&]() {
+        queue.enqueue("test6", [&]() {
             active_threads++;
             if (active_threads > 1) {
                 concurrency_violation = true;
@@ -156,7 +156,7 @@ TEST_F(TaskQueueTest, HandlesZeroThreadRequestWithFallback) {
     TaskQueue queue(0);
 
     std::atomic<bool> task_done{false};
-    queue.enqueue([&]() {
+    queue.enqueue("test7", [&]() {
         task_done = true;
     });
 

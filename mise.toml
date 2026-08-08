@@ -1,12 +1,18 @@
 [env]
-TARGET = "rest"
 DEV_MODE = true
 HOST = "0.0.0.0"
 PORT = 8080
 
 [tasks.dev]
 description = "Run application in dev mode"
-run = [{ tasks = ["watch-app"] }]
+quiet = true
+usage = '''
+arg "<example>" default="server"
+'''
+run = [
+  'mise w -r -w src -w examples app-run ${usage_example?}',
+]
+# run = [{ tasks = ["watch-app"] }]
 
 # -----------------------------------------------------------------------------
 # API
@@ -15,24 +21,18 @@ run = [{ tasks = ["watch-app"] }]
 [tasks.build]
 description = "Build and run dashboard"
 depends = ["app-install"]
+usage = 'arg "<example>" default="server"'
 quiet = true
 hide = true
-run = "cmake --build build -j$(nproc) --target $TARGET"
+run = "cmake --build build -j$(nproc) --target {{usage.example}}"
 
 [tasks.app-run]
 description = "Build and run dashboard"
-depends = ["build"]
-# env = {
-#     POLL_TIMEOUT = 300,
-# }
+usage = 'arg "<example>"'
+depends = [{task = "build", args = ["{{usage.example}}"]}]
 quiet = true
 hide = true
-run = "cd ./build/examples/$TARGET && ./$TARGET || true"
-
-[tasks.watch-app]
-description = "Watch and run application"
-quiet = true
-run = "mise w -r -w src -w examples app-run"
+run = "cd ./build/examples/{{usage.example}} && ./{{usage.example}} || true"
 
 [tasks.app-install]
 description = "Build and run application"
@@ -48,7 +48,6 @@ env = {
 quiet = true
 run = "cmake -S . -B build -DBUILD_TESTS:BOOL=ON && cmake --build build -j$(nproc) && ./build/test/tests"
 
-
 # -----------------------------------------------------------------------------
 # Miscellaneous
 # -----------------------------------------------------------------------------
@@ -58,15 +57,15 @@ description = "Cleanup"
 quiet = true
 run = "rm -rf ./build ./web/node_modules assets/ui .cache"
 
-[tasks.prod-up]
+[tasks.docker-up]
 description = 'Bring up production environment'
 quiet = true
 run = '''
-docker compose -f docker/compose.yml up -d --build
+docker compose -f examples/rest/compose.yml up -d --build
 docker image prune -a -f
 '''
 
-[tasks.prod-down]
+[tasks.docker-down]
 description = 'Take down production environment'
 quiet = true
-run = 'docker compose -f docker/compose.yml down'
+run = 'docker compose -f examples/rest/compose.yml down'
