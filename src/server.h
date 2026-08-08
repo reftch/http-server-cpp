@@ -176,6 +176,8 @@ namespace http {
 
         std::chrono::time_point<std::chrono::high_resolution_clock> start_ = std::chrono::high_resolution_clock::now();
 
+        bool is_handshake_ = false;
+
         int setNonblockMode(int fd);
 
         virtual void handleListenSocket(const pollfd& pfd);

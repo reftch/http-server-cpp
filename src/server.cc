@@ -212,26 +212,32 @@ namespace http {
         }
 
         if (wsRoutes.size() > 0) {
-            // HTTP websocket handshake
-            if (processWebsocketHandshake(sd, req)) {
-                updateWsRoute(req.normalize_path(), req.query(), sd);
-                // return;
-            }
+            // Websocket dispatcher
+            auto dispatchWebSocket = [&, sd]() {
+                if (auto route = getWsRouteBySocketId(sd)) {
+                    WebSocket ws(sd, raw_request, route->query);
+                    route->handler(ws);
+                }
+            };
 
-            // Websocket requests
-            auto opcode = getWebSocketFrame(raw_request);
-            if (opcode.has_value()) {
-                log.debug("Websocket status: {}", toWsOpcodeString(opcode.value()));
-                if (opcode.value() == WsOpcode::Close) {
+            // WebSocket frames
+            if (auto opcode = getWebSocketFrame(raw_request)) {
+                log.debug("WebSocket status: {}", toWsOpcodeString(*opcode));
+
+                if (*opcode == WsOpcode::Close) {
                     closeSocket(sd, "websocket");
                     return;
                 }
 
-                auto route = getWsRouteBySocketId(sd);
-                if (route.has_value()) {
-                    WebSocket ws(sd, raw_request, route->query);
-                    route->handler(ws);
-                }
+                dispatchWebSocket();
+                return;
+            }
+
+            // HTTP WebSocket handshake
+            if (processWebsocketHandshake(sd, req)) {
+                updateWsRoute(req.normalize_path(), req.query(), sd);
+
+                dispatchWebSocket();
                 return;
             }
         }

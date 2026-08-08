@@ -173,23 +173,35 @@ namespace http {
          * @return Number of bytes sent, or -1 on error
          */
         ssize_t send(const std::string& msg) {
-            // Creates WebSocket frame from string
-            auto response = writeFrame(msg, frame.fin, frame.opcode);
-            if (response.empty()) {
-                return -1;  // Return error if frame creation failed
+            int client = frame.sockfd;
+
+            std::vector<unsigned char> frame;
+
+            // FIN + text frame
+            frame.push_back(0x81);
+
+            if (msg.size() < 126) {
+                frame.push_back(msg.size());
+            } else {
+                frame.push_back(126);
+                frame.push_back((msg.size() >> 8) & 0xff);
+                frame.push_back(msg.size() & 0xff);
             }
 
+            frame.insert(frame.end(), msg.begin(), msg.end());
+
+            ssize_t sent = -1;
             // Send the frame to the socket
 #ifndef HTTP_OPENSSL_SUPPORT
-            transport_ = BasicTransport{frame.sockfd};
+            transport_ = BasicTransport{client};
+            // sent = ::send(client, frame.data(), frame.size(), 0);
 #else
             transport_ = SSLTransport{frame.ssl};
 #endif
 
-            ssize_t sent = -1;
             std::visit(
-                [&response, &sent](auto&& t) {
-                    sent = t.send(response);
+                [&frame, &sent](auto&& t) {
+                    sent = t.send(frame);
                 },
                 transport_);
 
