@@ -135,6 +135,7 @@ namespace http {
                 if (pfd.fd == sockfd_) {
                     handleListenSocket(pfd);
                 } else {
+                    log.debug("Handle client fd={} revents={}", pfd.fd, pfd.revents);
                     handleClientSocket(pfd, closedSockets);
                 }
             });

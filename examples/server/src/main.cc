@@ -1,6 +1,9 @@
 // #define HTTP_OPENSSL_SUPPORT
 // #include "sslserver.h"
 
+#include <chrono>
+#include <ratio>
+
 #include "server.h"
 
 [[nodiscard]]
@@ -35,6 +38,7 @@ int main() {
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
+
         s.taskQueue()->enqueue("/stream", [res_ptr, &counter] {
             while (true) {
                 if (!res_ptr->stream(std::format("data: {}\n\n", ++counter).c_str())) break;
@@ -44,15 +48,17 @@ int main() {
     });
 
     // WebSocket handler
-    s.setRoute("/wstime", [&](http::WebSocket& ws) {
-        auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
-        s.taskQueue()->enqueue("/wstime", [ws_ptr] {
-            while (ws_ptr->isOpen()) {
-                ws_ptr->send(getCurrentTimeJson());
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
-        });
-    });
+    // s.setRoute("/wstime", [&](http::WebSocket& ws) {
+    //     auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
+    //     // s.taskQueue()->remove("/wstime");
+
+    //     s.taskQueue()->enqueue("/wstime", [ws_ptr] {
+    //         while (ws_ptr->isOpen()) {
+    //             ws_ptr->send(getCurrentTimeJson());
+    //             std::this_thread::sleep_for(std::chrono::seconds(1));
+    //         }
+    //     });
+    // });
 
     // Post request for CORS
     s.setPostRoute([&](const http::Request&, http::Response& res) {
