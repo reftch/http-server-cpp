@@ -5,7 +5,6 @@
 #include <functional>
 #include <list>
 #include <mutex>
-#include <queue>
 #include <set>
 #include <thread>
 #include <vector>

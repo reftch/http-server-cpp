@@ -25,26 +25,5 @@
 
             <a href="/">SSE Demo Page</a>
         </div>
-
-        <!--<script>
-            document.addEventListener("htmx:after:ws:connection", (e) => {
-                let conn = e.detail.connection;
-                console.log(conn);
-
-                if (e.detail.connection.url.includes("/wstime")) {
-                    let ws = e.detail.connection.socket;
-                    ws.send("start");
-                }
-            });
-
-            document.addEventListener("htmx:ws:close", (e) => {
-                console.log(
-                    "Disconnected from",
-                    e.detail.connection.url,
-                    "reason:",
-                    e.detail.reason,
-                );
-            });
-        </script>-->
     </body>
 </html>

@@ -2,7 +2,6 @@
 // #include "sslserver.h"
 
 #include <chrono>
-#include <ratio>
 
 #include "server.h"
 #include "task.h"
@@ -43,10 +42,7 @@ int main() {
 
         worker.start([res_ptr, &counter](std::stop_token stop) {
             while (!stop.stop_requested()) {
-                if (!res_ptr->stream(std::format("data: {}\n\n", ++counter).c_str())) {
-                    break;
-                }
-
+                if (!res_ptr->stream(std::format("data: {}\n\n", ++counter).c_str())) break;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         });
@@ -62,7 +58,6 @@ int main() {
     // WebSocket handler
     s.setRoute("/wstime", [&](http::WebSocket& ws) {
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
-        //     // s.taskQueue()->remove("/wstime");
 
         worker.start([ws_ptr](std::stop_token stop) {
             while (!stop.stop_requested()) {
