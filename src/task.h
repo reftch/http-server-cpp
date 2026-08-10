@@ -12,6 +12,24 @@
 
 namespace http {
 
+    class Worker {
+       public:
+        template <typename F>
+        void start(F&& fn) {
+            if (thread_.joinable()) {
+                thread_.request_stop();
+                thread_.join();
+            }
+
+            thread_ = std::jthread([fn = std::forward<F>(fn)](std::stop_token stop) mutable {
+                fn(stop);
+            });
+        }
+
+       private:
+        std::jthread thread_;
+    };
+
     class TaskQueue {
         // A wrapper to associate a key with the function for removal logic
         struct TaskItem {
