@@ -43,7 +43,7 @@ int main() {
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
         s.repeatEvery(res.getId(), std::chrono::seconds(1), [res, &counter]() mutable {
-            return res.stream(std::format("data: {}\n\n", ++counter).c_str());
+            return res.stream(std::format("data: SSE count: {}\n\n", ++counter).c_str());
         });
     });
 

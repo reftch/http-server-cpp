@@ -171,8 +171,6 @@ namespace http {
         // static directory
         std::string static_directory_ = "./assets";
 
-        // bool isHttps = false;
-
         bool running_ = false;           // Is server running flag
         std::set<int32_t> client_list_;  // client list for connections(slave sockets)
         int32_t sockfd_ = -1;            // server file descriptor

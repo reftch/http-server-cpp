@@ -46,7 +46,7 @@ namespace http {
     const std::map<std::string, std::string>& Response::headers() const { return headers_; }
 
     std::optional<std::string> Response::build(bool chunked) {
-        // 1. If content is empty, we have nothing to send.
+        // If content is empty, we have nothing to send.
         // Returning std::nullopt represents the 'empty' state clearly.
         if (content_.empty()) {
             return std::nullopt;
@@ -68,8 +68,6 @@ namespace http {
             }
         }
 
-        // Note: If we modified headers above via setHeader,
-        // we need to ensure the loop below uses the updated map.
         if (!chunked) {
             auto content_length_it = headers().find("Content-Length");  // find in current state
             if (content_length_it == headers().end()) {
@@ -77,7 +75,7 @@ namespace http {
             }
         }
 
-        // 2. Using modern ranges to append headers
+        // Append headers
         // We use the actual class member 'headers_' because setHeader modifies it
         std::ranges::for_each(headers_, [&](const auto& header) {
             body.append(header.first);

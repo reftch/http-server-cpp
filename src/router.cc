@@ -8,7 +8,7 @@
 
 namespace http {
 
-    int Router::registerHandler(const std::string& method, const std::string& path, request_handler handler) {
+    int Router::registerHandler(std::string_view method, std::string_view path, request_handler handler) {
         auto parts = splitPath(path);
 
         // Use accumulate to traverse/build the tree
@@ -31,12 +31,12 @@ namespace http {
                 return child.get();
             });
 
-        // Final registration logic
-        if (node->handlers.contains(method)) {
+        auto [it, inserted] = node->handlers.try_emplace(std::string(method), std::move(handler));
+        if (!inserted) {
+            // If insertion failed, it means the method was already registered at this node
             return -1;
         }
 
-        node->handlers[method] = std::move(handler);
         return 0;
     }
 
@@ -85,7 +85,7 @@ namespace http {
         return false;
     }
 
-    std::vector<std::string> Router::splitPath(const std::string& path) {
+    std::vector<std::string> Router::splitPath(std::string_view path) {
         auto view = path | std::views::split('/')  // Split into sub-ranges
                     | std::views::filter([](auto&& r) {
                           return !std::ranges::empty(r);  // Remove empty parts

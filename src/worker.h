@@ -20,7 +20,7 @@ namespace http {
             requires std::invocable<F, std::stop_token>
         void enqueue(int id, F&& fn) {
             // Lock the mutex for the entire duration of this operation
-            // std::lock_guard<std::mutex> lock(threads_mutex_);
+            std::lock_guard<std::mutex> lock(threads_mutex_);
 
             auto it = threads_.find(id);
             if (it != threads_.end()) {
@@ -39,7 +39,6 @@ namespace http {
             });
 
             // Insert/Update the map
-            // try_emplace is the best way to move a non-copyable object like jthread into a map
             threads_.erase(id);  // Ensure any existing entry is gone
             threads_.emplace(id, std::move(new_thread));
         }

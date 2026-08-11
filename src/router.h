@@ -46,7 +46,7 @@ namespace http {
          * @param path The URL path to split
          * @return std::vector<std::string> Vector of path segments
          */
-        static std::vector<std::string> splitPath(const std::string& path);
+        static std::vector<std::string> splitPath(std::string_view path);
 
        public:
         /**
@@ -57,7 +57,7 @@ namespace http {
          * @param handler The handler function to call when matched
          * @return int Returns 0 on success, non-zero on failure
          */
-        int registerHandler(const std::string& method, const std::string& path, request_handler handler);
+        int registerHandler(std::string_view method, std::string_view path, request_handler handler);
 
         /**
          * @brief Matches an HTTP request to a registered handler

@@ -45,13 +45,6 @@ body {
     border-radius: 0.5rem;
 }
 
-.count {
-    display: flex;
-    gap: 0.5rem;
-    /*min-width: 10rem;*/
-    /*max-width: 10rem;*/
-}
-
 .centered-image {
     display: block;
     margin: 20px auto;
