@@ -42,6 +42,14 @@ body {
     border-radius: 0.5rem;
 }
 
+.count {
+    display: flex;
+    text-align: left;
+    width: 100px;
+    min-width: 100px;
+    border: 1px solid white;
+}
+
 .centered-image {
     display: block;
     margin: 20px auto;
@@ -50,7 +58,6 @@ body {
     border: 1px solid #2c3e50;
     border-radius: 0.5rem;
 }
-
 
 @media (prefers-color-scheme: light) {
     :root {
@@ -61,6 +68,4 @@ body {
             box-shadow: 0 0 10px rgba(192, 182, 182, 0.8);
         }
     }
-
-
 }

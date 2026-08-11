@@ -83,7 +83,7 @@ namespace http {
          * Constructor for the server.
          * Initializes server configuration but does not start listening.
          */
-        Server() : port_(8080), host_("0.0.0.0"), taskQueue_(std::make_shared<http::TaskQueue>(0)) {}
+        Server() : port_(8080), host_("0.0.0.0"), taskQueue_(std::make_shared<http::Worker>()) {}
 
         /**
          * Constructor for the server.
@@ -93,10 +93,10 @@ namespace http {
          * @param port The port number to listen on.
          */
         Server(const std::string& host, const int& port)
-            : port_(port), host_(host), taskQueue_(std::make_shared<http::TaskQueue>(0)) {}
+            : port_(port), host_(host), taskQueue_(std::make_shared<http::Worker>()) {}
 
-        Server(const std::string& host, const int& port, size_t workers)
-            : port_(port), host_(host), taskQueue_(std::make_shared<http::TaskQueue>(workers)) {}
+        // Server(const std::string& host, const int& port, size_t workers)
+        //     : port_(port), host_(host), taskQueue_(std::make_shared<http::TaskQueue>(workers)) {}
 
         virtual ~Server() = default;
 
@@ -150,7 +150,8 @@ namespace http {
 
         virtual bool sendResponse(const int sd, std::string& body);
 
-        std::shared_ptr<http::TaskQueue> taskQueue() { return taskQueue_; }
+        // std::shared_ptr<http::TaskQueue> taskQueue() { return taskQueue_; }
+        std::shared_ptr<http::Worker> taskQueue() { return taskQueue_; }
 
        private:
         // Websocket routes
@@ -168,7 +169,8 @@ namespace http {
         int32_t sockfd_ = -1;            // server file descriptor
         const int port_;                 // Port number to listen on
         const std::string host_;         // Hostname or IP address to bind to
-        std::shared_ptr<http::TaskQueue> taskQueue_;
+        // std::shared_ptr<http::TaskQueue> taskQueue_;
+        std::shared_ptr<http::Worker> taskQueue_;
 
         request_handler pre_routing_handler_;   // Pre-Routing handler
         request_handler post_routing_handler_;  // Post-Routing handler

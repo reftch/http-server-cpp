@@ -18,8 +18,10 @@
 
             <!-- Auto-connects on load, streams messages into the div -->
             <div hx-sse:connect="/stream" hx-target="#count">
-                <span>Count: </span>
-                <span id="count">Waiting for messages...</span>
+                <div class="count">
+                    <span>Count:</span>
+                    <span id="count">..</span>
+                </div>
             </div>
 
             <img
