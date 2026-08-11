@@ -112,9 +112,7 @@ namespace http {
          * @param query Query parameters from the connection
          */
         WebSocket(int sockfd, const std::string& raw_request, const std::unordered_map<std::string, std::string> query)
-            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), query_(query) {
-            log.debug("Websocket open FD={}", sockfd);
-        }
+            : frame{sockfd}, byte_data(raw_request.begin(), raw_request.end()), query_(query) {}
 #ifdef HTTP_OPENSSL_SUPPORT
         /**
          * @brief Construct a new WebSocket object with SSL support
@@ -175,57 +173,15 @@ namespace http {
          * @param msg Message to send
          * @return Number of bytes sent, or -1 on error
          */
-        //         ssize_t send(const std::string& msg) {
-        //             int client = frame.sockfd;
-
-        //             std::vector<unsigned char> frame;
-
-        //             // FIN + text frame
-        //             frame.push_back(0x81);
-
-        //             if (msg.size() < 126) {
-        //                 frame.push_back(msg.size());
-        //             } else {
-        //                 frame.push_back(126);
-        //                 frame.push_back((msg.size() >> 8) & 0xff);
-        //                 frame.push_back(msg.size() & 0xff);
-        //             }
-
-        //             frame.insert(frame.end(), msg.begin(), msg.end());
-
-        //             ssize_t sent = -1;
-        //             // Send the frame to the socket
-        // #ifndef HTTP_OPENSSL_SUPPORT
-        //             transport_ = BasicTransport{client};
-        //             // sent = ::send(client, frame.data(), frame.size(), 0);
-        // #else
-        //             transport_ = SSLTransport{frame.ssl};
-        // #endif
-
-        //             std::visit(
-        //                 [&frame, &sent](auto&& t) {
-        //                     sent = t.send(frame);
-        //                 },
-        //                 transport_);
-
-        //             if (sent < 0) {
-        //                 perror("WebSocket send failed");
-        //             }
-        //             return sent;
-        //         }
-
-        // Updated function signature
         ssize_t send(const std::string& msg, FrameType type = FrameType::Text) {
-            int client = frame.sockfd;  // Assuming 'frame' is a member containing the socket
-
             std::vector<unsigned char> buffer;
 
-            // 1. Set FIN bit (0x80) + Opcode (type)
+            // Set FIN bit (0x80) + Opcode (type)
             // If type is Text(0x01), first byte is 0x81
             // If type is Binary(0x02), first byte is 0x82
             buffer.push_back(static_cast<unsigned char>(0x80 | static_cast<uint8_t>(type)));
 
-            // 2. Set Payload Length
+            // Set Payload Length
             if (msg.size() < 126) {
                 buffer.push_back(static_cast<unsigned char>(msg.size()));
             } else if (msg.size() <= 0xFFFF) {  // Up to 65535 bytes
@@ -239,27 +195,24 @@ namespace http {
                 // Add 8-byte big-endian length here if necessary
             }
 
-            // 3. Append payload
+            // Append payload
             buffer.insert(buffer.end(), msg.begin(), msg.end());
 
             ssize_t sent = -1;
 
 #ifndef HTTP_OPENSSL_SUPPORT
-            transport_ = BasicTransport{client};
+            transport_ = BasicTransport{frame.sockfd};
 #else
-            // Note: Ensure frame.ssl is initialized/passed correctly here
             transport_ = SSLTransport{frame.ssl};
 #endif
 
+            // Send frame with correspondent transport
             std::visit(
                 [&buffer, &sent](auto&& t) {
                     sent = t.send(buffer);
                 },
                 transport_);
 
-            if (sent < 0) {
-                perror("WebSocket send failed");
-            }
             return sent;
         }
 

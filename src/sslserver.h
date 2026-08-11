@@ -7,9 +7,6 @@
 
 #include <algorithm>
 #include <ranges>
-// #include <string>
-// #include <mutex>
-// #include <unordered_map>
 
 #include "server.h"
 
@@ -199,7 +196,8 @@ namespace http {
                 pollfds.insert(pollfds.end(), client_view.begin(), client_view.end());
 
                 // Wait for activity
-                int activity = poll(pollfds.data(), static_cast<int>(pollfds.size()), POLL_TIMEOUT);
+                auto timeout = utils::getEnv("POLL_TIMEOUT", -1);
+                int activity = poll(pollfds.data(), static_cast<int>(pollfds.size()), timeout);
                 if (activity < 0) {
                     if (errno == EINTR) continue;
                     log.warning("poll failed");
@@ -242,29 +240,36 @@ namespace http {
                 pre_routing_handler_(req, res);
             }
 
-            // is websocket requests
-            auto opcode = getWebSocketFrame(raw_request);
-            if (opcode.has_value()) {
-                log.debug("Websocket status: {}", toWsOpcodeString(opcode.value()));
-                auto route = getWsRouteBySocketId(sd);
-                if (route.has_value()) {
-                    if (opcode.value() == WsOpcode::Close) {
+            if (wsRoutes.size() > 0) {
+                // Websocket dispatcher
+                auto dispatchWebSocket = [&, sd]() {
+                    if (auto route = getWsRouteBySocketId(sd)) {
+                        ClientConnection& client = ssl_clients_[sd];
+                        WebSocket ws(sd, client.ssl, raw_request, route->query);
+                        route->handler(ws);
+                    }
+                };
+
+                // WebSocket frames
+                if (auto opcode = getWebSocketFrame(raw_request)) {
+                    log.debug("WebSocket status: {}", toWsOpcodeString(*opcode));
+
+                    if (*opcode == WsOpcode::Close) {
                         closeSocket(sd, "websocket");
                         return;
                     }
 
-                    ClientConnection& client = ssl_clients_[sd];
-                    WebSocket ws(sd, client.ssl, raw_request, route->query);
-                    route->handler(ws);
+                    dispatchWebSocket();
+                    return;
                 }
-                return;
-            }
 
-            // HTTP websocket handshake
-            if (processWebsocketHandshake(sd, req)) {
-                log.info("Norm path: {}", req.normalize_path());
-                updateWsRoute(req.normalize_path(), req.query(), sd);
-                return;
+                // HTTP WebSocket handshake
+                if (processWebsocketHandshake(sd, req)) {
+                    updateWsRoute(req.normalize_path(), req.query(), sd);
+
+                    dispatchWebSocket();
+                    return;
+                }
             }
 
             // send server response

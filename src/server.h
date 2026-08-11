@@ -44,8 +44,8 @@
 #include "request.h"
 #include "response.h"
 #include "router.h"
-#include "task.h"
 #include "websocket.h"
+#include "worker.h"
 
 namespace http {
 
@@ -154,9 +154,6 @@ namespace http {
         std::shared_ptr<http::Worker> taskQueue() { return taskQueue_; }
 
        private:
-        // Websocket routes
-        std::set<WsRoute> wsRoutes;
-
        protected:
         // static directory
         std::string static_directory_ = "./assets";
@@ -175,6 +172,9 @@ namespace http {
         request_handler pre_routing_handler_;   // Pre-Routing handler
         request_handler post_routing_handler_;  // Post-Routing handler
         std::vector<std::pair<std::string, std::string>> default_headers_;
+
+        // Websocket routes
+        std::set<WsRoute> wsRoutes;
 
         std::chrono::time_point<std::chrono::high_resolution_clock> start_ = std::chrono::high_resolution_clock::now();
 

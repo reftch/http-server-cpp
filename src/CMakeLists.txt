@@ -12,12 +12,12 @@ add_library(http-server STATIC
   server.h
   sslserver.h
   status.h
-  task.h
   utils.cc
   utils.h
   websocket.h
   websocket.cc
   websocketclient.h
+  worker.h
 )
 
 target_include_directories(http-server

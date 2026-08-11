@@ -1,6 +1,6 @@
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/examples/server)
 
-#find_package(OpenSSL REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_executable(server src/main.cc)
 
@@ -9,6 +9,6 @@ include(FetchContent)
 target_link_libraries(server
   PRIVATE
     http-server
-#    OpenSSL::SSL
-#    OpenSSL::Crypto
+   OpenSSL::SSL
+   OpenSSL::Crypto
 )
