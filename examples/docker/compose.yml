@@ -1,0 +1,11 @@
+services:
+    rest:
+        image: rest:1.0.0
+        build:
+            context: ../..
+            dockerfile: ./examples/docker/Dockerfile
+        environment:
+            - PORT=8080
+        restart: unless-stopped
+        ports:
+            - 8080:8080

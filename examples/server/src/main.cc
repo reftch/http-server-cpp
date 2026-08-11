@@ -4,7 +4,6 @@
 #include <chrono>
 
 #include "server.h"
-#include "task.h"
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
@@ -24,7 +23,7 @@ std::string getCurrentTimeJson() {
 
 int main() {
     http::Server s("0.0.0.0", 8080);
-    auto& log = http::Logger::getInstance();
+    // auto& log = http::Logger::getInstance();
     // http::Logger::getInstance().setLevel(http::Level::DEBUG);
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
 
@@ -38,21 +37,17 @@ int main() {
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
         auto res_ptr = std::make_shared<http::Response>(std::move(res));
-
         s.taskQueue()->enqueue([res_ptr, &counter](std::stop_token stop) {
             while (!stop.stop_requested()) {
                 if (!res_ptr->stream(std::format("data: {}\n\n", ++counter).c_str())) break;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         });
-
-        // log.info("Exit");
     });
 
     // WebSocket handler
     s.setRoute("/wstime", [&](http::WebSocket& ws) {
         auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
-
         s.taskQueue()->enqueue([ws_ptr](std::stop_token stop) {
             while (!stop.stop_requested()) {
                 ws_ptr->send(getCurrentTimeJson());

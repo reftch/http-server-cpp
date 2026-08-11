@@ -1,5 +1,9 @@
+ARG TARGET=server
+
 # Stage 1: Build stage
 FROM alpine:3.20 AS build
+
+ARG TARGET
 
 RUN apk add --no-cache \
     build-base \
@@ -27,7 +31,7 @@ COPY CMakeLists.txt ./CMakeLists.txt
 RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_EXE_LINKER_FLAGS="-static"
 
-RUN cmake --build build -j$(nproc) --target rest
+RUN cmake --build build -j$(nproc) --target $TARGET
 
 # Create cerificates
 #RUN openssl req -x509 -noenc -keyout key.pem -out cert.pem -subj /CN=0.0.0.0
@@ -35,10 +39,13 @@ RUN cmake --build build -j$(nproc) --target rest
 # Production
 FROM scratch
 
+ARG TARGET
+
 #COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 #COPY --from=build /app/cert.pem /cert.pem
 #COPY --from=build /app/key.pem /key.pem
 
-COPY --from=build /app/build/examples/rest/rest /application
+COPY --from=build /app/build/examples/$TARGET/$TARGET /application
+COPY --from=build /app/build/examples/$TARGET/assets /assets
 
 CMD [ "/application" ]

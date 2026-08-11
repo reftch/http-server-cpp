@@ -61,11 +61,11 @@ run = "rm -rf ./build ./web/node_modules assets/ui .cache"
 description = 'Bring up production environment'
 quiet = true
 run = '''
-docker compose -f examples/rest/compose.yml up -d --build
+docker compose -f examples/docker/compose.yml up -d --build
 docker image prune -a -f
 '''
 
 [tasks.docker-down]
 description = 'Take down production environment'
 quiet = true
-run = 'docker compose -f examples/rest/compose.yml down'
+run = 'docker compose -f examples/docker/compose.yml down'

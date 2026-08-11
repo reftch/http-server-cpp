@@ -33,6 +33,9 @@ body {
 }
 
 .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     max-width: 800px;
     margin: 50px auto;
     padding: 20px;
@@ -44,10 +47,9 @@ body {
 
 .count {
     display: flex;
-    text-align: left;
-    width: 100px;
-    min-width: 100px;
-    border: 1px solid white;
+    justify-content: space-between;
+    min-width: 5rem;
+    max-width: 5rem;
 }
 
 .centered-image {

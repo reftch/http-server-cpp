@@ -14,13 +14,15 @@
 
     <body>
         <div class="container">
-            <h1>SSE Demo Page</h1>
+            <div>
+                <h1>SSE Demo Page</h1>
+            </div>
 
             <!-- Auto-connects on load, streams messages into the div -->
             <div hx-sse:connect="/stream" hx-target="#count">
                 <div class="count">
-                    <span>Count:</span>
-                    <span id="count">..</span>
+                    <span>Count: </span>
+                    <span id="count"></span>
                 </div>
             </div>
 
