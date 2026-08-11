@@ -23,7 +23,6 @@ std::string getCurrentTimeJson() {
 
 int main() {
     http::Server s("0.0.0.0", 8080);
-    // http::WorkerPool pool(4);
     // auto& log = http::Logger::getInstance();
     // http::Logger::getInstance().setLevel(http::Level::DEBUG);
     // http::SSLServer s("0.0.0.0", 8443, "cert.pem", "key.pem");
