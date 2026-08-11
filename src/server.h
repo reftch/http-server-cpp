@@ -150,7 +150,6 @@ namespace http {
 
         virtual bool sendResponse(const int sd, std::string& body);
 
-        // std::shared_ptr<http::TaskQueue> taskQueue() { return taskQueue_; }
         std::shared_ptr<http::Worker> taskQueue() { return taskQueue_; }
 
        private:

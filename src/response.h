@@ -96,6 +96,8 @@ namespace http {
          */
         std::string content() { return content_; }
 
+        int getId() { return sockfd_; }
+
         /**
          * @brief Gets the status code of the response.
          * @return The current HTTP status.

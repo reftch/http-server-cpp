@@ -26,6 +26,14 @@
                 </div>
             </div>
 
+            <div
+                hx-ws:connect="/wstime"
+                hx-target="#wstime"
+                hx-swap="outerHTML"
+            >
+                <div id="wstime"></div>
+            </div>
+
             <img
                 src="image.png"
                 width="100"

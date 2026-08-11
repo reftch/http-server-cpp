@@ -167,6 +167,8 @@ namespace http {
             return true;
         }
 
+        int getId() { return frame.sockfd; }
+
         /**
          * @brief Send a message through the WebSocket connection
          *
