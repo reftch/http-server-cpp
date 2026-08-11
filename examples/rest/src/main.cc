@@ -9,7 +9,7 @@ static http::Server* server = nullptr;
 
 int main() {
     // http::SSLServer s("0.0.0.0", 8080, "cert.pem", "key.pem");
-    http::Server s("0.0.0.0", 8088);
+    http::Server s;
 
     server = &s;
 

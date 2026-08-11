@@ -4,7 +4,6 @@
 // #include "sslserver.h"
 
 #include "server.h"
-#include "worker.h"
 
 [[nodiscard]]
 std::string getCurrentTimeJson() {
@@ -38,32 +37,24 @@ int main() {
 
     // SSE handler
     s.setRoute<http::HttpMethod::GET>("/stream", [&](const http::Request&, http::Response& res) {
-        auto res_ptr = std::make_shared<http::Response>(std::move(res));
-        s.taskQueue()->enqueue(res.getId(), [res_ptr, &counter](std::stop_token stop) {
-            while (!stop.stop_requested()) {
-                if (!res_ptr->stream(std::format("data: {}\n\n", ++counter).c_str())) break;
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
+        s.repeatEvery(res.getId(), std::chrono::seconds(1), [res, &counter]() mutable {
+            return res.stream(std::format("data: {}\n\n", ++counter).c_str());
         });
     });
 
     // WebSocket handler
     s.setRoute("/wstime", [&](http::WebSocket& ws) {
-        auto ws_ptr = std::make_shared<http::WebSocket>(std::move(ws));
-        s.taskQueue()->enqueue(ws.getId(), [ws_ptr](std::stop_token stop) {
-            while (!stop.stop_requested()) {
-                ws_ptr->send(getCurrentTimeJson());
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
+        s.repeatEvery(ws.getId(), std::chrono::seconds(1), [ws]() mutable {
+            return ws.send(getCurrentTimeJson());
         });
     });
 
     // Post request for CORS
-    s.setPostRoute([&](const http::Request&, http::Response& res) {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    });
+    // s.setPostRoute([&](const http::Request&, http::Response& res) {
+    //     res.setHeader("Access-Control-Allow-Origin", "*");
+    //     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    //     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    // });
 
     s.run();
 

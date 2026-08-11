@@ -150,22 +150,34 @@ namespace http {
 
         virtual bool sendResponse(const int sd, std::string& body);
 
-        std::shared_ptr<http::Worker> taskQueue() { return taskQueue_; }
+        // std::shared_ptr<http::Worker> taskQueue() { return taskQueue_; }
+
+        template <typename Rep, typename Period, typename F>
+        void repeatEvery(int id, std::chrono::duration<Rep, Period> interval, F&& fn) {
+            taskQueue_->enqueue(id, [interval, fn = std::forward<F>(fn)](std::stop_token stop) mutable {
+                while (!stop.stop_requested()) {
+                    if (!fn()) break;
+
+                    std::this_thread::sleep_for(interval);
+                }
+            });
+        }
 
        private:
+        // router
+        http::Router router_;
+
        protected:
         // static directory
         std::string static_directory_ = "./assets";
-        // router
-        http::Router router_;
-        bool isHttps = false;
+
+        // bool isHttps = false;
 
         bool running_ = false;           // Is server running flag
         std::set<int32_t> client_list_;  // client list for connections(slave sockets)
         int32_t sockfd_ = -1;            // server file descriptor
         const int port_;                 // Port number to listen on
         const std::string host_;         // Hostname or IP address to bind to
-        // std::shared_ptr<http::TaskQueue> taskQueue_;
         std::shared_ptr<http::Worker> taskQueue_;
 
         request_handler pre_routing_handler_;   // Pre-Routing handler
@@ -176,8 +188,6 @@ namespace http {
         std::set<WsRoute> wsRoutes;
 
         std::chrono::time_point<std::chrono::high_resolution_clock> start_ = std::chrono::high_resolution_clock::now();
-
-        bool is_handshake_ = false;
 
         int setNonblockMode(int fd);
 
