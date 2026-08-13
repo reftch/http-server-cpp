@@ -33,6 +33,9 @@ body {
 }
 
 .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     max-width: 800px;
     margin: 50px auto;
     padding: 20px;
@@ -51,7 +54,6 @@ body {
     border-radius: 0.5rem;
 }
 
-
 @media (prefers-color-scheme: light) {
     :root {
         color: #213547;
@@ -61,6 +63,4 @@ body {
             box-shadow: 0 0 10px rgba(192, 182, 182, 0.8);
         }
     }
-
-
 }
